@@ -246,9 +246,14 @@
     #term { padding: 12px; }
     aside {
       order: -1; padding: 8px 12px; cursor: pointer;
-      display: grid; grid-template-columns: max-content 1fr max-content; column-gap: 10px; align-items: center;
+      display: grid; grid-template-columns: max-content 1fr max-content max-content; column-gap: 10px; align-items: center;
     }
-    aside::after { content: "▾"; color: var(--dim); font-size: 12px; grid-row: 1; grid-column: 3; }
+    aside::after { content: "▾"; color: var(--dim); font-size: 12px; grid-row: 1; grid-column: 4; }
+    /* 手がかりの数は TRACE と同じ1行目に「◆ 2/3」とだけ出す */
+    aside h2.evi-head { display: block; grid-row: 1; grid-column: 3; margin: 0; font-size: 12px; }
+    aside h2.evi-head span:first-child { display: none; }
+    #eviCount { color: var(--warn); }
+    #eviCount:not(:empty)::before { content: "◆ "; }
     aside.open::after { content: "▴"; }
     .trace-label { gap: 8px; }
     .bar { margin: 0; }
@@ -258,9 +263,9 @@
     aside.open #log { max-height: 25vh; overflow-y: auto; }
     aside.open #log li { border-bottom: 1px dotted var(--line); padding: 2px 0; }
     #evi { display: none; grid-column: 1 / -1; }
-    aside.open h2.evi-head { display: flex; grid-column: 1 / -1; margin-top: 8px; }
-    aside.open #evi { display: block; max-height: 20vh; }
+    aside.open #evi { display: block; max-height: 20vh; margin-top: 6px; }
     .mission .m-title { font-size: 18px; }
+    .banner { font-size: 15px; letter-spacing: .25em; padding: 3px 12px; }
   }
 </style>
 </head>
