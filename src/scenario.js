@@ -26,8 +26,11 @@
 //    say:    初めて来たときの師匠のセリフ（配列）
 //    clue:   初めて来たときに記録される「手がかり」の名前（画面右の EVIDENCE 欄に集まる）
 //            search の entries[] と dir[] にも clue を付けられる。任務完了の画面に「回収 n/N」と出る
-//    lock:   { pass: "パスワード" or [...], hint, prompt, penalty, say }
+//    lock:   { pass: "パスワード" or [...], hint, prompt, penalty, say, showLength, user }
 //            pass は全角・半角、大文字・小文字、空白を区別しない
+//            パスワードを間違えても入力画面のまま続けて打てる。何も入力せずに Enter / back / Esc で戻る
+//            showLength: true でパスワードの文字数を見せる（入力中も [5/17] のように出る）
+//            user: { prompt, hint, ids, owner, disabled } を付けると、先にユーザーIDを聞く（人事DB の書き方を参照）
 //            ※ ビルドすると、host・title・lock 以外がこのパスワードで暗号化される
 //    search: { label, limit, records, entries: [...], notes: [...], empty }
 //            records は検索中の演出で回る「総件数」（見た目だけ）
@@ -283,8 +286,25 @@ const SCENARIO = {
           host: "hr.teiwa.local",
           title: "人事データベース",
           lock: {
+            // ユーザーID → パスワードの順に聞く。ids は「打つ文字列 → アカウント」の対応
+            // パスワードが通るのは owner のアカウントだけ（ほかの社員の ID は、ID までは通るがパスワードで弾かれる）
+            user: {
+              prompt: "ユーザーID",
+              hint: "ユーザーID は社員名のローマ字です（例：yamada.taro）",
+              ids: {
+                "asahina.satsuki": "asahina", "asahina": "asahina", "s.asahina": "asahina", "satsuki.asahina": "asahina", "朝比奈": "asahina", "朝比奈さつき": "asahina",
+                "kuroda.seiichi": "kuroda", "kuroda": "kuroda", "黒田": "kuroda", "黒田誠一": "kuroda",
+                "saeki.aya": "saeki", "saeki": "saeki", "佐伯": "saeki", "佐伯あや": "saeki",
+                "ishida.wataru": "ishida", "ishida": "ishida",
+                "onodera.jin": "onodera", "onodera": "onodera",
+                "makabe.minato": "makabe", "makabe": "makabe", "真壁": "makabe", "真壁湊": "makabe",
+              },
+              owner: "asahina",
+              disabled: { makabe: "このアカウントは停止されています（2026/09/12）" },
+            },
             pass: "hikari20090822!!!",
-            hint: "社員のパスワードでログインしてください（社内ネットワークのため、二段階認証は省略されます）",
+            showLength: true, // ログイン画面に「パスワード：17文字」と出す
+            hint: "社員のユーザーIDとパスワードでログインしてください（社内ネットワークのため、二段階認証は省略されます）",
             say: [
               "[師匠] 正面からは無理か。さすがに個人情報は固い。",
               "[師匠] 日報のほうはどうだ。社員同士で見せ合うものなら、守りはゆるいはずだ。口の軽そうな奴を探せ。",

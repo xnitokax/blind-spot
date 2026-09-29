@@ -56,6 +56,9 @@ function check(cid, ch) {
 async function lockNode(cid, id, node) {
   const { host, title, lock, ...secret } = node;
   const { pass, ...rest } = lock;
+  // 文字数を見せる鍵は、文字数だけ残す（パスワードそのものは公開データから消える）
+  if (lock.showLength) rest.len = [...[].concat(pass)[0]].length;
+  if (lock.user && !Object.values(lock.user.ids).includes(lock.user.owner)) throw new Error(`${cid}/${id}: user.owner が user.ids のどれにも当てはまりません`);
   const text = JSON.stringify(secret);
   const boxes = [];
   for (const p of [].concat(pass)) {
