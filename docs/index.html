@@ -891,7 +891,10 @@ async function search(arg) {
 }
 
 async function showResults(conf, q, terms, hits, shown, limit) {
-  print(`${esc(conf.label)}：「${esc(q)}」の検索結果 ${hits.length} 件${hits.length > limit ? `（上位 ${limit} 件を表示）` : ""}`, hits.length ? "sys" : "dim");
+  // 見せかけの総件数（totals）：その言葉1つだけで検索したときに、大企業らしい件数を出す
+  const key = Object.keys(conf.totals || {}).find(k => NZ.norm(k) === NZ.norm(q));
+  const total = hits.length ? Math.max(hits.length, key ? conf.totals[key] : 0) : 0;
+  print(`${esc(conf.label)}：「${esc(q)}」の検索結果 ${total.toLocaleString()} 件${total > limit ? `（上位 ${limit} 件を表示）` : ""}`, hits.length ? "sys" : "dim");
   if (!hits.length) print(esc(conf.empty || "該当するものはありません。"), "dim");
   shown.forEach(e => decode(print(`<div class="doc">${e.html}</div>`, "node"), 380));
 
