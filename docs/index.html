@@ -840,7 +840,8 @@ async function connect(id, opt = {}) {
   if (node.lock && !state.opened.has(id)) {
     const label = node.lock.prompt || "password";
     SFX.alert();
-    print(`<span class="banner bad" style="font-size:14px">LOCKED</span>\n<span class="warn">認証が必要です。</span>\n${esc(node.lock.hint || "")}\n<span class="dim">※ 間違えるとトレースが上昇します</span>`);
+    disablePicks();
+    print(`<span class="banner bad" style="font-size:14px">LOCKED</span>\n<span class="warn">認証が必要です。</span>\n${esc(node.lock.hint || "")}\n<span class="dim">※ 間違えるとトレースが上昇します</span>\n<span class="dim">※ 何も入力せずに Enter（または back）で、入力せずに戻れます</span>　<span class="n pick" data-cancel>[やめる]</span>`);
     if (!state.said.has("lock:" + id)) { state.said.add("lock:" + id); await speak(node.lock.say); }
     state.mode = { type: "password", id, opt, label };
     setPrompt(`${label}:`);
@@ -1206,6 +1207,21 @@ const COMMANDS = {
 };
 COMMANDS.exit = COMMANDS.back;
 
+// 認証をやめて、元いた場所に戻る
+function cancelAuth() {
+  if (state.mode?.type !== "password") return;
+  const label = state.mode.label;
+  state.mode = null;
+  disablePicks();
+  print(`<span class="ps">${esc(label)}:</span> <span class="dim">（入力しない）</span>`, "echo");
+  print("認証をやめました。", "dim");
+  SFX.enter();
+  printLinks();
+  normalPrompt();
+  cmd.value = "";
+  focusCmd();
+}
+
 async function run(raw) {
   const mode = state.mode;
   if (mode?.type === "line") {
@@ -1232,6 +1248,8 @@ async function run(raw) {
     return startChapter(ch);
   }
   if (mode?.type === "password") {
+    // 何も入力しない／back と打つと、パスワードを試さずに戻る（トレースは上がらない）
+    if (!raw.trim() || /^(back|exit|cancel)$/i.test(raw.trim())) return cancelAuth();
     state.mode = null;
     const node = nodeOf(mode.id);
     const shown = node.lock.prompt ? esc(raw) : "*".repeat(raw.length);
@@ -1323,7 +1341,8 @@ $("form").onsubmit = async e => {
 cmd.addEventListener("keydown", e => {
   const inGame = CH && !state.mode;
   if (e.key.length === 1 || e.key === "Backspace") SFX.key();
-  if (e.key === "Tab") { e.preventDefault(); if (inGame) complete(); }
+  if (e.key === "Escape" && state.mode?.type === "password") { e.preventDefault(); cancelAuth(); }
+  else if (e.key === "Tab") { e.preventDefault(); if (inGame) complete(); }
   else if (e.key === "ArrowUp" && inGame && histPos > 0) { e.preventDefault(); cmd.value = hist[--histPos]; }
   else if (e.key === "ArrowDown" && inGame) {
     e.preventDefault();
@@ -1353,6 +1372,7 @@ $("term").addEventListener("click", e => {
   if (isBusy()) { fast = true; return; }
   const pick = e.target.closest(".pick");
   if (pick) {
+    if ("cancel" in pick.dataset) return cancelAuth();
     if (state.mode?.type === "password") return;
     cmd.value = pick.dataset.fill;
     SFX.tick();
