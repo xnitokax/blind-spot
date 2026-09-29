@@ -81,6 +81,24 @@
   }
   #cmd.ghost { color: var(--alert); }
 
+  /* 入力欄と「NEXT」欄：画面の下に固定して、次にできることを常に見せる */
+  #term { padding-bottom: 0; }
+  .dock {
+    position: sticky; bottom: 0; z-index: 2; background: var(--panel);
+    margin-top: 10px; padding: 8px 0 14px; border-top: 1px dashed var(--line);
+    transition: opacity .3s;
+  }
+  .dock.busy #next { opacity: .3; pointer-events: none; }
+  #next { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; font-size: 13px; }
+  #next:empty { display: none; }
+  #next .next-label { color: var(--dim); font-size: 11px; letter-spacing: .25em; margin-right: 2px; }
+  #next .chip {
+    margin: 0; padding: 1px 9px; border: 1px solid var(--line); border-radius: 12px; color: var(--accent);
+    white-space: nowrap; text-shadow: none;
+  }
+  #next .chip.ow, #next .chip.warn { color: var(--warn); border-color: rgba(255,193,77,.4); }
+  #next .chip.go { border-color: rgba(61,255,168,.45); }
+
   /* タイトル */
   .title-logo {
     font-size: clamp(30px, 8vw, 60px); letter-spacing: .12em; color: var(--accent); margin: 18px 0 6px; line-height: 1.2;
@@ -243,7 +261,7 @@
     .wrap { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; height: 100dvh; padding: 12px; gap: 8px; }
     header { order: -2; padding-bottom: 6px; }
     header h1 { font-size: 15px; letter-spacing: .1em; }
-    #term { padding: 12px; }
+    #term { padding: 12px 12px 0; }
     aside {
       order: -1; padding: 8px 12px; cursor: pointer;
       display: grid; grid-template-columns: max-content 1fr max-content max-content; column-gap: 10px; align-items: center;
@@ -258,6 +276,9 @@
     .trace-label { gap: 8px; }
     .bar { margin: 0; }
     aside h2 { display: none; }
+    /* スマホ：NEXT 欄は1行で、横にスクロール */
+    #next { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    #next::-webkit-scrollbar { display: none; }
     #log { grid-column: 1 / -1; max-height: 1.8em; overflow: hidden; margin: 4px 0 0; }
     #log li { border-bottom: none; padding: 0; }
     aside.open #log { max-height: 25vh; overflow-y: auto; }
@@ -279,11 +300,14 @@
 
   <main class="panel" id="term">
     <div id="out"></div>
-    <form class="row" id="form" autocomplete="off">
-      <span class="ps" id="prompt"></span>
-      <input id="cmd" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" enterkeyhint="go" aria-label="コマンド入力">
-      <button id="run" type="submit" aria-label="実行">⏎</button>
-    </form>
+    <div class="dock" id="dock">
+      <div id="next" aria-label="次にできること"></div>
+      <form class="row" id="form" autocomplete="off">
+        <span class="ps" id="prompt"></span>
+        <input id="cmd" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" enterkeyhint="go" aria-label="コマンド入力">
+        <button id="run" type="submit" aria-label="実行">⏎</button>
+      </form>
+    </div>
   </main>
 
   <aside class="panel" id="side">
@@ -542,15 +566,43 @@ function focusCmd() { if (finePointer) cmd.focus(); }
 async function busy(fn) {
   busyDepth++;
   cmd.disabled = true;
+  $("dock").classList.add("busy");
   try {
     return await fn();
   } finally {
     if (--busyDepth <= 0) {
       busyDepth = 0;
       fast = false;
+      $("dock").classList.remove("busy");
       if (!state.over) { cmd.disabled = false; focusCmd(); }
     }
   }
+}
+
+// ---------------- NEXT 欄：次にできることを、入力欄の上に常に出す ----------------
+function chip(fill, label, cls = "") {
+  return `<span class="chip pick ${cls}" data-fill="${esc(fill)}">${esc(label ?? fill)}</span>`;
+}
+function updateNext() {
+  const box = $("next");
+  const mode = state?.mode;
+  let chips = [];
+  if (!CH || state.over) {
+    box.innerHTML = "";
+    return;
+  }
+  if (mode?.type === "password") {
+    chips = [`<span class="chip pick warn" data-cancel>やめる（入力しない）</span>`];
+  } else if (mode?.type === "confirm") {
+    chips = [chip("y", "y 進む", "ow"), chip("n", "n やめる")];
+  } else if (state.current) {
+    const node = here();
+    if (node.search) chips.push(chip("search ", `search ${node.search.label}を検索…`, "go"));
+    for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
+    for (const l of state.links) chips.push(chip(`ssh ${l.name}`, `ssh ${l.name}${l.oneway ? "（一方通行）" : ""}`, l.oneway ? "ow" : ""));
+    if (state.history.length) chips.push(chip("back"));
+  }
+  box.innerHTML = chips.length ? `<span class="next-label">NEXT</span>${chips.join("")}` : "";
 }
 
 // ---------------- 表示 ----------------
@@ -631,7 +683,7 @@ async function speak(lines) {
 }
 
 function shortHost(host) { return host.split(/[./]/)[0]; }
-function setPrompt(text) { $("prompt").textContent = text; }
+function setPrompt(text) { $("prompt").textContent = text; updateNext(); }
 function normalPrompt() {
   setPrompt(`guest@${shortHost(here().host)}:~$`);
   cmd.type = "text";
@@ -936,6 +988,7 @@ function resetScreen() {
   updateTrace();
   updateClock();
   updateClueCount();
+  updateNext();
 }
 
 async function startChapter(ch) {
@@ -1063,6 +1116,7 @@ async function play(steps) {
 
 async function runGoal(goal) {
   state.over = true;
+  updateNext();
   const cut = goal.end === "cut";
   await busy(async () => {
     $("form").style.visibility = "hidden";
