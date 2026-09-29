@@ -1,4 +1,4 @@
-# LINE//UZU（仮題）
+# BLIND//SPOT
 
 マーダーミステリー「uzu」と行き来する、一人用シナリオの **Web 側（ハッキング画面）** の試作です。
 ▶ **遊ぶ**：https://xnitokax.github.io/blind-spot/ （回線コードは下の「回線コード」の表にあります）
