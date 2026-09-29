@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>LINE//UZU build</title>
+<style>
+  body { background: #05090a; color: #b8f5d8; font-family: Consolas, "MS Gothic", monospace; padding: 24px; line-height: 1.7; }
+  button { font: inherit; background: transparent; color: #3dffa8; border: 1px solid #3dffa8; padding: 6px 16px; border-radius: 4px; cursor: pointer; }
+  button:hover { background: #3dffa8; color: #05090a; }
+  #out { white-space: pre-wrap; color: #5d8f7c; }
+  .ok { color: #3dffa8; } .ng { color: #ff4d6a; }
+</style>
+</head>
+<body>
+<h1>LINE//UZU build</h1>
+<p>src/scenario.js → docs/scenario.data.js（任務ごとに回線コードで、鍵付きの場所はそのパスワードで暗号化）</p>
+<p>※ tools/serve.ps1 で起動したサーバー経由で開いてください</p>
+<button id="build">ビルド</button>
+<div id="out"></div>
+
+<script src="../src/scenario.js"></script>
+<script src="../docs/nz-crypto.js"></script>
+<script>
+const out = document.getElementById("out");
+const log = (msg, cls = "") => { const d = document.createElement("div"); d.textContent = msg; d.className = cls; out.appendChild(d); };
+
+// 接続先の名前（docs/index.html の linkName と同じ決め方）
+const linkName = a => a.dataset.name || a.textContent.trim().split(/[\s　]/)[0].split(".")[0];
+
+// 書き間違いのチェック
+function check(cid, ch) {
+  const ng = msg => log(`⚠ ${cid}: ${msg}`, "ng");
+  if (!ch.code) ng("code（回線コード）がありません");
+  if (!ch.nodes[ch.start]) ng(`start のノード ${ch.start} がありません`);
+  let goals = 0;
+  for (const [id, node] of Object.entries(ch.nodes)) {
+    const box = document.createElement("div");
+    box.innerHTML = node.body || "";
+    const names = new Set();
+    box.querySelectorAll("a[data-go]").forEach(a => {
+      if (!ch.nodes[a.dataset.go]) ng(`${id} → ${a.dataset.go}: 接続先がありません`);
+      const name = linkName(a);
+      if (names.has(name)) ng(`${id}: 接続先の名前「${name}」が重複しています（data-name で変えてください）`);
+      names.add(name);
+    });
+    for (const d of node.dir || []) {
+      if (d.go && !ch.nodes[d.go]) ng(`${id} のフォルダ ${d.name} → ${d.go}: 接続先がありません`);
+    }
+    if (node.goal) goals++;
+    goals += (node.search?.entries || []).filter(e => e.goal).length;
+  }
+  if (!goals) ng("任務完了（goal）がひとつもありません");
+}
+
+// 鍵付きノード：host・title・lock 以外を、パスワードごとに暗号化する
+async function lockNode(cid, id, node) {
+  const { host, title, lock, ...secret } = node;
+  const { pass, ...rest } = lock;
+  const text = JSON.stringify(secret);
+  const boxes = [];
+  for (const p of [].concat(pass)) {
+    const box = await NZ.lock(text, NZ.norm(p));
+    if (await NZ.unlock(box, NZ.norm(p)) !== text) throw new Error(`${cid}/${id}: 復号テストに失敗`);
+    boxes.push(box);
+  }
+  log(`  🔒 ${id}: 暗号化しました（パスワード ${boxes.length} 通り）`);
+  return { host, title, lock: { ...rest, boxes } };
+}
+
+async function build() {
+  out.textContent = "";
+  const codes = new Set();
+  const chapters = [];
+  for (const [cid, src] of Object.entries(SCENARIO.chapters)) {
+    check(cid, src);
+    const code = NZ.norm(src.code);
+    if (codes.has(code)) log(`⚠ ${cid}: 回線コード ${src.code} がほかの任務と重複しています`, "ng");
+    codes.add(code);
+
+    const { code: _, ...ch } = JSON.parse(JSON.stringify(src));
+    ch.id = cid;
+    // 手がかりの総数（鍵付きノードの中身は暗号化すると数えられないので、先に数えておく）
+    ch.clueTotal = Object.values(ch.nodes).reduce((n, node) => n + (node.clue ? 1 : 0)
+      + (node.search?.entries || []).filter(e => e.clue).length + (node.dir || []).filter(d => d.clue).length, 0);
+    log(`■ ${cid}（${ch.label}）　手がかり ${ch.clueTotal} 個`);
+    for (const [id, node] of Object.entries(ch.nodes)) {
+      if (node.lock) ch.nodes[id] = await lockNode(cid, id, node);
+    }
+    const text = JSON.stringify(ch);
+    const box = await NZ.lock(text, code);
+    if (await NZ.unlock(box, code) !== text) throw new Error(`${cid}: 復号テストに失敗`);
+    chapters.push(box);
+    log(`  🔒 任務全体を回線コードで暗号化しました`);
+  }
+  const data = { title: SCENARIO.title, gameOver: SCENARIO.gameOver, chapters };
+  const js = `// 自動生成ファイル（tools/build.html）。直接編集しないでください。\nwindow.SCENARIO_DATA = ${JSON.stringify(data, null, 2)};\n`;
+  const res = await fetch("/__build", { method: "PUT", body: js });
+  if (!res.ok) throw new Error(`書き込み失敗 (${res.status})`);
+  log(`✔ docs/scenario.data.js を書き出しました（${js.length} 文字）`, "ok");
+}
+
+document.getElementById("build").onclick = () => build().catch(e => log("✖ " + e.message, "ng"));
+</script>
+</body>
+</html>
