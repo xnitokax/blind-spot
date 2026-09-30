@@ -1814,7 +1814,7 @@ async function authorLine() {
   await speak(authorCount === 1 ? [
     "[師匠] ……おい。そこは俺の回線だ。",
     "[師匠] なんで俺と繋がりたがる。言っとくが、俺にそっちの趣味はないからな。",
-  ] : ["[師匠] ……また来たのか。物好きなやつだな。"]);
+  ] : ["[師匠] ……また来たのか。懲りないやつだな。"]);
   // プロフィールのカード（https:// で始まる中身はリンクにする）
   const val = v => /^https:\/\//.test(v)
     ? `<a class="pf-link" href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https:\/\//, ""))}</a>`
