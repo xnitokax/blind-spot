@@ -58,10 +58,9 @@
   /* 移動先のアドレス：はっきりした緑で光らせて、「ここに移動した」感じを出す */
   .node-head .host { color: var(--accent); font-size: 14px; letter-spacing: .06em; text-shadow: 0 0 10px rgba(61,255,168,.6); }
   /* 今いる場所でできること：本文と間を空け、中はきゅっと詰める */
-  .menu { margin-top: 16px; font-size: 14px; line-height: 1.5; white-space: normal; }
+  .menu { margin-top: 26px; font-size: 14px; line-height: 1.5; white-space: normal; }
   .menu .ls { margin: 0; row-gap: 0; }
-  .menu .ls + .ls, .menu .menu-search + .ls, .menu .ls + .menu-search { margin-top: 6px; }
-  .menu .menu-search { color: var(--accent); }  .doc { border-left: 2px solid var(--line); padding: 2px 12px; margin: 10px 0; white-space: normal; }
+  .doc { border-left: 2px solid var(--line); padding: 2px 12px; margin: 10px 0; white-space: normal; }
   .doc p { margin: 4px 0; }
   .node p { margin: 6px 0; white-space: normal; }
   .log { background: #000; border: 1px solid var(--line); padding: 10px; overflow-x: auto; font-size: 13px; margin: 8px 0; white-space: pre; }
@@ -845,7 +844,7 @@ function updateNext() {
     chips = [chip("y", "y 進む", "ow"), chip("n", "n やめる")];
   } else if (state.current) {
     const node = here();
-    if (node.search) chips.push(chip("search ", `search ${node.search.label}を検索…`, "go"));
+    if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
     for (const l of state.links) chips.push(chip(`ssh ${l.name}`, `ssh ${l.name}${l.oneway ? "（一方通行）" : ""}`, l.oneway ? "ow" : ""));
     if (state.history.length) chips.push(chip("back"));
@@ -1079,21 +1078,20 @@ function parseNode(html) {
 }
 
 // 今いる場所でできること（フォルダ・検索・接続先）を、本文と間を空けた1つのかたまりにまとめて出す
+// フォルダ・検索・接続先を1つの表にまとめる（左に打つもの、右に説明。列がそろう）
 function printMenu() {
-  const node = here(), parts = [];
-  if (node.dir) {
-    parts.push(`<div class="ls">${node.dir.map(d =>
-      `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`).join("")}</div>`);
+  const node = here(), rows = [];
+  for (const d of node.dir || []) {
+    rows.push(`<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`);
   }
   if (node.search) {
-    parts.push(`<div class="menu-search"><span class="n pick" data-fill="search ">search</span> &lt;言葉&gt; で${esc(node.search.label)}を検索</div>`);
+    rows.push(`<span class="n pick" data-fill="search ">search 〇〇</span><span>${esc(node.search.label)}から「〇〇」を探す</span>`);
   }
-  if (state.links.length) {
-    parts.push(`<div class="ls">${state.links.map(l =>
-      `<span class="n pick${l.oneway ? " ow" : ""}" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span><span${l.oneway ? ' class="ow"' : ""}>${esc(l.desc)}${l.oneway ? "　【一方通行】" : ""}</span>`).join("")}</div>`);
+  for (const l of state.links) {
+    rows.push(`<span class="n pick${l.oneway ? " ow" : ""}" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span><span${l.oneway ? ' class="ow"' : ""}>${esc(l.desc)}${l.oneway ? "　【一方通行】" : ""}</span>`);
   }
-  if (!parts.length) return false;
-  print(`<div class="menu">${parts.join("")}</div>`);
+  if (!rows.length) return false;
+  print(`<div class="menu"><div class="ls">${rows.join("")}</div></div>`);
   return true;
 }
 const printLinks = () => printMenu();
