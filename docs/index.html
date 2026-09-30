@@ -61,9 +61,7 @@
   .menu { margin-top: 16px; font-size: 14px; line-height: 1.5; white-space: normal; }
   .menu .ls { margin: 0; row-gap: 0; }
   .menu .ls + .ls, .menu .menu-search + .ls, .menu .ls + .menu-search { margin-top: 6px; }
-  .menu .menu-search { color: var(--accent); }
-  .menu .menu-hint { color: var(--dim); font-size: 12px; margin-top: 4px; }
-  .doc { border-left: 2px solid var(--line); padding: 2px 12px; margin: 10px 0; white-space: normal; }
+  .menu .menu-search { color: var(--accent); }  .doc { border-left: 2px solid var(--line); padding: 2px 12px; margin: 10px 0; white-space: normal; }
   .doc p { margin: 4px 0; }
   .node p { margin: 6px 0; white-space: normal; }
   .log { background: #000; border: 1px solid var(--line); padding: 10px; overflow-x: auto; font-size: 13px; margin: 8px 0; white-space: pre; }
@@ -1082,24 +1080,20 @@ function parseNode(html) {
 
 // 今いる場所でできること（フォルダ・検索・接続先）を、本文と間を空けた1つのかたまりにまとめて出す
 function printMenu() {
-  const node = here(), parts = [], hints = [];
+  const node = here(), parts = [];
   if (node.dir) {
     parts.push(`<div class="ls">${node.dir.map(d =>
       `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`).join("")}</div>`);
-    hints.push("cd &lt;フォルダ名&gt; で移動");
   }
   if (node.search) {
-    const s = node.search;
-    parts.push(`<div class="menu-search"><span class="n pick" data-fill="search ">search</span> &lt;言葉&gt; で${esc(s.label)}を検索　<span class="dim">（上位 ${s.limit ?? 3} 件のみ表示）</span></div>`);
+    parts.push(`<div class="menu-search"><span class="n pick" data-fill="search ">search</span> &lt;言葉&gt; で${esc(node.search.label)}を検索</div>`);
   }
   if (state.links.length) {
     parts.push(`<div class="ls">${state.links.map(l =>
       `<span class="n pick${l.oneway ? " ow" : ""}" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span><span${l.oneway ? ' class="ow"' : ""}>${esc(l.desc)}${l.oneway ? "　【一方通行】" : ""}</span>`).join("")}</div>`);
-    hints.push("ssh &lt;名前&gt; で接続");
   }
   if (!parts.length) return false;
-  if (hints.length) hints.push("名前をタップでも入力できます");
-  print(`<div class="menu">${parts.join("")}${hints.length ? `<div class="menu-hint">${hints.join(" ／ ")}</div>` : ""}</div>`);
+  print(`<div class="menu">${parts.join("")}</div>`);
   return true;
 }
 const printLinks = () => printMenu();
