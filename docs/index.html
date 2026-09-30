@@ -29,11 +29,16 @@
   @keyframes flicker { 0%, 96%, 100% { opacity: 1; } 97% { opacity: .93; } 98% { opacity: 1; } 99% { opacity: .96; } }
   header { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
   header h1 { margin: 0; font-size: 18px; color: var(--accent); letter-spacing: .2em; text-shadow: 0 0 10px rgba(61,255,168,.5); flex: 1; }
-  #mute {
+  #mute, #bgm {
     font: inherit; font-size: 12px; background: transparent; color: var(--dim); border: 1px solid var(--line);
     border-radius: 4px; padding: 2px 8px; cursor: pointer;
   }
-  #mute:hover { color: var(--accent); border-color: var(--accent); }
+  #mute:hover, #bgm:hover { color: var(--accent); border-color: var(--accent); }
+  #bgm.off { text-decoration: line-through; opacity: .6; }
+  /* 師匠が流している曲 */
+  #np { font-size: 12px; color: var(--voice); opacity: 0; transition: opacity 1s; white-space: nowrap; }
+  #np.on { opacity: 1; animation: npPulse 2.2s ease-in-out infinite; }
+  @keyframes npPulse { 50% { opacity: .55; } }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; min-height: 0; }
   h2 { font-size: 13px; color: var(--dim); margin: 0 0 6px; letter-spacing: .1em; font-weight: normal; }
 
@@ -261,6 +266,10 @@
     .wrap { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; height: 100dvh; padding: 12px; gap: 8px; }
     header { order: -2; padding-bottom: 6px; }
     header h1 { font-size: 15px; letter-spacing: .1em; }
+    header { gap: 6px; }
+    #np { width: 1em; overflow: hidden; }
+    #mute, #bgm { font-size: 11px; padding: 1px 5px; }
+    #clock { font-size: 11px; }
     #term { padding: 12px 12px 0; }
     aside {
       order: -1; padding: 8px 12px; cursor: pointer;
@@ -294,6 +303,8 @@
 <div class="wrap" id="wrap">
   <header>
     <h1 id="gameTitle">BLIND//SPOT</h1>
+    <span id="np" aria-live="polite">♪ 師匠のプレイリスト</span>
+    <button id="bgm" type="button" aria-label="BGM のオン・オフ">BGM ON</button>
     <button id="mute" type="button" aria-label="音のオン・オフ">SOUND ON</button>
     <span id="clock" class="meta"></span>
   </header>
@@ -339,9 +350,9 @@
 // ---------------- 効果音（Web Audio でその場で合成する。音声ファイルは使わない） ----------------
 // 方針：ピコピコした矩形波は使わない。サイン波・フィルターをかけたノイズ・低音で、映画の UI のような質感にする
 const SFX = (() => {
-  let ctx = null, out = null, echo = null, noiseBuf = null, siren = null, ambient = null;
-  let muted = false;
-  try { muted = localStorage.getItem("uzu-muted") === "1"; } catch {}
+  let ctx = null, out = null, echo = null, noiseBuf = null, siren = null;
+  let muted = false, bgmOn = true, bgmWant = false, bgm = null;
+  try { muted = localStorage.getItem("uzu-muted") === "1"; bgmOn = localStorage.getItem("uzu-bgm") !== "0"; } catch {}
 
   function ac() {
     if (!ctx) {
@@ -406,12 +417,13 @@ const SFX = (() => {
     src.start(t, Math.random()); src.stop(t + dur + 0.05);
   }
 
-  return {
+  const api = {
     get muted() { return muted; },
     toggle() {
       muted = !muted;
       try { localStorage.setItem("uzu-muted", muted ? "1" : "0"); } catch {}
-      if (muted) { this.siren(false); this.ambient(false); } else ac();
+      if (muted) this.siren(false); else ac();
+      applyBgm();
       return muted;
     },
     wake() { if (!muted) ac(); },
@@ -472,26 +484,167 @@ const SFX = (() => {
       osc.start(); lfo.start();
       siren = { stop() { osc.stop(); lfo.stop(); } };
     },
-    // 任務中ずっと鳴っている、ごく小さい低い唸り
-    ambient(on) {
-      if (ambient) { try { ambient.stop(); } catch {} ambient = null; }
-      if (!on || muted) return;
-      const c = ac(); if (!c) return;
-      const g = c.createGain();
-      g.gain.setValueAtTime(0.0001, c.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.02, c.currentTime + 3);
-      g.connect(out);
-      const a = c.createOscillator(), b = c.createOscillator();
-      a.frequency.value = 55; b.frequency.value = 55.35;
-      a.connect(g); b.connect(g);
-      const src = c.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
-      const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 320; f.Q.value = 0.8;
-      const ng = c.createGain(); ng.gain.value = 0.35;
-      src.connect(f).connect(ng).connect(g);
-      a.start(); b.start(); src.start();
-      ambient = { stop() { a.stop(); b.stop(); src.stop(); } };
+    // BGM：師匠が流している音楽。on / off は「流したい」という希望で、音を消している間は鳴らさない
+    music(on, opt = {}) { bgmWant = on; applyBgm(opt); },
+    get bgmOn() { return bgmOn; },
+    get bgmPlaying() { return !!bgm; },
+    toggleBgm() {
+      bgmOn = !bgmOn;
+      try { localStorage.setItem("uzu-bgm", bgmOn ? "1" : "0"); } catch {}
+      applyBgm();
+      return bgmOn;
     },
+    // 師匠がしゃべる間は、少しだけ音量を下げる
+    duck(on) {
+      if (!bgm) return;
+      const t = ctx.currentTime;
+      bgm.bus.gain.cancelScheduledValues(t);
+      bgm.bus.gain.setTargetAtTime(on ? BGM_VOL * 0.45 : BGM_VOL, t, 0.15);
+    },
+    onBgmChange: null,
   };
+
+  // ---------------- BGM の演奏 ----------------
+  // ダークなシンセウェーブ風。4小節（Am → F → Dm → E）をくり返し、小節が進むごとに楽器が増えていく
+  function applyBgm(opt = {}) {
+    const play = bgmWant && bgmOn && !muted;
+    if (play && !bgm) startBgm();
+    else if (!play && bgm) stopBgm(opt);
+    api.onBgmChange?.();
+  }
+
+  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.55;
+  const PROG = [
+    { root: 55.00, chord: [220.00, 261.63, 329.63] }, // Am
+    { root: 43.65, chord: [174.61, 220.00, 261.63] }, // F
+    { root: 36.71, chord: [146.83, 174.61, 220.00] }, // Dm
+    { root: 41.20, chord: [164.81, 207.65, 246.94] }, // E
+  ];
+  const BASS_OCT = [1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 1, 2]; // 16分で刻むベース（2 はオクターブ上）
+  const ARP = [0, 1, 2, 1, 0, 2, 1, 2];                           // アルペジオで弾くコードの音の順番
+
+  function startBgm() {
+    const c = ac(); if (!c) return;
+    const t = c.currentTime;
+    // ラジオのつまみを回したように、こもった音から開いていく
+    const bus = c.createGain(), lp = c.createBiquadFilter();
+    bus.gain.setValueAtTime(0.0001, t);
+    bus.gain.exponentialRampToValueAtTime(BGM_VOL, t + 2.5);
+    lp.type = "lowpass"; lp.frequency.setValueAtTime(300, t); lp.frequency.exponentialRampToValueAtTime(16000, t + 4);
+    bus.connect(lp).connect(out);
+    bgm = { bus, lp, step: 0, next: t + 0.1, timer: null };
+    bgm.timer = setInterval(scheduleBgm, 25);
+    scheduleBgm();
+  }
+  function stopBgm(opt = {}) {
+    const b = bgm; bgm = null;
+    const t = ctx.currentTime;
+    clearInterval(b.timer);
+    if (opt.tape) {
+      // テープが止まるように、音がしぼんで途切れる
+      b.lp.frequency.cancelScheduledValues(t);
+      b.lp.frequency.setValueAtTime(b.lp.frequency.value, t);
+      b.lp.frequency.exponentialRampToValueAtTime(80, t + 0.5);
+      b.bus.gain.cancelScheduledValues(t);
+      b.bus.gain.setValueAtTime(b.bus.gain.value || BGM_VOL, t);
+      b.bus.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    } else {
+      b.bus.gain.cancelScheduledValues(t);
+      b.bus.gain.setValueAtTime(b.bus.gain.value || BGM_VOL, t);
+      b.bus.gain.exponentialRampToValueAtTime(0.0001, t + (opt.fast ? 0.05 : 1.2));
+    }
+    setTimeout(() => { try { b.bus.disconnect(); } catch {} }, 1500);
+  }
+  // 少し先の分まで、音符を予約しておく（タブが裏に回ってタイマーが遅れても途切れにくいよう多めに）
+  function scheduleBgm() {
+    if (!bgm) return;
+    const ahead = document.hidden ? 1.5 : 0.15;
+    while (bgm.next < ctx.currentTime + ahead) {
+      playStep(bgm.step, bgm.next);
+      bgm.next += STEP;
+      bgm.step++;
+    }
+  }
+  function playStep(n, t) {
+    const s = n % 16, bar = Math.floor(n / 16), p = PROG[bar % 4], bus = bgm.bus;
+    // 1〜2小節目はベースとパッドだけ → 3小節目からドラム → 5小節目からアルペジオ
+    if (s === 0) pad(bus, t, p.chord, STEP * 16);
+    bass(bus, t, p.root * BASS_OCT[s], s % 4 === 0);
+    if (bar >= 2) {
+      if (s % 4 === 0) kick(bus, t);
+      if (s === 4 || s === 12) snare(bus, t);
+    }
+    hat(bus, t, bar >= 4 && s % 4 === 2);
+    if (bar >= 4 && s % 2 === 0) arp(bus, t, p.chord[ARP[(s / 2) % 8]] * 2);
+  }
+  function voice(bus, t, dur, vol, build) {
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(bus);
+    build(g);
+    return g;
+  }
+  function kick(bus, t) {
+    voice(bus, t, 0.42, 0.9, g => {
+      const o = ctx.createOscillator();
+      o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.3);
+      o.connect(g); o.start(t); o.stop(t + 0.45);
+    });
+  }
+  function snare(bus, t) {
+    const g = voice(bus, t, 0.22, 0.32, g => {
+      const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+      const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1900; f.Q.value = 0.8;
+      src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.25);
+    });
+    const s = ctx.createGain(); s.gain.value = 0.35; g.connect(s).connect(echo);
+  }
+  function hat(bus, t, open) {
+    voice(bus, t, open ? 0.14 : 0.03, open ? 0.08 : 0.035, g => {
+      const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+      const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 7500;
+      src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.16);
+    });
+  }
+  function bass(bus, t, freq, accent) {
+    voice(bus, t, STEP * 0.95, accent ? 0.2 : 0.13, g => {
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 5;
+      f.frequency.setValueAtTime(accent ? 1100 : 800, t); f.frequency.exponentialRampToValueAtTime(220, t + STEP * 0.9);
+      f.connect(g);
+      for (const d of [1, 1.006]) {
+        const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq * d;
+        o.connect(f); o.start(t); o.stop(t + STEP);
+      }
+    });
+  }
+  function pad(bus, t, chord, dur) {
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.05, t + 0.6);
+    g.gain.setValueAtTime(0.05, t + dur - 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.3);
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1100;
+    f.connect(g).connect(bus);
+    for (const note of chord) {
+      for (const d of [0.996, 1.004]) {
+        const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = note * d;
+        o.connect(f); o.start(t); o.stop(t + dur + 0.35);
+      }
+    }
+  }
+  function arp(bus, t, freq) {
+    const g = voice(bus, t, 0.28, 0.07, g => {
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 3;
+      f.frequency.setValueAtTime(2600, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.2);
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq;
+      o.connect(f).connect(g); o.start(t); o.stop(t + 0.3);
+    });
+    const s = ctx.createGain(); s.gain.value = 0.5; g.connect(s).connect(echo);
+  }
+
+  return api;
 })();
 
 (async () => {
@@ -659,12 +812,20 @@ function printLine(s) {
   const { cls, text, say } = lineParts(s);
   return print(say ? `<span class="who">師匠</span>${esc(text)}` : esc(text), cls);
 }
+// 師匠がしゃべっている間だけ BGM を少し下げる（しゃべり終わって少ししたら戻す）
+let duckTimer = null;
+function duckBgm(ms = 2600) {
+  SFX.duck(true);
+  clearTimeout(duckTimer);
+  duckTimer = setTimeout(() => SFX.duck(false), ms);
+}
+
 async function typeLine(s) {
   const { cls, text, say } = lineParts(s);
   const d = print(say ? `<span class="who">師匠</span><span class="t"></span>` : `<span class="t"></span>`, cls);
   const t = d.querySelector(".t");
   if (cls === "alert") SFX.alert();
-  if (say) SFX.radio();
+  if (say) { SFX.radio(); duckBgm(); }
   const chars = [...text];
   for (let i = 0; i < chars.length; i++) {
     if (fast || REDUCED) break;
@@ -744,7 +905,7 @@ async function raceTrace(to, ms) {
 // 画面が消える（ブラウン管の電源を切ったように）
 async function powerOff() {
   SFX.siren(false);
-  SFX.ambient(false);
+  SFX.music(false);
   SFX.power();
   $("wrap").classList.remove("glitch", "unstable");
   $("wrap").classList.add("crt-off");
@@ -1009,7 +1170,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
 function resetScreen() {
   fast = false;
   SFX.siren(false);
-  SFX.ambient(false);
+  SFX.music(false, { fast: true });
   document.body.classList.remove("red", "blue");
   $("overlay").className = "";
   $("wrap").classList.remove("glitch", "unstable", "crt-off");
@@ -1046,7 +1207,6 @@ async function startChapter(ch) {
     SFX.warp();
     pulse($("wrap"), "warp", 800);
     await wait(600);
-    SFX.ambient(true);
     print(`[+] 接続完了：${esc(route.at(-1))}`, "sys");
     addLog(`LINE OPEN  ${CH.label}`);
 
@@ -1062,7 +1222,8 @@ async function startChapter(ch) {
     await decode(card, 700);
     await wait(400);
   });
-  await speak(CH.intro);
+  // 導入の台本（{ music: true } で師匠が音楽を流し始める）
+  await busy(() => play(CH.intro || []));
   await enterNode(CH.start);
 }
 
@@ -1077,9 +1238,13 @@ async function play(steps) {
       document.body.classList.remove("red", "blue");
       if (s.mode) document.body.classList.add(s.mode);
       SFX.siren(s.mode === "red");
+      // 警報で音楽がテープのように止まり、師匠が回線を奪い返すと戻ってくる
+      if (s.mode === "red") SFX.music(false, { tape: true });
+      if (s.mode === "blue") SFX.music(true);
       if (s.mode === "blue") SFX.granted();
     }
     if (s.sound) SFX[s.sound]?.();
+    if ("music" in s) SFX.music(s.music);
     if ("trace" in s) await raceTrace(s.trace, s.ms || 2000);
     if (s.hex) {
       for (let i = 0; i < s.hex; i++) { print(`0x${(0x7f3a00 + i * 16).toString(16)}  ${randHex(16)}`, "dim"); SFX.tick(); await wait(28); }
@@ -1162,7 +1327,7 @@ async function runGoal(goal) {
   if (cut) {
     // 何の前触れもなく、真っ暗になる（音も全部止まる）
     SFX.siren(false);
-    SFX.ambient(false);
+    SFX.music(false, { fast: true });
     document.body.classList.remove("red", "blue");
     $("wrap").classList.remove("glitch", "unstable");
   } else {
@@ -1463,14 +1628,17 @@ cmd.addEventListener("keydown", e => {
   }
 });
 
-// 音のオン・オフ
-function updateMute() { $("mute").textContent = SFX.muted ? "SOUND OFF" : "SOUND ON"; }
-$("mute").addEventListener("click", () => {
-  SFX.toggle();
-  updateMute();
-  if (!SFX.muted) { SFX.enter(); if (CH && !state.over) SFX.ambient(true); }
-});
-updateMute();
+// 音のオン・オフ（SOUND は全部、BGM は音楽だけ）と「♪ 師匠のプレイリスト」の表示
+function updateSoundUi() {
+  $("mute").textContent = SFX.muted ? "SOUND OFF" : "SOUND ON";
+  $("bgm").textContent = SFX.bgmOn ? "BGM ON" : "BGM OFF";
+  $("bgm").classList.toggle("off", !SFX.bgmOn || SFX.muted);
+  $("np").classList.toggle("on", SFX.bgmPlaying);
+}
+SFX.onBgmChange = updateSoundUi;
+$("mute").addEventListener("click", () => { SFX.toggle(); updateSoundUi(); if (!SFX.muted) SFX.enter(); });
+$("bgm").addEventListener("click", () => { SFX.toggleBgm(); updateSoundUi(); });
+updateSoundUi();
 
 // スマホ：TRACE 欄をタップでアクセスログと手がかりを開閉
 $("side").addEventListener("click", e => e.currentTarget.classList.toggle("open"));
