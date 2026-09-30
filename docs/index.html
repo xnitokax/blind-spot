@@ -361,9 +361,9 @@ const SFX = (() => {
       ctx = new C();
       // 全体：音量 → コンプレッサー（大きな音をまとめる）→ スピーカー
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -12; comp.ratio.value = 4;
+      comp.threshold.value = -8; comp.ratio.value = 4;
       out = ctx.createGain();
-      out.gain.value = 0.9; // 全体の音量（効果音はここで決まる）
+      out.gain.value = 1.8; // 全体の音量（効果音はここで決まる）
       out.connect(comp).connect(ctx.destination);
       // エコー：音が空間に残る感じ
       const delay = ctx.createDelay(1), fb = ctx.createGain(), lp = ctx.createBiquadFilter(), wet = ctx.createGain();
@@ -434,11 +434,12 @@ const SFX = (() => {
     tick: () => tone(3400, 0.008, { vol: 0.02 }),
     // Enter：低い「トン」と、軽いクリック
     enter: () => { tone(160, 0.1, { vol: 0.18 }); hiss(0.025, { vol: 0.06, freq: 3000 }); },
-    // 名前やボタンを選んだとき：軽い「カツッ」に短い余韻
+    // 名前やボタンを選んだとき：近未来の画面のような、ガラスをはじいた澄んだ短い音
     select: () => {
-      hiss(0.012, { vol: 0.07, freq: 5500, q: 1.5 });
-      tone(1250, 0.06, { vol: 0.06, echo: 0.25 });
-      tone(1875, 0.05, { vol: 0.03, at: 0.025, echo: 0.25 });
+      tone(180, 0.035, { vol: 0.05 });                                    // 低い「トッ」で輪郭をつける
+      hiss(0.01, { vol: 0.03, filter: "highpass", freq: 8000 });          // 空気感のある細いノイズ
+      tone(2637, 0.08, { vol: 0.03, echo: 0.3 });                         // 高い音（ミ）
+      tone(3951, 0.06, { vol: 0.018, at: 0.014, echo: 0.3 });             // 少しずらして5度上（シ）を重ねる
     },
     // 中継点を通過：ソナーのような短いピン
     hop: i => tone(1320 + i * 40, 0.14, { vol: 0.05, echo: 0.5 }),
@@ -521,7 +522,7 @@ const SFX = (() => {
   }
 
   // BGM_VOL は全体の音量に対する BGM の割合（効果音より控えめに、後ろで小さく流れる程度）
-  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.11;
+  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.055;
   const PROG = [
     { root: 55.00, chord: [220.00, 261.63, 329.63] }, // Am
     { root: 43.65, chord: [174.61, 220.00, 261.63] }, // F
