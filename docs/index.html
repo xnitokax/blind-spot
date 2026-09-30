@@ -190,6 +190,17 @@
   .auth-notes { color: var(--dim); font-size: 12px; margin-top: 12px; line-height: 1.7; }
   .auth-choice { display: flex; gap: 22px; }
 
+  /* 小ネタ：師匠（＝製作者）のプロフィール */
+  .profile {
+    white-space: normal; margin: 14px 0; padding: 12px 16px; max-width: 520px;
+    border: 1px solid rgba(143,200,255,.45); border-radius: 4px; background: rgba(143,200,255,.05);
+    box-shadow: 0 0 20px -8px var(--voice); animation: cardIn .6s ease-out;
+  }
+  .pf-head { color: var(--voice); font-size: 12px; letter-spacing: .3em; }
+  .pf-role { color: var(--fg); font-size: 16px; margin: 4px 0 10px; }
+  .pf-fields { display: grid; grid-template-columns: max-content 1fr; column-gap: 16px; row-gap: 3px; font-size: 14px; }
+  .pf-link { color: var(--voice); }
+
   /* 検索：scanning は小さく、見出しは「何を探したか」を大きく、件数は小さく */
   .scan { font-size: 12px; margin-top: 4px; }
   .res-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 14px; margin: 10px 0 2px; }
@@ -1748,7 +1759,52 @@ async function titleCommand(raw) {
   if (c === "connect" && !arg) return print("使い方：connect &lt;回線コード&gt;", "dim");
   const code = c === "connect" ? arg : raw.trim(); // コードだけ打っても通す
   if (NZ.norm(code) === NZ.norm(EXAMPLE_CODE)) return idiotLine();
+  if (S.author && NZ.norm(code) === NZ.norm(S.author.handle)) return authorLine();
   return connectLine(code);
+}
+
+// 小ネタ：connect <製作者のハンドル> と打つと、師匠の回線につながって、師匠（＝製作者）のプロフィールが出る
+let authorCount = 0;
+async function authorLine() {
+  const a = S.author;
+  authorCount++;
+  await busy(() => fakeRoute(`${a.handle}.uzu`));
+  await speak(authorCount === 1 ? [
+    "[師匠] ……おい。そこは俺の回線だ。",
+    "[師匠] なんで俺と繋がりたがる。言っとくが、俺にそっちの趣味はないからな。",
+  ] : ["[師匠] ……また来たのか。物好きなやつだな。"]);
+  // プロフィールのカード（https:// で始まる中身はリンクにする）
+  const val = v => /^https:\/\//.test(v)
+    ? `<a class="pf-link" href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https:\/\//, ""))}</a>`
+    : esc(v);
+  await busy(async () => {
+    SFX.card();
+    const card = print(`<div class="profile"><div class="pf-head">PROFILE ── ${esc(a.handle)}</div>`
+      + `<div class="pf-role">${esc(a.role || "")}</div>`
+      + `<div class="pf-fields">${(a.profile || []).map(([k, v]) => `<span class="dim">${esc(k)}</span><span>${val(v)}</span>`).join("")}</div></div>`);
+    await decode(card, 600);
+    await wait(600);
+  });
+  await speak(authorCount === 1 ? [
+    "[師匠] ……バレちまったもんは仕方ない。これが俺だ。",
+    "[師匠] 気が済んだら仕事に戻れ。俺から受け取ったコードを打て。",
+  ] : ["[師匠] 用が済んだら、仕事に戻れ。"]);
+}
+
+// 本物っぽい接続の演出だけを見せる（小ネタ用）
+async function fakeRoute(dest) {
+  const line = print("", "dim");
+  for (let i = 0; i < 10; i++) { line.textContent = `回線コードを照合中... ${randHex(6)}`; SFX.tick(); await wait(60); }
+  line.textContent = "回線コードを照合中... done";
+  for (const [i, hop] of ["uzu://safehouse", "tor-entry.anon", dest].entries()) {
+    const l = print(`  ${i === 2 ? "└" : "├"}─ ${esc(hop)} `, "dim");
+    for (let k = 0; k < 6; k++) { await wait(32); l.innerHTML += "▓"; }
+    l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
+    SFX.hop(i);
+    await wait(110);
+  }
+  print(`[+] 接続完了：${esc(dest)}`, "sys");
+  await wait(900);
 }
 
 // 師匠の例の「connect IDIOT」を、そのまま打った人へのつっこみ
@@ -1757,20 +1813,7 @@ const EXAMPLE_CODE = "IDIOT";
 let idiotCount = 0;
 async function idiotLine() {
   idiotCount++;
-  await busy(async () => {
-    const line = print("", "dim");
-    for (let i = 0; i < 10; i++) { line.textContent = `回線コードを照合中... ${randHex(6)}`; SFX.tick(); await wait(60); }
-    line.textContent = "回線コードを照合中... done";
-    for (const [i, hop] of ["uzu://safehouse", "tor-entry.anon", "idiot.anon"].entries()) {
-      const l = print(`  ${i === 2 ? "└" : "├"}─ ${esc(hop)} `, "dim");
-      for (let k = 0; k < 6; k++) { await wait(32); l.innerHTML += "▓"; }
-      l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
-      SFX.hop(i);
-      await wait(110);
-    }
-    print("[+] 接続完了：idiot.anon", "sys");
-    await wait(900);
-  });
+  await busy(() => fakeRoute("idiot.anon"));
   // 2回目からは、師匠のあきれ方が変わる
   await speak(idiotCount === 1 ? [
     "[師匠] ……おい。",
