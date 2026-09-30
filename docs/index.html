@@ -1644,7 +1644,7 @@ async function confirmHandle(raw) {
     SFX.granted();
     state.mode = { type: "title" };
     setPrompt(titlePrompt());
-    await speak([`[師匠] よし、${handle}。覚えた。`, `[師匠] 次は回線だ。俺が渡したコードを、connect のあとに打て。例えば connect ${EXAMPLE_CODE}`]);
+    await speak([`[師匠] よし、${handle}。覚えた。`, `[師匠] 次は回線だ。俺が渡したコードを、connect のあとに打て。connect ${EXAMPLE_CODE} のようにな。`]);
     if (m.autoCode) await autoConnect(m.autoCode);
     return;
   }
