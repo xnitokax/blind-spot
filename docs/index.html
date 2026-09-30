@@ -427,14 +427,21 @@ const SFX = (() => {
       return muted;
     },
     wake() { if (!muted) ac(); },
-    // キー入力：小さく乾いたクリック
-    key: () => hiss(0.012, { vol: 0.035, freq: 5200, q: 1.2 }),
+    // キー入力：乾いたクリックに、少しだけ芯のある音を重ねる
+    key: () => { hiss(0.014, { vol: 0.075, freq: 4800, q: 1.2 }); tone(1900 + Math.random() * 300, 0.012, { vol: 0.02 }); },
     // 師匠の無線：行の頭で一度だけ「ザッ」
     radio: () => { hiss(0.1, { vol: 0.07, freq: 1700, q: 2.5 }); tone(2800, 0.035, { vol: 0.012 }); },
-    tick: () => tone(3400, 0.008, { vol: 0.01 }),
-    enter: () => { tone(160, 0.09, { vol: 0.09 }); hiss(0.02, { vol: 0.03, freq: 3000 }); },
+    tick: () => tone(3400, 0.008, { vol: 0.02 }),
+    // Enter：低い「トン」と、軽いクリック
+    enter: () => { tone(160, 0.1, { vol: 0.18 }); hiss(0.025, { vol: 0.06, freq: 3000 }); },
+    // 名前やボタンを選んだとき：軽い「カツッ」に短い余韻
+    select: () => {
+      hiss(0.012, { vol: 0.07, freq: 5500, q: 1.5 });
+      tone(1250, 0.06, { vol: 0.06, echo: 0.25 });
+      tone(1875, 0.05, { vol: 0.03, at: 0.025, echo: 0.25 });
+    },
     // 中継点を通過：ソナーのような短いピン
-    hop: i => tone(1320 + i * 40, 0.14, { vol: 0.025, echo: 0.5 }),
+    hop: i => tone(1320 + i * 40, 0.14, { vol: 0.05, echo: 0.5 }),
     // 転移：低い地鳴りと、こもった音が開いていくノイズ
     warp: () => {
       tone(42, 1.4, { vol: 0.3, slide: 30, attack: 0.05 });
@@ -1637,8 +1644,8 @@ function updateSoundUi() {
   $("np").classList.toggle("on", SFX.bgmPlaying);
 }
 SFX.onBgmChange = updateSoundUi;
-$("mute").addEventListener("click", () => { SFX.toggle(); updateSoundUi(); if (!SFX.muted) SFX.enter(); });
-$("bgm").addEventListener("click", () => { SFX.toggleBgm(); updateSoundUi(); });
+$("mute").addEventListener("click", () => { SFX.toggle(); updateSoundUi(); if (!SFX.muted) SFX.select(); });
+$("bgm").addEventListener("click", () => { SFX.toggleBgm(); updateSoundUi(); SFX.select(); });
 updateSoundUi();
 
 // スマホ：TRACE 欄をタップでアクセスログと手がかりを開閉
@@ -1653,6 +1660,7 @@ $("term").addEventListener("click", e => {
   if (isBusy()) { fast = true; return; }
   const pick = e.target.closest(".pick");
   if (pick) {
+    if ("cancel" in pick.dataset || "reuser" in pick.dataset) SFX.select();
     if ("cancel" in pick.dataset) return cancelAuth();
     if ("reuser" in pick.dataset && state.mode?.type === "password") {
       print("ユーザーIDを入力し直します。", "dim");
@@ -1661,7 +1669,7 @@ $("term").addEventListener("click", e => {
     }
     if (["user", "password"].includes(state.mode?.type)) return;
     cmd.value = pick.dataset.fill;
-    SFX.tick();
+    SFX.select();
     if (finePointer || cmd.value.endsWith(" ")) cmd.focus(); else cmd.blur();
     return;
   }
