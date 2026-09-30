@@ -247,6 +247,9 @@
   .rep { display: grid; grid-template-columns: 3.4em 3.6em 1fr; column-gap: 12px; white-space: normal; }
 
   /* 手がかり */
+  /* 1つずつ出すときの、ふわっと浮かび上がる動き */
+  .reveal { animation: revealIn .35s ease-out both; }
+  @keyframes revealIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   .evidence { color: var(--warn); white-space: normal; }
   .evi-card {
     display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: fit-content; max-width: 100%;
@@ -1084,11 +1087,30 @@ async function typeLine(s, opt = {}) {
   scrollDown();
   return d;
 }
-async function speak(lines) {
+// beat：話し始める前の「間」。出来事のあとに余韻を残してから、師匠が口を開く
+async function speak(lines, beat = 0) {
   if (!lines?.length) return;
   await busy(async () => {
+    if (beat) await wait(beat);
     for (const s of lines) { await wait(200); await typeLine(s); await wait(380); }
   });
+}
+
+// ---------------- 間（ま） ----------------
+// 全体の「出てくる速さ」はここでまとめて調整する
+//   react：出来事のあと、師匠が話し出すまでの余韻
+//   block：かたまりを1つずつ出すときの間隔
+//   small：見出しと中身の間などの、小さな間
+const BEAT = { react: 1400, block: 380, small: 220 };
+// parent の中に、かたまりを1つ足して（ふわっと出して）から、pause だけ待つ
+async function reveal(parent, html, pause = BEAT.block) {
+  const d = document.createElement("div");
+  d.className = "reveal";
+  d.innerHTML = html;
+  parent.appendChild(d);
+  scrollDown();
+  await wait(pause);
+  return d;
 }
 
 function shortHost(host) { return host.split(/[./]/)[0]; }
@@ -1244,7 +1266,7 @@ function printMenu() {
     rows.push(`<span class="n pick${l.oneway ? " ow" : ""}" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span><span${l.oneway ? ' class="ow"' : ""}>${esc(l.desc)}${l.oneway ? "　【一方通行】" : ""}</span>`);
   }
   if (!rows.length) return false;
-  print(`<div class="menu"><div class="ls">${rows.join("")}</div></div>`);
+  print(`<div class="menu reveal"><div class="ls">${rows.join("")}</div></div>`);
   return true;
 }
 const printLinks = () => printMenu();
@@ -1254,13 +1276,19 @@ function disablePicks() {
   out.querySelectorAll(".pick").forEach(el => el.classList.remove("pick"));
 }
 
-function showNode() {
+// 移動したときの表示：アドレス → 場所の名前 → 本文 → （間）→ 行き先の一覧、の順に1つずつ出す
+async function showNode() {
   disablePicks();
   const node = here();
   const { html, links } = parseNode((node.body || "").replaceAll("{handle}", esc(who())));
   state.links = links;
-  print(`<span class="host">▶ ssh://${esc(node.host)}</span>\n<b>${esc(fill(node.title))}</b>`, "node-head");
-  if (html.trim()) decode(print(html, "node"));
+  const head = print(`<span class="host">▶ ssh://${esc(node.host)}</span>`, "node-head");
+  await wait(BEAT.small);
+  head.insertAdjacentHTML("beforeend", `\n<b class="reveal">${esc(fill(node.title))}</b>`);
+  scrollDown();
+  await wait(BEAT.block);
+  if (html.trim()) await decode(print(html, "node reveal"));
+  await wait(BEAT.block);
   printMenu();
   normalPrompt();
 }
@@ -1277,11 +1305,11 @@ async function enterNode(id, opt = {}) {
   else if (first) addLog(`→ ${node.host}`);
   state.visited.add(id);
 
-  showNode();
   await busy(async () => {
+    await showNode();
     if (first) {
-      if (node.clue) { await wait(500); addClue(node.clue); }
-      await speak(node.say);
+      if (node.clue) { await wait(600); addClue(node.clue); }
+      await speak(node.say, BEAT.react);
     }
     if (node.goal) await runGoal(node.goal);
   });
@@ -1302,7 +1330,7 @@ async function connect(id, opt = {}) {
     const lock = node.lock, len = lockLen(lock);
     disablePicks();
     await busy(() => showLockScreen(node, lock, len));
-    if (!state.said.has("lock:" + id)) { state.said.add("lock:" + id); await speak(lock.say); }
+    if (!state.said.has("lock:" + id)) { state.said.add("lock:" + id); await speak(lock.say, BEAT.react); }
     if (lock.user) askUser(id, opt);
     else askPass(id, opt);
     return;
@@ -1334,19 +1362,17 @@ async function showLockScreen(node, lock, len) {
   const fields = [];
   if (lock.user) fields.push(`<span class="dim">${esc(lock.user.prompt || "ユーザーID")}</span><span>${lines(lock.user.hint)}</span>`);
   if (len) fields.push(`<span class="dim">パスワード</span><span><span class="warn slots">${"_".repeat(len)}</span>（${len}文字）</span>`);
+  // LOCKED が出て、掛け金が「ガチャッ」と閉まるのを見せてから、案内を読む順番に1つずつ出す
   SFX.alert();
   pulse($("wrap"), "shake", 450);
-  print(`<div class="auth">
-${panelHtml("lock", "LOCKED", `ACCESS RESTRICTED ── ${esc(node.host)}`)}
-<div class="auth-need">認証が必要です。</div>
-<div class="auth-hint">${lines(lock.hint)}</div>
-${fields.length ? `<div class="auth-fields">${fields.join("")}</div>` : ""}
-<div class="auth-notes">※ ${lock.prompt ? "間違えると" : "パスワードを間違えると"}トレースが上昇します<br>※ 何も入力せずに Enter（または back）で戻れます　<span class="n pick" data-cancel>[やめる]</span></div>
-</div>`.replace(/\n/g, ""));
-  // 掛け金が閉まるタイミングで「ガチャッ」
-  await wait(520);
+  const auth = print(`<div class="auth"></div>`).querySelector(".auth");
+  await reveal(auth, panelHtml("lock", "LOCKED", `ACCESS RESTRICTED ── ${esc(node.host)}`), 520);
   SFX.lock();
-  await wait(300);
+  await wait(900);
+  await reveal(auth, `<div class="auth-need">認証が必要です。</div>`, 550);
+  await reveal(auth, `<div class="auth-hint">${lines(lock.hint)}</div>`, 450);
+  if (fields.length) await reveal(auth, `<div class="auth-fields">${fields.join("")}</div>`, 400);
+  await reveal(auth, `<div class="auth-notes">※ ${lock.prompt ? "間違えると" : "パスワードを間違えると"}トレースが上昇します<br>※ 何も入力せずに Enter（または back）で戻れます　<span class="n pick" data-cancel>[やめる]</span></div>`, BEAT.small);
 }
 // パスワードの文字数（showLength のときだけ見せる。公開データではビルド時に len を入れておく）
 const lockLen = lock => lock.showLength ? (lock.len ?? [...[].concat(lock.pass)[0]].length) : 0;
@@ -1426,10 +1452,19 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   print(`<div class="res-head${hits.length ? "" : " none"}"><span class="res-title">${esc(conf.label)} ─ 「${esc(q)}」</span>`
     + `<span class="res-count">${hits.length ? `${total.toLocaleString()} 件${total > limit ? `（上位 ${limit} 件を表示）` : ""}` : "0 件"}</span></div>`);
   if (!hits.length) print(esc(conf.empty || "該当するものはありません。"), "dim");
-  shown.forEach(e => decode(print(`<div class="doc">${e.html}</div>`, "node result"), 380));
+  // 結果は1件ずつ（解読しながら）出す
+  await wait(BEAT.small);
+  for (const e of shown) {
+    decode(print(`<div class="doc">${e.html}</div>`, "node result reveal"), 380);
+    await wait(450);
+  }
 
   const clues = shown.map(e => e.clue).filter(c => c && !state.clues.includes(c));
-  if (clues.length) { await sleep(450); clues.forEach(addClue); }
+  // 手がかりのカードも1枚ずつ
+  if (clues.length) {
+    await wait(700);
+    for (const c of clues) { addClue(c); await wait(450); }
+  }
 
   // 師匠のひとこと（それぞれ一度だけ）
   const lines = [];
@@ -1444,7 +1479,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
       if ([].concat(n.when).some(w => terms.some(t => t.includes(NZ.norm(w))))) { state.said.add(key); lines.push(...n.say); }
     });
   }
-  await speak(lines);
+  await speak(lines, BEAT.react);
   if (goal) await runGoal(goal);
 }
 
@@ -1503,7 +1538,8 @@ async function startChapter(ch) {
       <div class="m-meta">${esc(CH.date)} ${esc(CH.clock || "")}</div>
     </div>`);
     await decode(card, 700);
-    await wait(400);
+    // カードを読む時間を取ってから、師匠が話し出す
+    await wait(1300);
   });
   // 導入の台本（{ music: true } で師匠が音楽を流し始める）
   await busy(() => play(CH.intro || []));
@@ -1607,6 +1643,8 @@ async function runGoal(goal) {
   const cut = goal.end === "cut";
   await busy(async () => {
     $("form").style.visibility = "hidden";
+    // 見つけたものを眺める余韻を残してから、任務の締めくくりが始まる
+    await wait(BEAT.react);
     await play(goal.script || []);
     await wait(900);
     if (!cut) { await typeLine("[*] 回線を切断しました。"); await wait(700); }
@@ -1709,7 +1747,7 @@ const COMMANDS = {
     ].map(([c, d]) => `<span class="n">${esc(c)}</span><span>${esc(d)}</span>`).join("");
     print(`<div class="ls">${rows}</div><span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中はクリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ ここでは cd が使えます" : ""}</span>`);
   },
-  ssh(arg) {
+  async ssh(arg) {
     if (!arg) return print("使い方：ssh &lt;名前&gt;", "dim");
     const link = state.links.find(l => l.name.toLowerCase() === arg.toLowerCase());
     if (!link) return print(`ssh: 接続先が見つかりません: ${esc(arg)}`, "alert");
@@ -1717,9 +1755,13 @@ const COMMANDS = {
       disablePicks();
       SFX.alert();
       pulse($("wrap"), "shake", 450);
-      print(`<div class="auth">${panelHtml("warn", "ONE-WAY", "この先は戻れません")}`
-        + `<div class="auth-need">進みますか？</div>`
-        + `<div class="auth-choice"><span class="n pick ow" data-fill="y">y 進む</span><span class="n pick" data-fill="n">n やめる</span></div></div>`);
+      // ONE-WAY が点く → 間 → 「進みますか？」 → 選択肢
+      const box = print(`<div class="auth"></div>`).querySelector(".auth");
+      await busy(async () => {
+        await reveal(box, panelHtml("warn", "ONE-WAY", "この先は戻れません"), 1100);
+        await reveal(box, `<div class="auth-need">進みますか？</div>`, 400);
+        await reveal(box, `<div class="auth-choice"><span class="n pick ow" data-fill="y">y 進む</span><span class="n pick" data-fill="n">n やめる</span></div>`, BEAT.small);
+      });
       state.mode = { type: "confirm", id: link.go };
       setPrompt("続けますか？ [y/N]");
       return;
@@ -1736,7 +1778,7 @@ const COMMANDS = {
       addLog(`cd ${arg}`);
       SFX.granted();
       print(panelHtml("found", "FOUND", `${esc(node.host)}/${esc(arg.toUpperCase())}`));
-      await sleep(900);
+      await wait(1500);
       return connect(byAlias.go);
     }
     const d = node.dir.find(d => NZ.norm(d.name) === a);
@@ -1744,10 +1786,11 @@ const COMMANDS = {
     // フォルダの場所を見出しに、中身は左の線で囲んだ一覧に（空のときは黄色）
     const files = (d.text || "ファイルがありません。").split("\n").map(esc);
     const empty = !d.text || /ファイルがありません/.test(d.text);
-    decode(print(`<div class="dirview"><div class="dir-path">▸ ${esc(node.host)}/${esc(d.name)}</div>`
-      + `<div class="dir-files${empty ? " dir-empty" : ""}">${files.join("<br>")}</div></div>`), 300);
-    if (d.clue) addClue(d.clue);
-    if (d.say && !state.said.has(d)) { state.said.add(d); await speak(d.say); }
+    const view = print(`<div class="dirview"><div class="dir-path">▸ ${esc(node.host)}/${esc(d.name)}</div></div>`).querySelector(".dirview");
+    await wait(BEAT.small);
+    await reveal(view, `<div class="dir-files${empty ? " dir-empty" : ""}">${files.join("<br>")}</div>`, 400);
+    if (d.clue) { await wait(400); addClue(d.clue); }
+    if (d.say && !state.said.has(d)) { state.said.add(d); await speak(d.say, BEAT.react); }
   },
   search,
   back() {
@@ -1818,7 +1861,7 @@ async function authorLine() {
   await speak(authorCount === 1 ? [
     "[師匠] ……おい。そこは俺の回線だ。",
     "[師匠] なんで俺と繋がりたがる。言っとくが、俺にそっちの趣味はないからな。",
-  ] : ["[師匠] ……また来たのか。{handle}、よく変なやつって言われるだろ。"]);
+  ] : ["[師匠] ……また来たのか。{handle}、よく変なやつって言われるだろ。"], 1000);
   // プロフィールのカード（https:// で始まる中身はリンクにする）
   const val = v => /^https:\/\//.test(v)
     ? `<a class="pf-link" href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https:\/\//, ""))}</a>`
@@ -1847,7 +1890,7 @@ async function authorLine() {
   await speak(authorCount === 1 ? [
     "[師匠] ……バレちまったもんは仕方ない。これが俺だ。",
     "[師匠] 気が済んだら仕事に戻れ。俺から受け取ったコードを打て。",
-  ] : ["[師匠] 用が済んだら、仕事に戻れ。"]);
+  ] : ["[師匠] 用が済んだら、仕事に戻れ。"], BEAT.react);
 }
 
 // 本物っぽい接続の演出だけを見せる（小ネタ用）
@@ -1921,7 +1964,7 @@ async function uzuLine() {
   await speak(uzuCount === 1 ? [
     "[師匠] ……おい。回線がぐるっと回って、お前の足元に戻ってきたぞ。",
     "[師匠] uzu は、お前が今いる場所だ。報告なら、あっちで直接しろ。",
-  ] : ["[師匠] ……だから、そこはお前の足元だって言ってるだろ。"]);
+  ] : ["[師匠] ……だから、そこはお前の足元だって言ってるだろ。"], 1200);
 }
 
 // 師匠の例の「connect IDIOT」を、そのまま打った人へのつっこみ
@@ -1939,7 +1982,7 @@ async function idiotLine() {
   ] : [
     "[師匠] ……わざとだろ、お前。",
     "[師匠] 遊んでないで、俺から受け取ったコードを打て。",
-  ]);
+  ], 1200);
 }
 
 async function confirmHandle(raw) {
@@ -2046,7 +2089,8 @@ async function run(raw) {
       pulse($("term"), "flash-ok", 600);
       print(panelHtml("unlock", "UNLOCKED", `ACCESS GRANTED ── ${esc(node.host)}`));
       addLog(`AUTH OK  ${node.host}`);
-      await sleep(700);
+      // 南京錠が開くのを見届けてから、中へ入る
+      await wait(1600);
       return enterNode(mode.id, mode.opt);
     }
     SFX.denied();
