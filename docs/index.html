@@ -211,7 +211,7 @@
   .pf-sign svg {
     height: 64px; width: auto; overflow: visible;
     clip-path: inset(-20% 100% -20% -5%);
-    animation: signReveal 1.3s cubic-bezier(.55, .1, .35, 1) forwards, signGlow .9s 1.2s ease-out both;
+    animation: signReveal 1.3s cubic-bezier(.3, .15, .6, 1) forwards, signGlow .9s 1.6s ease-out both;
   }
   .pf-sign text { font-size: 50px; fill: #ff9a3c; }
   @keyframes signReveal { to { clip-path: inset(-20% -5% -20% -5%); } }
@@ -616,9 +616,24 @@ const SFX = (() => {
       hiss(0.16, { vol: 0.1, filter: "lowpass", freq: 700 });
     },
     alert: () => { tone(1000, 0.14, { vol: 0.04, echo: 0.3 }); tone(1000, 0.14, { vol: 0.04, at: 0.2, echo: 0.3 }); },
-    // サインを書く「サラサラ」：ペン先が紙をこする、ごく小さな音
+    // サインを書く音：ペン先が触れる「コッ」→ 1文字ずつの「シュッ」→ 最後の払い → i の点と t の横線
+    // （文字が左から現れる速さ 1.3 秒に合わせてある）
     sign: () => {
-      for (let i = 0; i < 5; i++) hiss(0.2, { vol: 0.02, freq: 3500 + Math.random() * 1500, q: 2, at: i * 0.24, attack: 0.04 });
+      // ペン先が紙に触れる
+      hiss(0.012, { vol: 0.05, filter: "highpass", freq: 3000 });
+      tone(1800, 0.01, { vol: 0.015 });
+      // n i t o k a：[始まり, 長さ] 文字ごとに長さと高さを変え、ペンの勢いで音の高さも少し動かす
+      const strokes = [[0.04, 0.2], [0.26, 0.09], [0.37, 0.17], [0.57, 0.19], [0.79, 0.18], [0.99, 0.2]];
+      for (const [at, dur] of strokes) {
+        const f = 2400 + Math.random() * 900;
+        hiss(dur, { vol: 0.05, filter: "bandpass", freq: f, sweep: f * (Math.random() < 0.5 ? 1.35 : 0.75), q: 0.9, at, attack: 0.02 });
+      }
+      // 最後の払い：勢いよく抜ける
+      hiss(0.1, { vol: 0.06, filter: "bandpass", freq: 3000, sweep: 7000, q: 0.8, at: 1.2, attack: 0.01 });
+      // 仕上げ：i の点を打つ「トン」と、t の横線
+      hiss(0.02, { vol: 0.05, filter: "bandpass", freq: 3200, q: 1.5, at: 1.5 });
+      tone(1500, 0.012, { vol: 0.015, at: 1.5 });
+      hiss(0.08, { vol: 0.045, filter: "bandpass", freq: 2800, sweep: 3800, q: 0.9, at: 1.62, attack: 0.01 });
     },
     // 南京錠が閉まる「ガチャッ」：低い衝撃と、金属の小さな響き
     lock: () => {
