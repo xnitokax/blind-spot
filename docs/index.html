@@ -361,9 +361,9 @@ const SFX = (() => {
       ctx = new C();
       // 全体：音量 → コンプレッサー（大きな音をまとめる）→ スピーカー
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -8; comp.ratio.value = 4;
+      comp.threshold.value = -6; comp.ratio.value = 8; // 大きくしても音が割れないように押さえる
       out = ctx.createGain();
-      out.gain.value = 1.8; // 全体の音量（効果音はここで決まる）
+      out.gain.value = 2.7; // 全体の音量（効果音はここで決まる）
       out.connect(comp).connect(ctx.destination);
       // エコー：音が空間に残る感じ
       const delay = ctx.createDelay(1), fb = ctx.createGain(), lp = ctx.createBiquadFilter(), wet = ctx.createGain();
@@ -522,7 +522,7 @@ const SFX = (() => {
   }
 
   // BGM_VOL は全体の音量に対する BGM の割合（効果音より控えめに、後ろで小さく流れる程度）
-  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.055;
+  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.037;
   const PROG = [
     { root: 55.00, chord: [220.00, 261.63, 329.63] }, // Am
     { root: 43.65, chord: [174.61, 220.00, 261.63] }, // F
@@ -541,7 +541,11 @@ const SFX = (() => {
     bus.gain.exponentialRampToValueAtTime(BGM_VOL, t + 2.5);
     lp.type = "lowpass"; lp.frequency.setValueAtTime(300, t); lp.frequency.exponentialRampToValueAtTime(16000, t + 4);
     bus.connect(lp).connect(out);
-    bgm = { bus, lp, step: 0, next: t + 0.1, timer: null };
+    // BGM 専用の残響（BGM の音量・フェード・テープ停止がそのまま効くよう、bus に戻す）
+    const bgmEcho = c.createGain(), delay = c.createDelay(1), fb = c.createGain(), elp = c.createBiquadFilter();
+    delay.delayTime.value = STEP * 3; fb.gain.value = 0.3; elp.type = "lowpass"; elp.frequency.value = 1800;
+    bgmEcho.connect(delay); delay.connect(elp); elp.connect(fb); fb.connect(delay); elp.connect(bus);
+    bgm = { bus, lp, echo: bgmEcho, step: 0, next: t + 0.1, timer: null };
     bgm.timer = setInterval(scheduleBgm, 25);
     scheduleBgm();
   }
@@ -595,23 +599,24 @@ const SFX = (() => {
     build(g);
     return g;
   }
+  // キック：低く、長めに響く「ドッ」（BGM の主役）
   function kick(bus, t) {
-    voice(bus, t, 0.42, 0.9, g => {
+    voice(bus, t, 0.55, 1.6, g => {
       const o = ctx.createOscillator();
-      o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.3);
-      o.connect(g); o.start(t); o.stop(t + 0.45);
+      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.35);
+      o.connect(g); o.start(t); o.stop(t + 0.6);
     });
   }
   function snare(bus, t) {
-    const g = voice(bus, t, 0.22, 0.32, g => {
+    const g = voice(bus, t, 0.2, 0.2, g => {
       const src = ctx.createBufferSource(); src.buffer = noiseBuf;
       const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1900; f.Q.value = 0.8;
       src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.25);
     });
-    const s = ctx.createGain(); s.gain.value = 0.35; g.connect(s).connect(echo);
+    const s = ctx.createGain(); s.gain.value = 0.25; g.connect(s).connect(bgm.echo);
   }
   function hat(bus, t, open) {
-    voice(bus, t, open ? 0.14 : 0.03, open ? 0.08 : 0.035, g => {
+    voice(bus, t, open ? 0.12 : 0.03, open ? 0.04 : 0.017, g => {
       const src = ctx.createBufferSource(); src.buffer = noiseBuf;
       const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 7500;
       src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.16);
@@ -634,7 +639,7 @@ const SFX = (() => {
     g.gain.exponentialRampToValueAtTime(0.05, t + 0.6);
     g.gain.setValueAtTime(0.05, t + dur - 0.4);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.3);
-    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1100;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 750; // 高い成分を削って、耳に刺さらないように
     f.connect(g).connect(bus);
     for (const note of chord) {
       for (const d of [0.996, 1.004]) {
@@ -644,13 +649,13 @@ const SFX = (() => {
     }
   }
   function arp(bus, t, freq) {
-    const g = voice(bus, t, 0.28, 0.07, g => {
-      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 3;
-      f.frequency.setValueAtTime(2600, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.2);
+    const g = voice(bus, t, 0.26, 0.035, g => {
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 2;
+      f.frequency.setValueAtTime(1600, t); f.frequency.exponentialRampToValueAtTime(400, t + 0.2);
       const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq;
       o.connect(f).connect(g); o.start(t); o.stop(t + 0.3);
     });
-    const s = ctx.createGain(); s.gain.value = 0.5; g.connect(s).connect(echo);
+    const s = ctx.createGain(); s.gain.value = 0.4; g.connect(s).connect(bgm.echo);
   }
 
   return api;
@@ -1622,11 +1627,18 @@ $("form").onsubmit = async e => {
 };
 
 // パスワード入力中は、打った文字数を [5/17] のように出す
-cmd.addEventListener("input", () => { if (state.mode?.type === "password") passPrompt(); });
+cmd.addEventListener("input", e => {
+  if (state?.mode?.type === "password") passPrompt();
+  // 日本語入力（変換中）は keydown では文字キーとして来ないので、入力のたびにここで鳴らす
+  if (e.isComposing || e.inputType === "insertCompositionText" || e.inputType === "deleteCompositionText") SFX.key();
+});
+// 変換を確定したときも鳴らす
+cmd.addEventListener("compositionend", () => SFX.key());
 
 cmd.addEventListener("keydown", e => {
   const inGame = CH && !state.mode;
-  if (e.key.length === 1 || e.key === "Backspace") SFX.key();
+  // 普通のキー入力（日本語の変換中は input のほうで鳴らすので、ここでは鳴らさない）
+  if (!e.isComposing && e.key !== "Process" && (e.key.length === 1 || e.key === "Backspace")) SFX.key();
   if (e.key === "Escape" && ["user", "password"].includes(state.mode?.type)) { e.preventDefault(); cancelAuth(); }
   else if (e.key === "Tab") { e.preventDefault(); if (inGame) complete(); }
   else if (e.key === "ArrowUp" && inGame && histPos > 0) { e.preventDefault(); cmd.value = hist[--histPos]; }
