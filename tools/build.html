@@ -95,7 +95,7 @@ async function build() {
     chapters.push(box);
     log(`  🔒 任務全体を回線コードで暗号化しました`);
   }
-  const data = { title: SCENARIO.title, gameOver: SCENARIO.gameOver, chapters };
+  const data = { title: SCENARIO.title, gameOver: SCENARIO.gameOver, case: SCENARIO.case, chapters };
   const js = `// 自動生成ファイル（tools/build.html）。直接編集しないでください。\nwindow.SCENARIO_DATA = ${JSON.stringify(data, null, 2)};\n`;
   const res = await fetch("/__build", { method: "PUT", body: js });
   if (!res.ok) throw new Error(`書き込み失敗 (${res.status})`);
