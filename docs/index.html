@@ -606,7 +606,7 @@ const SFX = (() => {
   }
   // キック：低く、長めに響く「ドッ」（BGM の主役）
   function kick(bus, t) {
-    voice(bus, t, 0.55, 1.6, g => {
+    voice(bus, t, 0.55, 0.8, g => {
       const o = ctx.createOscillator();
       o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.35);
       o.connect(g); o.start(t); o.stop(t + 0.6);
