@@ -1576,14 +1576,14 @@ async function titleCommand(raw) {
   if (!name) return;
   const c = name.toLowerCase(), arg = rest.join(" ");
   if (c === "handle") {
-    if (!arg) return speak(["[師匠] 名前も一緒に打て。例えば handle kaito"]);
+    if (!arg) return speak(["[師匠] 名前も一緒に打て。例えば handle anonymous"]);
     const h = arg.normalize("NFKC").trim();
     if ([...h].length > 16 || /\s/.test(h)) return speak(["[師匠] 呼び名は16文字まで、空白なしだ。"]);
     state.mode = { type: "handleConfirm", name: h, autoCode: state.mode.autoCode };
     setPrompt("決定する？ [y/n]");
     return speak([`[師匠] 「${h}」……それでいいんだな？`]);
   }
-  if (!handle) return speak(["[師匠] まずは呼び名だ。handle と打って、その後ろに名前。例えば handle kaito"]);
+  if (!handle) return speak(["[師匠] まずは呼び名だ。handle と打って、その後ろに名前。例えば handle anonymous"]);
   if (c === "help") {
     const rows = [["connect <回線コード>", "師匠から受け取った回線につなぐ"], ["handle <名前>", "呼び名を変える"]]
       .map(([k, d]) => `<span class="n">${esc(k)}</span><span>${esc(d)}</span>`).join("");
@@ -1880,7 +1880,7 @@ async function boot(autoCode) {
       await speak([
         "[師匠] ……繋がったな。聞こえるか。",
         "[師匠] 始める前に、お前の呼び名を決めておく。本名は使うなよ。",
-        "[師匠] handle と打って、その後ろに名前だ。例えば handle kaito",
+        "[師匠] handle と打って、その後ろに名前だ。例えば handle anonymous",
       ]);
     } else {
       await speak([`[師匠] おかえり、${handle}。`, "[師匠] 回線コードは、connect のあとに打て。"]);
