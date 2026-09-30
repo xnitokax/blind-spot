@@ -1857,14 +1857,18 @@ async function fakeRoute(dest, opt = {}) {
     const last = i === hops.length - 1;
     const l = print(`  ${last ? "└" : "├"}─ ${esc(hop)} `, "dim");
     for (let k = 0; k < 6; k++) { await wait(32); l.innerHTML += "▓"; }
-    l.innerHTML += ` <span class="${last && opt.loop ? "warn" : "sys"}">${20 + Math.floor(Math.random() * 180)}ms OK${last && opt.loop ? "　← 出発点" : ""}</span>`;
+    l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
     SFX.hop(i);
     await wait(110);
   }
   if (opt.loop) {
-    SFX.alert();
-    pulse($("wrap"), "jolt", 160);
-    print("[!] 回線がループしています", "alert");
+    // 出発点に戻ってきた：エラーとして接続を止める
+    await wait(250);
+    SFX.denied();
+    pulse($("wrap"), "shake", 450);
+    print("[ERROR] 回線がループしています", "alert");
+    await wait(350);
+    print("[ERROR] 接続を停止しました。", "alert");
   } else {
     print(`[+] 接続完了：${esc(dest)}`, "sys");
   }
