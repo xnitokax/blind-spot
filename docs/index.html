@@ -1799,6 +1799,7 @@ async function titleCommand(raw) {
   const code = c === "connect" ? arg : raw.trim(); // コードだけ打っても通す
   if (NZ.norm(code) === NZ.norm(EXAMPLE_CODE)) return idiotLine();
   if (S.author && NZ.norm(code) === NZ.norm(S.author.handle)) return authorLine();
+  if (NZ.norm(code) === "uzu") return uzuLine();
   return connectLine(code);
 }
 
@@ -1846,19 +1847,41 @@ async function authorLine() {
 }
 
 // 本物っぽい接続の演出だけを見せる（小ネタ用）
-async function fakeRoute(dest) {
+// opt.hops：たどる中継点（最後が行き先）、opt.loop：出発点に戻ってきた（接続完了の代わりに警告を出す）
+async function fakeRoute(dest, opt = {}) {
+  const hops = opt.hops || ["uzu://safehouse", "tor-entry.anon", dest];
   const line = print("", "dim");
   for (let i = 0; i < 10; i++) { line.textContent = `回線コードを照合中... ${randHex(6)}`; SFX.tick(); await wait(60); }
   line.textContent = "回線コードを照合中... done";
-  for (const [i, hop] of ["uzu://safehouse", "tor-entry.anon", dest].entries()) {
-    const l = print(`  ${i === 2 ? "└" : "├"}─ ${esc(hop)} `, "dim");
+  for (const [i, hop] of hops.entries()) {
+    const last = i === hops.length - 1;
+    const l = print(`  ${last ? "└" : "├"}─ ${esc(hop)} `, "dim");
     for (let k = 0; k < 6; k++) { await wait(32); l.innerHTML += "▓"; }
-    l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
+    l.innerHTML += ` <span class="${last && opt.loop ? "warn" : "sys"}">${20 + Math.floor(Math.random() * 180)}ms OK${last && opt.loop ? "　← 出発点" : ""}</span>`;
     SFX.hop(i);
     await wait(110);
   }
-  print(`[+] 接続完了：${esc(dest)}`, "sys");
+  if (opt.loop) {
+    SFX.alert();
+    pulse($("wrap"), "jolt", 160);
+    print("[!] 回線がループしています", "alert");
+  } else {
+    print(`[+] 接続完了：${esc(dest)}`, "sys");
+  }
   await wait(900);
+}
+
+// 小ネタ：connect uzu と打つと、回線がぐるっと一周して、出発点の uzu://safehouse に戻ってくる
+let uzuCount = 0;
+async function uzuLine() {
+  uzuCount++;
+  await busy(() => fakeRoute("uzu://safehouse", {
+    hops: ["uzu://safehouse", "tor-entry.anon", "tor-exit-jp.anon", "uzu://safehouse"], loop: true,
+  }));
+  await speak(uzuCount === 1 ? [
+    "[師匠] ……おい。回線がぐるっと回って、お前の足元に戻ってきたぞ。",
+    "[師匠] uzu は、お前が今いる場所だ。報告なら、あっちで直接しろ。",
+  ] : ["[師匠] ……だから、そこはお前の足元だって言ってるだろ。"]);
 }
 
 // 師匠の例の「connect IDIOT」を、そのまま打った人へのつっこみ
