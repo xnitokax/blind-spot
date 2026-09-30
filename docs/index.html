@@ -206,16 +206,20 @@
   .pf-link { color: var(--voice); }
   .pf-msg { color: var(--voice); line-height: 1.9; margin: 10px 0 4px; }
   .profile .pf-fields { margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(143,200,255,.25); font-size: 12px; }
-  /* サイン：オレンジの筆記体。線が書かれていき、最後に色が入って光る */
+  /* サイン：オレンジの筆記体。ペンで書いていくように左から右へ現れ、書き終わりに一瞬強く光る */
   .pf-sign { display: flex; justify-content: flex-end; height: 64px; }
-  .pf-sign svg { height: 64px; width: auto; overflow: visible; filter: drop-shadow(0 0 6px rgba(255,122,26,.75)); }
-  .pf-sign text {
-    font-size: 50px; fill: #ff9a3c; fill-opacity: 0; stroke: #ffb066; stroke-width: 1;
-    stroke-dasharray: 900; stroke-dashoffset: 900;
-    animation: signDraw 1.8s ease-in-out forwards, signFill .7s 1.5s ease-out forwards;
+  .pf-sign svg {
+    height: 64px; width: auto; overflow: visible;
+    clip-path: inset(-20% 100% -20% -5%);
+    animation: signReveal 1.3s cubic-bezier(.55, .1, .35, 1) forwards, signGlow .9s 1.2s ease-out both;
   }
-  @keyframes signDraw { to { stroke-dashoffset: 0; } }
-  @keyframes signFill { to { fill-opacity: 1; } }
+  .pf-sign text { font-size: 50px; fill: #ff9a3c; }
+  @keyframes signReveal { to { clip-path: inset(-20% -5% -20% -5%); } }
+  @keyframes signGlow {
+    0% { filter: drop-shadow(0 0 6px rgba(255,122,26,.75)); }
+    30% { filter: drop-shadow(0 0 14px rgba(255,150,60,1)) brightness(1.3); }
+    100% { filter: drop-shadow(0 0 6px rgba(255,122,26,.75)); }
+  }
 
   /* 検索：scanning は小さく、見出しは「何を探したか」を大きく、件数は小さく */
   .scan { font-size: 12px; margin-top: 4px; }
@@ -614,7 +618,7 @@ const SFX = (() => {
     alert: () => { tone(1000, 0.14, { vol: 0.04, echo: 0.3 }); tone(1000, 0.14, { vol: 0.04, at: 0.2, echo: 0.3 }); },
     // サインを書く「サラサラ」：ペン先が紙をこする、ごく小さな音
     sign: () => {
-      for (let i = 0; i < 6; i++) hiss(0.22, { vol: 0.02, freq: 3500 + Math.random() * 1500, q: 2, at: i * 0.27, attack: 0.04 });
+      for (let i = 0; i < 5; i++) hiss(0.2, { vol: 0.02, freq: 3500 + Math.random() * 1500, q: 2, at: i * 0.24, attack: 0.04 });
     },
     // 南京錠が閉まる「ガチャッ」：低い衝撃と、金属の小さな響き
     lock: () => {
@@ -1816,7 +1820,7 @@ async function authorLine() {
       card.querySelector(".pf-sign").innerHTML = `<svg viewBox="0 0 240 72" aria-label="${esc(a.sign)}">`
         + `<text x="228" y="54" text-anchor="end" font-family="'${SIGN_FONT}', cursive">${esc(a.sign)}</text></svg>`;
       SFX.sign();
-      await wait(2300);
+      await wait(2100);
     }
     await wait(500);
   });
