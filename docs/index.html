@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BLIND//SPOT</title>
+<!-- 製作者のサイン用の筆記体（connect nitoka の小ネタでだけ使う） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&display=swap">
 <style>
   :root {
     --bg: #05090a; --panel: #0b1214; --line: #1c3a34;
@@ -200,6 +204,18 @@
   .pf-role { color: var(--fg); font-size: 16px; margin: 4px 0 10px; }
   .pf-fields { display: grid; grid-template-columns: max-content 1fr; column-gap: 16px; row-gap: 3px; font-size: 14px; }
   .pf-link { color: var(--voice); }
+  .pf-msg { color: var(--voice); line-height: 1.9; margin: 10px 0 4px; }
+  .profile .pf-fields { margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(143,200,255,.25); font-size: 12px; }
+  /* サイン：オレンジの筆記体。線が書かれていき、最後に色が入って光る */
+  .pf-sign { display: flex; justify-content: flex-end; height: 64px; }
+  .pf-sign svg { height: 64px; width: auto; overflow: visible; filter: drop-shadow(0 0 6px rgba(255,122,26,.75)); }
+  .pf-sign text {
+    font-size: 50px; fill: #ff9a3c; fill-opacity: 0; stroke: #ffb066; stroke-width: 1;
+    stroke-dasharray: 900; stroke-dashoffset: 900;
+    animation: signDraw 1.8s ease-in-out forwards, signFill .7s 1.5s ease-out forwards;
+  }
+  @keyframes signDraw { to { stroke-dashoffset: 0; } }
+  @keyframes signFill { to { fill-opacity: 1; } }
 
   /* 検索：scanning は小さく、見出しは「何を探したか」を大きく、件数は小さく */
   .scan { font-size: 12px; margin-top: 4px; }
@@ -596,6 +612,10 @@ const SFX = (() => {
       hiss(0.16, { vol: 0.1, filter: "lowpass", freq: 700 });
     },
     alert: () => { tone(1000, 0.14, { vol: 0.04, echo: 0.3 }); tone(1000, 0.14, { vol: 0.04, at: 0.2, echo: 0.3 }); },
+    // サインを書く「サラサラ」：ペン先が紙をこする、ごく小さな音
+    sign: () => {
+      for (let i = 0; i < 6; i++) hiss(0.22, { vol: 0.02, freq: 3500 + Math.random() * 1500, q: 2, at: i * 0.27, attack: 0.04 });
+    },
     // 南京錠が閉まる「ガチャッ」：低い衝撃と、金属の小さな響き
     lock: () => {
       tone(95, 0.1, { vol: 0.22 });
@@ -1764,6 +1784,8 @@ async function titleCommand(raw) {
 }
 
 // 小ネタ：connect <製作者のハンドル> と打つと、師匠の回線につながって、師匠（＝製作者）のプロフィールが出る
+// サインの筆記体（Google Fonts。<head> で読み込んでいる）
+const SIGN_FONT = "Yellowtail";
 let authorCount = 0;
 async function authorLine() {
   const a = S.author;
@@ -1779,11 +1801,24 @@ async function authorLine() {
     : esc(v);
   await busy(async () => {
     SFX.card();
+    // サインのフォントを読み込んでから書き始める（読み込めなければ、ふつうの筆記体で書く）
+    await Promise.race([document.fonts?.load(`48px "${SIGN_FONT}"`), sleep(1500)]).catch(() => {});
     const card = print(`<div class="profile"><div class="pf-head">PROFILE ── ${esc(a.handle)}</div>`
-      + `<div class="pf-role">${esc(a.role || "")}</div>`
-      + `<div class="pf-fields">${(a.profile || []).map(([k, v]) => `<span class="dim">${esc(k)}</span><span>${val(v)}</span>`).join("")}</div></div>`);
+      + (a.role ? `<div class="pf-role">${esc(a.role)}</div>` : "")
+      + (a.message ? `<div class="pf-msg">${a.message.map(esc).join("<br>")}</div>` : "")
+      + (a.sign ? `<div class="pf-sign"></div>` : "")
+      + (a.profile?.length ? `<div class="pf-fields">${a.profile.map(([k, v]) => `<span class="dim">${esc(k)}</span><span>${val(v)}</span>`).join("")}</div>` : "")
+      + `</div>`);
     await decode(card, 600);
-    await wait(600);
+    if (a.sign) {
+      await wait(500);
+      // サイン：線が一筆ずつ書かれていき、最後にオレンジの色が入る
+      card.querySelector(".pf-sign").innerHTML = `<svg viewBox="0 0 240 72" aria-label="${esc(a.sign)}">`
+        + `<text x="228" y="54" text-anchor="end" font-family="'${SIGN_FONT}', cursive">${esc(a.sign)}</text></svg>`;
+      SFX.sign();
+      await wait(2300);
+    }
+    await wait(500);
   });
   await speak(authorCount === 1 ? [
     "[師匠] ……バレちまったもんは仕方ない。これが俺だ。",
