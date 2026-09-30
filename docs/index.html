@@ -864,6 +864,18 @@ function print(html, cls = "") {
   return d;
 }
 const scrollDown = () => { $("term").scrollTop = $("term").scrollHeight; };
+// 演出で行の中身があとから伸びても（照合中… など）、いちばん下についていく。
+// ただし、自分で上にスクロールしてログを読んでいるときは、勝手に引き戻さない
+let followBottom = true;
+$("term").addEventListener("scroll", () => {
+  const t = $("term");
+  followBottom = t.scrollHeight - t.scrollTop - t.clientHeight < 40;
+});
+if (window.ResizeObserver) {
+  const ro = new ResizeObserver(() => { if (followBottom) scrollDown(); });
+  ro.observe($("out"));
+  ro.observe($("dock"));
+}
 function pulse(el, cls, ms = 600) {
   el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
   setTimeout(() => el.classList.remove(cls), ms);
