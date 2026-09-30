@@ -1599,7 +1599,40 @@ async function titleCommand(raw) {
     return print(`<div class="ls">${rows}</div>`);
   }
   if (c === "connect" && !arg) return print("使い方：connect &lt;回線コード&gt;", "dim");
-  return connectLine(c === "connect" ? arg : raw.trim()); // コードだけ打っても通す
+  const code = c === "connect" ? arg : raw.trim(); // コードだけ打っても通す
+  if (NZ.norm(code) === NZ.norm(EXAMPLE_CODE)) return idiotLine();
+  return connectLine(code);
+}
+
+// 師匠の例の「connect IDIOT」を、そのまま打った人へのつっこみ
+// 本物と同じように「つながった」ところまで見せてから、師匠があきれる
+const EXAMPLE_CODE = "IDIOT";
+let idiotCount = 0;
+async function idiotLine() {
+  idiotCount++;
+  await busy(async () => {
+    const line = print("", "dim");
+    for (let i = 0; i < 10; i++) { line.textContent = `回線コードを照合中... ${randHex(6)}`; SFX.tick(); await wait(60); }
+    line.textContent = "回線コードを照合中... done";
+    for (const [i, hop] of ["uzu://safehouse", "tor-entry.anon", "idiot.anon"].entries()) {
+      const l = print(`  ${i === 2 ? "└" : "├"}─ ${esc(hop)} `, "dim");
+      for (let k = 0; k < 6; k++) { await wait(32); l.innerHTML += "▓"; }
+      l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
+      SFX.hop(i);
+      await wait(110);
+    }
+    print("[+] 接続完了：idiot.anon", "sys");
+    await wait(900);
+  });
+  // 2回目からは、師匠のあきれ方が変わる
+  await speak(idiotCount === 1 ? [
+    "[師匠] ……おい。",
+    "[師匠] 本当にそのまま打つやつがあるか。例だよ、例。",
+    "[師匠] 俺から受け取ったコードを打て。",
+  ] : [
+    "[師匠] ……わざとだろ、お前。",
+    "[師匠] 遊んでないで、俺から受け取ったコードを打て。",
+  ]);
 }
 
 async function confirmHandle(raw) {
@@ -1611,7 +1644,7 @@ async function confirmHandle(raw) {
     SFX.granted();
     state.mode = { type: "title" };
     setPrompt(titlePrompt());
-    await speak([`[師匠] よし、${handle}。覚えた。`, "[師匠] 次は回線だ。俺が渡したコードを、connect のあとに打て。例えば connect XXXX"]);
+    await speak([`[師匠] よし、${handle}。覚えた。`, `[師匠] 次は回線だ。俺が渡したコードを、connect のあとに打て。例えば connect ${EXAMPLE_CODE}`]);
     if (m.autoCode) await autoConnect(m.autoCode);
     return;
   }
