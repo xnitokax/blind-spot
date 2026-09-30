@@ -300,7 +300,7 @@ const SCENARIO = {
             // パスワードが通るのは owner のアカウントだけ（ほかの社員の ID は、ID までは通るがパスワードで弾かれる）
             user: {
               prompt: "ユーザーID",
-              hint: "ユーザーID は社員名のローマ字です（例：yamada.taro）",
+              hint: "社員名のローマ字（例：yamada.taro）",
               ids: {
                 "asahina.satsuki": "asahina", "asahina": "asahina", "s.asahina": "asahina", "satsuki.asahina": "asahina", "朝比奈": "asahina", "朝比奈さつき": "asahina",
                 "kuroda.seiichi": "kuroda", "kuroda": "kuroda", "黒田": "kuroda", "黒田誠一": "kuroda",
@@ -319,7 +319,7 @@ const SCENARIO = {
             },
             pass: "hikari20090822!!!",
             showLength: true, // ログイン画面に「パスワード：17文字」と出す
-            hint: "人事部社員のユーザーIDとパスワードでログインしてください（社内ネットワークのため、二段階認証は省略されます）",
+            hint: "人事部社員のユーザーIDとパスワードでログインしてください\n（社内ネットワークのため、二段階認証は省略されます）",
             say: [
               "[師匠] 正面からは無理か。さすがに個人情報は固い。",
               "[師匠] 日報のほうはどうだ。社員同士で見せ合うものなら、守りはゆるいはずだ。",
