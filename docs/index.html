@@ -361,9 +361,9 @@ const SFX = (() => {
       ctx = new C();
       // 全体：音量 → コンプレッサー（大きな音をまとめる）→ スピーカー
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -18; comp.ratio.value = 4;
+      comp.threshold.value = -12; comp.ratio.value = 4;
       out = ctx.createGain();
-      out.gain.value = 0.6;
+      out.gain.value = 0.9; // 全体の音量（効果音はここで決まる）
       out.connect(comp).connect(ctx.destination);
       // エコー：音が空間に残る感じ
       const delay = ctx.createDelay(1), fb = ctx.createGain(), lp = ctx.createBiquadFilter(), wet = ctx.createGain();
@@ -513,7 +513,8 @@ const SFX = (() => {
     api.onBgmChange?.();
   }
 
-  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.55;
+  // BGM_VOL は全体の音量に対する BGM の割合（効果音より控えめに、後ろで小さく流れる程度）
+  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.11;
   const PROG = [
     { root: 55.00, chord: [220.00, 261.63, 329.63] }, // Am
     { root: 43.65, chord: [174.61, 220.00, 261.63] }, // F
