@@ -441,6 +441,11 @@ const SFX = (() => {
       tone(2637, 0.08, { vol: 0.03, echo: 0.3 });                         // 高い音（ミ）
       tone(3951, 0.06, { vol: 0.018, at: 0.014, echo: 0.3 });             // 少しずらして5度上（シ）を重ねる
     },
+    // ボタンにカーソルを合わせたとき：選んだときの音と同じ系統の、小さく短い「チッ」
+    hover: () => {
+      hiss(0.006, { vol: 0.015, filter: "highpass", freq: 9000 });
+      tone(3951, 0.025, { vol: 0.01 });
+    },
     // 中継点を通過：ソナーのような短いピン
     hop: i => tone(1320 + i * 40, 0.14, { vol: 0.05, echo: 0.5 }),
     // 転移：低い地鳴りと、こもった音が開いていくノイズ
@@ -522,7 +527,7 @@ const SFX = (() => {
   }
 
   // BGM_VOL は全体の音量に対する BGM の割合（効果音より控えめに、後ろで小さく流れる程度）
-  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.037;
+  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.026;
   const PROG = [
     { root: 55.00, chord: [220.00, 261.63, 329.63] }, // Am
     { root: 43.65, chord: [174.61, 220.00, 261.63] }, // F
@@ -1663,6 +1668,16 @@ updateSoundUi();
 
 // スマホ：TRACE 欄をタップでアクセスログと手がかりを開閉
 $("side").addEventListener("click", e => e.currentTarget.classList.toggle("open"));
+
+// NEXT のボタンにカーソルを合わせたら、ボタンが変わるごとに1回だけ鳴らす（演出中は押せないので鳴らさない）
+let hovered = null;
+$("next").addEventListener("mouseover", e => {
+  const chipEl = e.target.closest(".chip");
+  if (chipEl === hovered) return;
+  hovered = chipEl;
+  if (chipEl && !isBusy()) SFX.hover();
+});
+$("next").addEventListener("mouseleave", () => { hovered = null; });
 
 // 名前をタップ → 入力欄にコマンドを入れる（実行は Enter か ⏎ ボタン）
 // 「search 」のように続きを打つものは、スマホでもキーボードを出す
