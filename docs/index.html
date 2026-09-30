@@ -1867,7 +1867,7 @@ const EXAMPLE_CODE = "IDIOT";
 let idiotCount = 0;
 async function idiotLine() {
   idiotCount++;
-  await busy(() => fakeRoute("idiot.anon"));
+  await busy(() => fakeRoute(`idiot.${who()}`)); // 接続先は「idiot.（打った人のハンドル名）」
   // 2回目からは、師匠のあきれ方が変わる
   await speak(idiotCount === 1 ? [
     "[師匠] ……おい。",
