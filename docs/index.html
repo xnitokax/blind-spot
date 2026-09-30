@@ -518,7 +518,11 @@ const SFX = (() => {
   };
 
   // ---------------- BGM の演奏 ----------------
-  // ダークなシンセウェーブ風。4小節（Am → F → Dm → E）をくり返し、小節が進むごとに楽器が増えていく
+  // 作業に集中できる、落ち着いたロー・ファイ寄りの曲。長く聞いても疲れないように：
+  //   ・テンポはゆっくり（88）。ドラムは柔らかく小さく、少しだけハネさせる
+  //   ・和音は Am9 → Fmaj7 → Dm9 → Em7 を2小節ずつ。こもった柔らかい音で、ゆっくり息をするように揺れる
+  //   ・メロディは毎回その場で作る（前の音の近くの音を選ぶので、フレーズに聞こえる）。同じくり返しにならない
+  //   ・最初の4小節はドラムなし。32小節（約1分半）ごとに、ドラムが抜けて静かになる区間がある
   function applyBgm(opt = {}) {
     const play = bgmWant && bgmOn && !muted;
     if (play && !bgm) startBgm();
@@ -527,15 +531,14 @@ const SFX = (() => {
   }
 
   // BGM_VOL は全体の音量に対する BGM の割合（効果音より控えめに、後ろで小さく流れる程度）
-  const BPM = 108, STEP = 60 / BPM / 4, BGM_VOL = 0.026;
-  const PROG = [
-    { root: 55.00, chord: [220.00, 261.63, 329.63] }, // Am
-    { root: 43.65, chord: [174.61, 220.00, 261.63] }, // F
-    { root: 36.71, chord: [146.83, 174.61, 220.00] }, // Dm
-    { root: 41.20, chord: [164.81, 207.65, 246.94] }, // E
+  const BPM = 88, STEP = 60 / BPM / 4, BGM_VOL = 0.026;
+  const SWING = STEP * 0.18; // 裏の16分を少し遅らせて、機械っぽさを消す
+  const CHORDS = [
+    { root: 55.00, pad: [261.63, 329.63, 392.00, 493.88], mel: [440.00, 493.88, 523.25, 659.25, 783.99] }, // Am9
+    { root: 43.65, pad: [220.00, 261.63, 329.63, 392.00], mel: [440.00, 523.25, 659.25, 783.99] },         // Fmaj7
+    { root: 73.42, pad: [174.61, 220.00, 261.63, 329.63], mel: [440.00, 523.25, 587.33, 659.25] },         // Dm9
+    { root: 82.41, pad: [196.00, 246.94, 293.66, 392.00], mel: [392.00, 493.88, 587.33, 659.25] },         // Em7
   ];
-  const BASS_OCT = [1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 1, 2]; // 16分で刻むベース（2 はオクターブ上）
-  const ARP = [0, 1, 2, 1, 0, 2, 1, 2];                           // アルペジオで弾くコードの音の順番
 
   function startBgm() {
     const c = ac(); if (!c) return;
@@ -543,14 +546,14 @@ const SFX = (() => {
     // ラジオのつまみを回したように、こもった音から開いていく
     const bus = c.createGain(), lp = c.createBiquadFilter();
     bus.gain.setValueAtTime(0.0001, t);
-    bus.gain.exponentialRampToValueAtTime(BGM_VOL, t + 2.5);
-    lp.type = "lowpass"; lp.frequency.setValueAtTime(300, t); lp.frequency.exponentialRampToValueAtTime(16000, t + 4);
+    bus.gain.exponentialRampToValueAtTime(BGM_VOL, t + 3);
+    lp.type = "lowpass"; lp.frequency.setValueAtTime(300, t); lp.frequency.exponentialRampToValueAtTime(14000, t + 5);
     bus.connect(lp).connect(out);
     // BGM 専用の残響（BGM の音量・フェード・テープ停止がそのまま効くよう、bus に戻す）
     const bgmEcho = c.createGain(), delay = c.createDelay(1), fb = c.createGain(), elp = c.createBiquadFilter();
-    delay.delayTime.value = STEP * 3; fb.gain.value = 0.3; elp.type = "lowpass"; elp.frequency.value = 1800;
+    delay.delayTime.value = STEP * 3; fb.gain.value = 0.38; elp.type = "lowpass"; elp.frequency.value = 1600;
     bgmEcho.connect(delay); delay.connect(elp); elp.connect(fb); fb.connect(delay); elp.connect(bus);
-    bgm = { bus, lp, echo: bgmEcho, step: 0, next: t + 0.1, timer: null };
+    bgm = { bus, lp, echo: bgmEcho, step: 0, next: t + 0.1, timer: null, mel: 2, rest: 0 };
     bgm.timer = setInterval(scheduleBgm, 25);
     scheduleBgm();
   }
@@ -569,9 +572,9 @@ const SFX = (() => {
     } else {
       b.bus.gain.cancelScheduledValues(t);
       b.bus.gain.setValueAtTime(b.bus.gain.value || BGM_VOL, t);
-      b.bus.gain.exponentialRampToValueAtTime(0.0001, t + (opt.fast ? 0.05 : 1.2));
+      b.bus.gain.exponentialRampToValueAtTime(0.0001, t + (opt.fast ? 0.05 : 1.5));
     }
-    setTimeout(() => { try { b.bus.disconnect(); } catch {} }, 1500);
+    setTimeout(() => { try { b.bus.disconnect(); } catch {} }, 2000);
   }
   // 少し先の分まで、音符を予約しておく（タブが裏に回ってタイマーが遅れても途切れにくいよう多めに）
   function scheduleBgm() {
@@ -584,83 +587,105 @@ const SFX = (() => {
     }
   }
   function playStep(n, t) {
-    const s = n % 16, bar = Math.floor(n / 16), p = PROG[bar % 4], bus = bgm.bus;
-    // 1〜2小節目はベースとパッドだけ → 3小節目からドラム → 5小節目からアルペジオ
-    if (s === 0) pad(bus, t, p.chord, STEP * 16);
-    bass(bus, t, p.root * BASS_OCT[s], s % 4 === 0);
-    if (bar >= 2) {
-      if (s % 4 === 0) kick(bus, t);
-      if (s === 4 || s === 12) snare(bus, t);
+    const s = n % 16, bar = Math.floor(n / 16), ch = CHORDS[Math.floor(bar / 2) % 4], bus = bgm.bus;
+    const tt = s % 2 ? t + SWING : t;       // 裏拍だけ少し遅らせる
+    const calm = bar < 4 || bar % 32 >= 28; // 最初の4小節と、32小節ごとの静かな区間
+    // 和音とベースは2小節ごとに、長く伸ばす
+    if (s === 0 && bar % 2 === 0) { pad(bus, t, ch.pad, STEP * 32); sub(bus, t, ch.root, STEP * 31); }
+    if (!calm) {
+      if (s === 0 || s === 10) kick(bus, t, s === 0 ? 1 : 0.7);
+      if (s === 4 || s === 12) rim(bus, t);
     }
-    hat(bus, t, bar >= 4 && s % 4 === 2);
-    if (bar >= 4 && s % 2 === 0) arp(bus, t, p.chord[ARP[(s / 2) % 8]] * 2);
+    if (bar >= 2 && !calm) shaker(bus, tt, s % 4 === 2 ? 1 : 0.45 + Math.random() * 0.3);
+    // メロディ：8分の位置で、ときどきポロンと鳴らす（静かな区間は少し多め）
+    if (s % 2 === 0 && bar >= 2 && Math.random() < (calm ? 0.22 : 0.13)) {
+      if (bgm.rest > 0) { bgm.rest--; return; }
+      const pool = ch.mel;
+      const moves = [-1, -1, 0, 1, 1, 2];
+      bgm.mel = Math.max(0, Math.min(pool.length - 1, bgm.mel + moves[Math.floor(Math.random() * moves.length)]));
+      keys(bus, tt, pool[bgm.mel]);
+      if (Math.random() < 0.3) bgm.rest = 2; // フレーズの切れ目で少し休む
+    }
   }
-  function voice(bus, t, dur, vol, build) {
+  function voice(bus, t, dur, vol, build, attack = 0.005) {
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     g.connect(bus);
     build(g);
     return g;
   }
-  // キック：低く、長めに響く「ドッ」（BGM の主役）
-  function kick(bus, t) {
-    voice(bus, t, 0.55, 0.8, g => {
+  // キック：短く柔らかい「トッ」
+  function kick(bus, t, v) {
+    voice(bus, t, 0.3, 0.55 * v, g => {
       const o = ctx.createOscillator();
-      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.35);
-      o.connect(g); o.start(t); o.stop(t + 0.6);
+      o.frequency.setValueAtTime(115, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.12);
+      o.connect(g); o.start(t); o.stop(t + 0.32);
     });
   }
-  function snare(bus, t) {
-    const g = voice(bus, t, 0.2, 0.2, g => {
+  // リムショット：残響つきの小さな「コッ」
+  function rim(bus, t) {
+    const g = voice(bus, t, 0.06, 0.1, g => {
       const src = ctx.createBufferSource(); src.buffer = noiseBuf;
-      const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1900; f.Q.value = 0.8;
-      src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.25);
+      const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2600; f.Q.value = 5;
+      src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.08);
+      const o = ctx.createOscillator(); o.frequency.value = 1700;
+      const og = ctx.createGain(); og.gain.value = 0.3;
+      o.connect(og).connect(g); o.start(t); o.stop(t + 0.03);
     });
-    const s = ctx.createGain(); s.gain.value = 0.25; g.connect(s).connect(bgm.echo);
+    const s = ctx.createGain(); s.gain.value = 0.35; g.connect(s).connect(bgm.echo);
   }
-  function hat(bus, t, open) {
-    voice(bus, t, open ? 0.12 : 0.03, open ? 0.04 : 0.017, g => {
+  // シェイカー：ごく小さな「シャッ」
+  function shaker(bus, t, v) {
+    voice(bus, t, 0.05, 0.012 * v, g => {
       const src = ctx.createBufferSource(); src.buffer = noiseBuf;
-      const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 7500;
-      src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.16);
-    });
+      const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 6500;
+      src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.07);
+    }, 0.012);
   }
-  function bass(bus, t, freq, accent) {
-    voice(bus, t, STEP * 0.95, accent ? 0.2 : 0.13, g => {
-      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 5;
-      f.frequency.setValueAtTime(accent ? 1100 : 800, t); f.frequency.exponentialRampToValueAtTime(220, t + STEP * 0.9);
-      f.connect(g);
-      for (const d of [1, 1.006]) {
-        const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq * d;
-        o.connect(f); o.start(t); o.stop(t + STEP);
-      }
-    });
-  }
-  function pad(bus, t, chord, dur) {
+  // ベース：刻まずに低く伸ばす（小さいスピーカーでも聞こえるよう、1オクターブ上を少し重ねる）
+  function sub(bus, t, freq, dur) {
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.05, t + 0.6);
-    g.gain.setValueAtTime(0.05, t + dur - 0.4);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.3);
-    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 750; // 高い成分を削って、耳に刺さらないように
+    g.gain.exponentialRampToValueAtTime(0.3, t + 0.15);
+    g.gain.exponentialRampToValueAtTime(0.18, t + dur * 0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(bus);
+    const o = ctx.createOscillator(); o.frequency.value = freq; o.connect(g);
+    const o2 = ctx.createOscillator(); o2.type = "triangle"; o2.frequency.value = freq * 2;
+    const g2 = ctx.createGain(); g2.gain.value = 0.25; o2.connect(g2).connect(g);
+    o.start(t); o2.start(t); o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+  // 和音：こもった柔らかい音で、ゆっくり息をするように明るさが揺れる
+  function pad(bus, t, notes, dur) {
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.035, t + 1.4);
+    g.gain.setValueAtTime(0.035, t + dur - 0.2);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 1.6); // 次の和音と重なりながら消える
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 0.5;
+    f.frequency.setValueAtTime(450, t);
+    f.frequency.linearRampToValueAtTime(900, t + dur * 0.5);
+    f.frequency.linearRampToValueAtTime(500, t + dur);
     f.connect(g).connect(bus);
-    for (const note of chord) {
-      for (const d of [0.996, 1.004]) {
+    for (const note of notes) {
+      for (const d of [0.997, 1.003]) {
         const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = note * d;
-        o.connect(f); o.start(t); o.stop(t + dur + 0.35);
+        o.connect(f); o.start(t); o.stop(t + dur + 1.7);
       }
     }
   }
-  function arp(bus, t, freq) {
-    const g = voice(bus, t, 0.26, 0.035, g => {
-      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 2;
-      f.frequency.setValueAtTime(1600, t); f.frequency.exponentialRampToValueAtTime(400, t + 0.2);
-      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq;
-      o.connect(f).connect(g); o.start(t); o.stop(t + 0.3);
-    });
-    const s = ctx.createGain(); s.gain.value = 0.4; g.connect(s).connect(bgm.echo);
+  // メロディ：エレピやベルのような柔らかい音（1オクターブ上をうっすら重ねる）。残響多め
+  function keys(bus, t, freq) {
+    const g = voice(bus, t, 1.4, 0.06, g => {
+      const o = ctx.createOscillator(); o.frequency.value = freq; o.connect(g);
+      const o2 = ctx.createOscillator(); o2.frequency.value = freq * 2;
+      const g2 = ctx.createGain(); g2.gain.setValueAtTime(0.35, t); g2.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+      o2.connect(g2).connect(g);
+      o.start(t); o2.start(t); o.stop(t + 1.45); o2.stop(t + 1.45);
+    }, 0.008);
+    const s = ctx.createGain(); s.gain.value = 0.55; g.connect(s).connect(bgm.echo);
   }
 
   return api;
