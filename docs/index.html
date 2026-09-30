@@ -1066,7 +1066,8 @@ function duckBgm(ms = 2600) {
   duckTimer = setTimeout(() => SFX.duck(false), ms);
 }
 
-async function typeLine(s) {
+// opt.charMs：1文字ごとの間隔を指定する（「…………」をゆっくり出すときなど）
+async function typeLine(s, opt = {}) {
   const { cls, text, say } = lineParts(s);
   const d = print(say ? `<span class="who">師匠</span><span class="t"></span>` : `<span class="t"></span>`, cls);
   const t = d.querySelector(".t");
@@ -1077,7 +1078,7 @@ async function typeLine(s) {
     if (fast || REDUCED) break;
     t.textContent += chars[i];
     if (i % 6 === 0) scrollDown();
-    await sleep("。、…！？".includes(chars[i]) ? 90 : say ? 28 : 16);
+    await sleep(opt.charMs ?? ("。、…！？".includes(chars[i]) ? 90 : say ? 28 : 16));
   }
   t.textContent = text;
   scrollDown();
@@ -1527,6 +1528,8 @@ async function play(steps) {
     }
     if (s.sound) SFX[s.sound]?.();
     if ("music" in s) SFX.music(s.music);
+    // { slow: "セリフ", ms: 1文字の間隔 } … ゆっくり1文字ずつ出す
+    if (s.slow) { await typeLine(s.slow, { charMs: s.ms || 350 }); await wait(700); }
     if ("trace" in s) await raceTrace(s.trace, s.ms || 2000);
     if (s.hex) {
       for (let i = 0; i < s.hex; i++) { print(`0x${(0x7f3a00 + i * 16).toString(16)}  ${randHex(16)}`, "dim"); SFX.tick(); await wait(28); }
@@ -1800,6 +1803,7 @@ async function titleCommand(raw) {
   if (NZ.norm(code) === NZ.norm(EXAMPLE_CODE)) return idiotLine();
   if (S.author && NZ.norm(code) === NZ.norm(S.author.handle)) return authorLine();
   if (NZ.norm(code) === "uzu") return uzuLine();
+  if (["師匠", "ししょう", "shishou", "shisho"].includes(NZ.norm(code))) return mentorLine();
   return connectLine(code);
 }
 
@@ -1873,6 +1877,42 @@ async function fakeRoute(dest, opt = {}) {
     print(`[+] 接続完了：${esc(dest)}`, "sys");
   }
   await wait(900);
+}
+
+// 小ネタ：connect 師匠 と打つと、ふつうに「回線コードが違います」と出たあと、師匠が過去を少しだけ語る
+let mentorCount = 0;
+async function mentorLine() {
+  mentorCount++;
+  // まずは、本物の間違ったコードとまったく同じ見た目で失敗する
+  await busy(async () => {
+    const line = print("", "dim");
+    for (let i = 0; i < 12; i++) { line.textContent = `回線コードを照合中... ${randHex(6)}`; SFX.tick(); await wait(60); }
+    line.textContent = "回線コードを照合中... done";
+  });
+  SFX.denied();
+  pulse($("wrap"), "shake", 450);
+  print("回線コードが違います。師匠に確認してください。", "alert");
+  await busy(async () => {
+    await wait(1200);
+    if (mentorCount > 1) {
+      await play(["[師匠] ……しつこいぞ。昔話は一度で十分だ。"]);
+      return;
+    }
+    await play([
+      "[師匠] ……なんで俺のことを調べようとしてる。",
+      "[師匠] というか、「師匠」がハンドルネームだと思ったのか？",
+      "[師匠] それは、お前が勝手にそう呼び始めただけだろう。",
+      { wait: 900 },
+      "[師匠] 三年前のあの日、お前を助けた──",
+      { wait: 1100 },
+      "[師匠] ひどい雨の夜だった。お前は割れた端末を抱えたまま、自分の名前すら言えなかった。",
+      "[師匠] 俺の本当の名前は、あの夜、あの回線と一緒に焼き捨てた。",
+      "[師匠] だから、お前は俺を「師匠」と呼ぶしかない。……それでいい。",
+      { wait: 800 },
+      { slow: "[師匠] …………", ms: 380 },
+      "[師匠] もういい。仕事に戻れ。俺から受け取ったコードを打て。",
+    ]);
+  });
 }
 
 // 小ネタ：connect uzu と打つと、回線がぐるっと一周して、出発点の uzu://safehouse に戻ってくる
