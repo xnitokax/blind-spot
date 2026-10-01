@@ -110,6 +110,17 @@
     margin-top: 10px; padding: 8px 0 14px; border-top: 1px dashed var(--line);
     transition: opacity .3s;
   }
+  /* 上へさかのぼって読んでいるときだけ出る「いちばん下へ」のボタン（入力欄のすぐ上の右端） */
+  #toBottom {
+    position: absolute; right: 4px; top: -36px; display: none; font: inherit; font-size: 12px; cursor: pointer;
+    color: var(--bg); background: var(--accent); border: 0; border-radius: 12px; padding: 3px 12px;
+    box-shadow: 0 0 12px rgba(61,255,168,.45);
+  }
+  #toBottom.show { display: block; animation: revealIn .25s ease-out; }
+  /* 右の欄の手がかり：押すと、その EVIDENCE が出たところへ飛ぶ */
+  #evi .o-clue.jump { cursor: pointer; }
+  #evi .o-clue.jump:hover { text-decoration: underline; }
+  .evi-card.focus { animation: evidenceIn 1.6s ease-out; outline: 1px solid var(--warn); outline-offset: 2px; }
   .dock.busy #next { opacity: .3; pointer-events: none; }
   #next { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; font-size: 13px; }
   #next:empty { display: none; }
@@ -408,12 +419,13 @@
     40%  { filter: blur(1px) hue-rotate(40deg); transform: scale(.99); }
     100% { filter: none; transform: none; }
   }
-  /* 画面が消える（ブラウン管の電源を切ったように） */
-  .crt-off { animation: crtOff .75s forwards ease-in; }
+  /* 画面が消える：一瞬で横一本の光に潰れ、点になって「ぴちゅん」と消える */
+  .crt-off { animation: crtOff .26s forwards cubic-bezier(.7, 0, .9, .5); }
   @keyframes crtOff {
-    0% { transform: none; filter: none; }
-    55% { transform: scale(1, .004); filter: brightness(5); }
-    100% { transform: scale(0, .004); filter: brightness(8); opacity: 0; }
+    0%   { transform: none; filter: none; }
+    45%  { transform: scale(1, .006); filter: brightness(6); }
+    80%  { transform: scale(.03, .006); filter: brightness(10); opacity: 1; }
+    100% { transform: scale(0, 0); filter: brightness(10); opacity: 0; }
   }
 
   /* 逆ハッキング・接続遮断 */
@@ -549,6 +561,7 @@
   <main class="panel" id="term">
     <div id="out"></div>
     <div class="dock" id="dock">
+      <button id="toBottom" type="button" aria-label="いちばん下へ">↓ 最新へ</button>
       <div id="next" aria-label="次にできること"></div>
       <form class="row" id="form" autocomplete="off">
         <span class="ps" id="prompt"></span>
@@ -749,7 +762,12 @@ const SFX = (() => {
       hiss(0.3, { vol: 0.03, filter: "highpass", freq: 6000, sweep: 9000, attack: 0.02 });
     },
     static: () => hiss(0.18, { vol: 0.09, freq: 1200, q: 0.6 }),
-    power: () => { tone(900, 0.6, { vol: 0.07, slide: 40 }); hiss(0.2, { vol: 0.07, filter: "lowpass", freq: 1500 }); },
+    // 画面が消える「ぴちゅん」：高い音が一瞬で落ち、短い残響だけ残る
+    power: () => {
+      tone(2600, 0.08, { vol: 0.06, slide: 700, attack: 0.002 });
+      tone(1400, 0.16, { vol: 0.035, at: 0.07, slide: 160, echo: 0.35 });
+      hiss(0.03, { vol: 0.05, filter: "highpass", freq: 5000 });
+    },
     boom: () => {
       tone(48, 2.2, { vol: 0.45, slide: 26 });
       hiss(1.4, { vol: 0.2, filter: "lowpass", freq: 1400, sweep: 90, echo: 0.3 });
@@ -1117,6 +1135,29 @@ let followBottom = true;
 $("term").addEventListener("scroll", () => {
   const t = $("term");
   followBottom = t.scrollHeight - t.scrollTop - t.clientHeight < 40;
+  // さかのぼって読んでいるときだけ「↓ 最新へ」を出す
+  $("toBottom").classList.toggle("show", !followBottom);
+});
+$("toBottom").addEventListener("click", e => {
+  e.stopPropagation();
+  SFX.select();
+  $("term").scrollTo({ top: $("term").scrollHeight, behavior: REDUCED ? "auto" : "smooth" });
+  focusCmd();
+});
+// 右の欄の手がかりを押すと、その EVIDENCE のカードが出たところへ飛ぶ
+$("evi").addEventListener("click", e => {
+  const item = e.target.closest("[data-clue]");
+  if (!item) return;
+  const card = [...out.querySelectorAll(".evi-card")].find(el => el.dataset.clue === item.dataset.clue);
+  if (!card) return;
+  SFX.select();
+  // カードがターミナルの真ん中に来るように（下に固定した入力欄の分も考える）
+  const t = $("term"), view = t.clientHeight - $("dock").offsetHeight;
+  const top = card.getBoundingClientRect().top - t.getBoundingClientRect().top + t.scrollTop - (view - card.offsetHeight) / 2;
+  t.scrollTo({ top: Math.max(0, top), behavior: REDUCED ? "auto" : "smooth" });
+  card.classList.remove("focus");
+  void card.offsetWidth;
+  card.classList.add("focus");
 });
 if (window.ResizeObserver) {
   const ro = new ResizeObserver(() => { if (followBottom) scrollDown(); });
@@ -1288,7 +1329,7 @@ async function powerOff() {
   $("wrap").classList.remove("glitch", "unstable");
   $("wrap").classList.add("crt-off");
   document.body.classList.remove("red", "blue");
-  await sleep(850);
+  await sleep(320);
 }
 
 // 兄のプログラムの伏線：ときどき「送信エラー」が一瞬だけ出る
@@ -1342,11 +1383,11 @@ function updateClueCount() {
 
 // 右の欄：CASE（全体の目標）→ MISSION（任務の目的）→ 済んだ目標 → ▶ 今の目標と、その手がかり → 気になること
 function renderObjectives(fresh) {
+  const li = (cls, html, clue) => `<li class="${cls}"${clue ? ` data-clue="${esc(clue)}" title="押すと、見つけた場所へ飛ぶ"` : ""}>${html}</li>`;
   const box = $("evi");
-  const li = (cls, html) => `<li class="${cls}">${html}</li>`;
   // 見つけた手がかりだけを並べる（まだの分を「？？？」で先に見せることはしない）
   const clueItems = o => (o.clues || []).filter(c => state.clues.includes(c))
-    .map(c => li(`o-clue${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`)).join("");
+    .map(c => li(`o-clue jump${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`, c)).join("");
   let html = "";
   if (S.caseGoal && CH?.objective) html += li("o-sec", "CASE") + li("o-case", esc(S.caseGoal));
   if (CH?.objective) html += li("o-sec", "MISSION") + li("o-mission", esc(CH.objective));
@@ -1374,7 +1415,7 @@ function renderObjectives(fresh) {
   // 見つけてはいるが、まだ出ていない目標の手がかり
   const shown = new Set([...mains.slice(0, state.objIdx + 1), ...sideObjs()].flatMap(x => x.clues || []));
   const extra = state.clues.filter(c => !shown.has(c));
-  if (extra.length) html += li("o-sec", "MEMO") + extra.map(c => li(`o-clue${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`)).join("");
+  if (extra.length) html += li("o-sec", "MEMO") + extra.map(c => li(`o-clue jump${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`, c)).join("");
   for (const s of sideObjs()) {
     if (!objCount(s)) continue;   // ひとつも見つけていない「気になること」は、まだ出さない
     html += li("o-sec o-side", `？ ${esc(s.text)}<span class="o-n">${objCount(s)}/${s.clues.length}</span>`) + clueItems(s);
@@ -1415,7 +1456,7 @@ function addClue(label) {
   // カードの数字は「その目標の手がかり n / N」（目標のない手がかりは任務全体の数）
   const o = objOf(label), total = countClues(CH);
   const n = o ? `${esc(o.text)}　${objCount(o)} / ${o.clues.length}` : total ? `${state.clues.length} / ${total}` : "";
-  print(`<div class="evi-card"><span class="evi-tag">EVIDENCE</span><span>${esc(label)}</span>`
+  print(`<div class="evi-card" data-clue="${esc(label)}"><span class="evi-tag">EVIDENCE</span><span>${esc(label)}</span>`
     + (n ? `<span class="evi-n">${n}</span>` : "") + `</div>`, "evidence");
   SFX.evidence();
 }
