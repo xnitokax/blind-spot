@@ -731,16 +731,18 @@ const SFX = (() => {
       [2637, 3520, 4699].forEach((f, i) => tone(f, 0.35, { vol: 0.025, at: i * 0.045, echo: 0.45, attack: 0.003 }));
       hiss(0.12, { vol: 0.02, filter: "highpass", freq: 7000, attack: 0.005 });
     },
-    // タイトル：細い光の線が伸びる、澄んだ「シュン」
+    // タイトル（起動）：低いうなりが下からせり上がってくる。高い音は使わない
     titleLine: () => {
-      tone(900, 0.5, { vol: 0.03, slide: 2400, attack: 0.05, echo: 0.4 });
-      hiss(0.45, { vol: 0.03, freq: 2000, sweep: 6000, q: 0.8, attack: 0.1 });
+      tone(38, 0.7, { vol: 0.22, slide: 78, attack: 0.18 });
+      tone(76, 0.7, { type: "sawtooth", filter: 380, vol: 0.05, slide: 156, attack: 0.25 });
+      hiss(0.6, { vol: 0.05, filter: "lowpass", freq: 120, sweep: 900, q: 0.7, attack: 0.3 });
     },
-    // タイトル：文字が開くときの、低く温かい音のふくらみ
+    // タイトル：文字が開くとき。低い「ドン」と、温かい低音の和音がふくらんで残る
     titleOpen: () => {
-      tone(55, 1.8, { vol: 0.18, slide: 52, attack: 0.5 });
-      tone(110, 1.5, { vol: 0.04, attack: 0.6, echo: 0.3 });
-      tone(1760, 1.2, { vol: 0.01, at: 1.0, echo: 0.6, attack: 0.02 });
+      tone(62, 0.6, { vol: 0.3, slide: 40, attack: 0.005 });
+      hiss(0.12, { vol: 0.06, filter: "lowpass", freq: 600, attack: 0.003 });
+      tone(110, 1.8, { vol: 0.045, attack: 0.35, echo: 0.3 });
+      tone(165, 1.6, { vol: 0.022, at: 0.08, attack: 0.45, echo: 0.3 });
     },
     // 南京錠が閉まる「ガチャッ」：低い衝撃と、金属の小さな響き
     lock: () => {
@@ -2673,9 +2675,9 @@ async function boot(autoCode) {
     const logo = print(`<div class="title-logo" data-text="${t}"><span class="tl-text">${styled}</span>`
       + `<span class="tl-shine" aria-hidden="true">${t}</span><span class="tl-noise"></span><span class="tl-line"></span></div>`
       + `<div class="subtitle">ANON-NET TERMINAL</div>`);
-    SFX.titleLine();     // 0秒：細い光の線が伸びる「シュン」
+    SFX.titleLine();     // 0秒：光の線が伸びる。低いうなりがせり上がる（起動）
     await wait(450);
-    SFX.titleOpen();     // 0.45秒：文字が開く。低く温かい音がふくらむ
+    SFX.titleOpen();     // 0.45秒：文字が開く。低い「ドン」と温かい和音
     await wait(1900);    // 2.35秒：副題まで出そろう
     titleNoise(logo.querySelector(".title-logo"));
     for (const l of ["[ ok ] kernel modules", "[ ok ] tor client  3 guards", "[ ok ] relay  uzu://safehouse … online"]) {
