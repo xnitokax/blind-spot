@@ -367,7 +367,6 @@
   #evi .o-done { color: var(--dim); }
   #evi .o-done::before { content: "✔ "; color: var(--accent); }
   #evi .o-now { color: var(--warn); border: 1px solid rgba(255,193,77,.4); border-radius: 3px; padding: 3px 6px; margin-top: 4px; background: rgba(255,193,77,.06); }
-  #evi .o-now .o-tag { background: var(--warn); color: var(--bg); padding: 0 4px; margin-right: 6px; font-size: 10px; letter-spacing: .1em; }
   #evi .o-n { float: right; color: var(--dim); }
   #evi .o-clue { padding-left: 1.2em; text-indent: -1.2em; border-bottom: 0; }
   #evi .o-clue.miss { color: var(--dim); opacity: .6; }
@@ -1349,7 +1348,7 @@ function renderObjectives(fresh) {
   });
   const o = nowObj();
   if (o) {
-    html += li("o-now", `<span class="o-tag">NOW</span>${esc(o.text)}${o.clues?.length ? `<span class="o-n">${objCount(o)}/${o.clues.length}</span>` : ""}`);
+    html += li("o-now", `${esc(o.text)}${o.clues?.length ? `<span class="o-n">${objCount(o)}/${o.clues.length}</span>` : ""}`);
     html += clueItems(o);
   }
   // 見つけてはいるが、まだ出ていない目標の手がかり

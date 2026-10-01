@@ -22,7 +22,7 @@
 //           noiseStop のノードを訪れると止まる
 //    start: 最初のノード
 //    objective: 任務開始のカードに出る「目的」
-//    objectives: 任務の中の小さな目標（右の欄に「▶ NOW」として出る）。上から順に1つずつ進む
+//    objectives: 任務の中の小さな目標（右の欄に黄色の枠で出る）。上から順に1つずつ進む
 //           { text, clues: [手がかりの名前...], until: { opened: ノードid } | { visited: ノードid } | { clue: 手がかりの名前 } | { goal: true } }
 //           until を満たすと「OBJECTIVE CLEAR」→ 次の目標へ。clues は、その目標のための手がかり（n / N で数える）
 //           side: true の目標は、本筋とは別の「気になること」として、いつも一番下に出る
