@@ -1116,8 +1116,17 @@ const titlePrompt = () => `${who()}@safehouse:~$`;
 let fast = false; // 演出の早送り中
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-// 早送りできる待ち時間。任務ごとのテンポ（tempo）を掛ける：任務2は 0.65 で駆け抜ける
-const wait = ms => sleep(fast ? Math.min(ms, 30) : ms * (CH?.tempo ?? 1));
+// 早送りできる待ち時間。任務ごとのテンポ（tempo）を掛ける
+const wait = ms => sleep(fast ? Math.min(ms, 30) : ms * curTempo());
+// tempo：数字ならずっとその速さ。{ from, to, over } なら、打ったコマンドの数に合わせて from → to へだんだん速くなる
+// （任務2は、最初は普通の速さで始まり、実行を重ねるほど演出が速くなって、駆け抜ける感じになる）
+function curTempo() {
+  const t = CH?.tempo;
+  if (t == null) return 1;
+  if (typeof t === "number") return t;
+  const p = Math.min(1, (state?.cmdLog?.length ?? 0) / t.over);
+  return t.from + (t.to - t.from) * p;
+}
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const lower = s => String(s).normalize("NFKC").toLowerCase();
 const pickOne = s => s[Math.floor(Math.random() * s.length)];

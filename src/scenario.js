@@ -786,10 +786,10 @@ const SCENARIO = {
       route: ["uzu://safehouse", "tor-entry.anon", "tor-relay-19.anon", "tor-relay-02.anon", "tor-exit-jp.anon", "vpn.teiwa.local"],
       noise: true,
       // 任務2は「考えずに、スピード感でシステムを楽しむ」任務（任務1で疲れているので）
-      //   tempo … 演出の間を短くする（1 が標準）
+      //   tempo … 演出の速さ（1 が標準）。{ from, to, over } で、打ったコマンドの数に合わせてだんだん速くなる
       //   nav   … どのシステムからでも、ほかのシステムへ直接移動できる
       //   next  … 師匠が言った「次の一手」。NEXT 欄の先頭に光るボタンで出て、押すだけで実行される
-      tempo: 0.65,
+      tempo: { from: 1, to: 0.5, over: 14 },   // 最初は普通の速さ → 14回打つころには倍の速さ
       nav: ["portal", "files", "nippo", "hr", "seek", "keiri", "jyoshi"],
       intro: [
         "[師匠] まずはお疲れさん。最初の仕事にしちゃ、やるじゃないか。",
