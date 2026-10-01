@@ -76,13 +76,26 @@ async function lockNode(cid, id, node) {
   if (lock.showLength) rest.len = [...[].concat(pass)[0]].length;
   if (lock.user && !Object.values(lock.user.ids).includes(lock.user.owner)) throw new Error(`${cid}/${id}: user.owner が user.ids のどれにも当てはまりません`);
   const text = JSON.stringify(secret);
-  const boxes = [];
-  for (const p of [].concat(pass)) {
+  const seal = async p => {
     const box = await NZ.lock(text, NZ.norm(p));
     if (await NZ.unlock(box, NZ.norm(p)) !== text) throw new Error(`${cid}/${id}: 復号テストに失敗`);
-    boxes.push(box);
+    return box;
+  };
+  const boxes = [];
+  for (const p of [].concat(pass)) boxes.push(await seal(p));
+  // owner 以外のアカウントのパスワード（user.pass）も、アカウントごとに暗号化して文字数だけ残す
+  if (lock.user?.pass) {
+    const { pass: userPass, ...user } = lock.user;
+    user.boxes = {};
+    user.lens = {};
+    for (const [account, p] of Object.entries(userPass)) {
+      if (!Object.values(lock.user.ids).includes(account)) throw new Error(`${cid}/${id}: user.pass の ${account} が user.ids にありません`);
+      user.boxes[account] = await seal(p);
+      if (lock.showLength) user.lens[account] = [...p].length;
+    }
+    rest.user = user;
   }
-  log(`  🔒 ${id}: 暗号化しました（パスワード ${boxes.length} 通り）`);
+  log(`  🔒 ${id}: 暗号化しました（パスワード ${boxes.length + Object.keys(lock.user?.pass || {}).length} 通り）`);
   return { host, title, lock: { ...rest, boxes } };
 }
 

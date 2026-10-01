@@ -1023,10 +1023,17 @@ async function openChapter(code) {
 }
 
 // 鍵付きノード：開けたら中身を合わせたノードを返す
-async function tryUnlock(node, input) {
-  const v = NZ.norm(input);
-  if ("pass" in node.lock) return [].concat(node.lock.pass).map(NZ.norm).includes(v) ? node : null;
-  for (const box of node.lock.boxes) {
+// account … ユーザーID がある鍵で、どのアカウントでログインしようとしているか
+//   owner は lock.pass（boxes）、ほかのアカウントは user.pass（ビルド後は user.boxes）で照合する
+async function tryUnlock(node, input, account) {
+  const v = NZ.norm(input), lock = node.lock, u = lock.user;
+  const isOwner = !u || account === u.owner;
+  if ("pass" in lock) {
+    const ok = isOwner ? [].concat(lock.pass) : [].concat(u.pass?.[account] || []);
+    return ok.map(NZ.norm).includes(v) ? node : null;
+  }
+  const boxes = isOwner ? lock.boxes : [u.boxes?.[account]].filter(Boolean);
+  for (const box of boxes) {
     const text = await NZ.unlock(box, v);
     if (text !== null) return { ...node, ...JSON.parse(text) };
   }
@@ -1465,7 +1472,9 @@ function disablePicks() {
 async function showNode() {
   disablePicks();
   const node = here();
-  const { html, links } = parseNode((node.body || "").replaceAll("{handle}", esc(who())));
+  // {login} … 鍵を開けたときのアカウント名（ほかのアカウントで入ると、その人の名前になる）
+  const login = state.loginAs?.[state.current] || node.login || "";
+  const { html, links } = parseNode((node.body || "").replaceAll("{handle}", esc(who())).replaceAll("{login}", esc(login)));
   state.links = links;
   const head = print(`<span class="host">▶ ssh://${esc(node.host)}</span>`, "node-head");
   await wait(BEAT.small);
@@ -1547,7 +1556,8 @@ async function showLockScreen(node, lock, len) {
   const lines = s => esc(s || "").replace(/\n/g, "<br>");
   const fields = [];
   if (lock.user) fields.push(`<span class="dim">${esc(lock.user.prompt || "ユーザーID")}</span><span>${lines(lock.user.hint)}</span>`);
-  if (len) fields.push(`<span class="dim">パスワード</span><span><span class="warn slots">${"_".repeat(len)}</span>（${len}文字）</span>`);
+  // ユーザーID がある鍵では、パスワードの文字数は ID が通ってから出す（アカウントごとに違うので）
+  if (len && !lock.user) fields.push(`<span class="dim">パスワード</span><span><span class="warn slots">${"_".repeat(len)}</span>（${len}文字）</span>`);
   // LOCKED が出て、掛け金が「ガチャッ」と閉まるのを見せてから、案内を読む順番に1つずつ出す
   SFX.alert();
   pulse($("wrap"), "shake", 450);
@@ -1561,7 +1571,13 @@ async function showLockScreen(node, lock, len) {
   await reveal(auth, `<div class="auth-notes">※ ${lock.prompt ? "間違えると" : "パスワードを間違えると"}トレースが上昇します<br>※ 何も入力せずに Enter（または back）で戻れます　<span class="n pick" data-cancel>[やめる]</span></div>`, BEAT.small);
 }
 // パスワードの文字数（showLength のときだけ見せる。公開データではビルド時に len を入れておく）
-const lockLen = lock => lock.showLength ? (lock.len ?? [...[].concat(lock.pass)[0]].length) : 0;
+// ユーザーID がある鍵では、アカウントごとに文字数が違う（owner 以外は user.lens）
+function lockLen(lock, account) {
+  if (!lock.showLength) return 0;
+  const u = lock.user;
+  if (u && account && account !== u.owner) return u.lens?.[account] ?? (u.pass?.[account] ? [...u.pass[account]].length : 0);
+  return lock.len ?? [...[].concat(lock.pass)[0]].length;
+}
 
 function askUser(id, opt) {
   const u = nodeOf(id).lock.user;
@@ -1579,7 +1595,7 @@ function askPass(id, opt, user) {
 }
 // 文字数を見せる鍵では、打った文字数を [5/17] のように出す
 function passPrompt() {
-  const m = state.mode, len = lockLen(nodeOf(m.id).lock);
+  const m = state.mode, len = lockLen(nodeOf(m.id).lock, m.user);
   setPrompt(len ? `${m.label} [${[...cmd.value].length}/${len}]:` : `${m.label}:`);
 }
 // ユーザーID を確かめる（大文字小文字・全角半角・空白は区別しない）
@@ -2365,6 +2381,24 @@ async function run(raw) {
       return askUser(mode.id, mode.opt);
     }
     SFX.enter();
+    // ユーザーID が通ってから、そのアカウントのパスワード欄（文字数）を見せる
+    state.mode = null;
+    await busy(async () => {
+      const len = lockLen(lock, r.account);
+      if (len) {
+        await wait(BEAT.small);
+        const f = print(`<div class="auth"></div>`).querySelector(".auth");
+        await reveal(f, `<div class="auth-fields"><span class="dim">パスワード</span><span><span class="warn slots">${"_".repeat(len)}</span>（${len}文字）</span></div>`, 300);
+      }
+      // 師匠のひとこと：手がかりがそろっていれば「行けそうか」、まだなら「長いな」（それぞれ一度だけ）
+      const say = lock.passSay;
+      if (say) {
+        const o = nowObj();
+        const ready = r.account === lock.user.owner && (!o?.clues?.length || o.clues.every(c => state.clues.includes(c)));
+        const key = `passSay:${mode.id}:${ready ? "ready" : "else"}`;
+        if (!state.said.has(key)) { state.said.add(key); await speak(ready ? say.ready : say.else, BEAT.small); }
+      }
+    });
     return askPass(mode.id, mode.opt, r.account);
   }
   if (mode?.type === "password") {
@@ -2380,9 +2414,8 @@ async function run(raw) {
       const anim = (async () => {
         while (!done) { line.textContent = `decrypting ${randHex(10)}`; SFX.tick(); await sleep(50); }
       })();
-      // ユーザーID がある鍵では、パスワードの持ち主の ID のときだけ照合する
-      const owner = !node.lock.user || mode.user === node.lock.user.owner;
-      const [result] = await Promise.all([owner ? tryUnlock(node, raw) : null, sleep(900)]);
+      // ユーザーID がある鍵では、そのアカウントのパスワードとだけ照合する
+      const [result] = await Promise.all([tryUnlock(node, raw, mode.user), sleep(900)]);
       done = true;
       await anim;
       line.remove();
@@ -2390,6 +2423,7 @@ async function run(raw) {
     });
     if (opened) {
       state.opened.set(mode.id, opened);
+      if (mode.user) (state.loginAs ??= {})[mode.id] = node.lock.user.names?.[mode.user];
       SFX.granted();
       pulse($("term"), "flash-ok", 600);
       print(panelHtml("unlock", "UNLOCKED", `ACCESS GRANTED ── ${esc(node.host)}`));
