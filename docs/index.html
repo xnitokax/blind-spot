@@ -49,6 +49,8 @@
   .line { white-space: pre-wrap; word-break: break-word; }
   .line.node { white-space: normal; }
   .echo { color: var(--fg); }
+  /* 自分が打ったコマンドの行：上に余白を入れて、あとから「ここで何をしたか」を見つけやすくする */
+  .line.echo { margin-top: 18px; }
   .echo .ps, .ps { color: var(--accent); }
   .dim { color: var(--dim); }
   .sys { color: var(--accent); }
@@ -81,6 +83,7 @@
   }
   .line.say + .line.say { margin-top: 0; }
   .line.say + .line:not(.say) { margin-top: 12px; }
+  .line.say + .line.echo { margin-top: 18px; } /* 師匠のセリフの後でも、自分が打った行の上は同じ余白に */
   .say .who { display: inline-block; width: 3.6em; text-indent: 0; color: var(--dim); }
   .say .who::before { content: "▸ "; color: var(--voice); }
   .noise { font-size: 12px; opacity: .85; }
