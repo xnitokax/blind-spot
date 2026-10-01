@@ -61,6 +61,17 @@ function check(cid, ch) {
     checkNext(id, node.next);
     for (const e of node.search?.entries || []) checkNext(`${id} の検索結果`, e.next);
     for (const n of node.search?.notes || []) checkNext(`${id} の検索の師匠のひとこと`, n.next);
+    // 裏で動く処理（job）：「次の一手」と、止まる場所（stopAt）があるか
+    const scripts = [...(node.search?.notes || []).map(n => n.script), ...(node.search?.entries || []).flatMap(e => [e.before, e.after]),
+      ...Object.values(node.actions || {}).map(a => a.script), node.scene, node.entry];
+    for (const x of scripts.flat().filter(Boolean)) {
+      if (!x.job) continue;
+      checkNext(`${id} の job`, x.job.next);
+      if (x.job.stopAt && !ch.nodes[x.job.stopAt]) ng(`${id} の job の stopAt「${x.job.stopAt}」というノードがありません`);
+    }
+    for (const d of node.detours || []) {
+      if (!d.cmd) ng(`${id} の寄り道（detours）に cmd がありません`);
+    }
     for (const d of node.dir || []) checkNext(`${id} のフォルダ ${d.name}`, d.next);
     for (const [k, a] of Object.entries(node.actions || {})) checkNext(`${id} のコマンド ${k}`, a.next);
   }
@@ -73,6 +84,7 @@ function check(cid, ch) {
     if (node.clue) clues.add(node.clue);
     for (const e of node.search?.entries || []) if (e.clue) clues.add(e.clue);
     for (const d of node.dir || []) if (d.clue) clues.add(d.clue);
+    for (const a of Object.values(node.actions || {})) for (const x of a.script || []) if (x?.clue) clues.add(x.clue);
   }
   for (const o of ch.objectives || []) {
     for (const c of o.clues || []) if (!clues.has(c)) ng(`目標「${o.text}」の手がかり「${c}」が、どこにもありません`);
@@ -130,7 +142,8 @@ async function build() {
     ch.id = cid;
     // 手がかりの総数（鍵付きノードの中身は暗号化すると数えられないので、先に数えておく）
     ch.clueTotal = Object.values(ch.nodes).reduce((n, node) => n + (node.clue ? 1 : 0)
-      + (node.search?.entries || []).filter(e => e.clue).length + (node.dir || []).filter(d => d.clue).length, 0);
+      + (node.search?.entries || []).filter(e => e.clue).length + (node.dir || []).filter(d => d.clue).length
+      + Object.values(node.actions || {}).flatMap(a => a.script || []).filter(x => x?.clue).length, 0);
     log(`■ ${cid}（${ch.label}）　手がかり ${ch.clueTotal} 個`);
     for (const [id, node] of Object.entries(ch.nodes)) {
       if (node.lock) ch.nodes[id] = await lockNode(cid, id, node);
