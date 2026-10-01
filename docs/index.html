@@ -735,10 +735,8 @@ const SFX = (() => {
     titleLine: () => {
       hiss(0.55, { vol: 0.07, freq: 300, sweep: 1400, q: 2.2, attack: 0.3, echo: 0.25 });
     },
-    // タイトル：文字が開くとき。低い「ドン」と、温かい低音の和音がふくらんで残る
+    // タイトル：文字が開くとき。温かい低音の和音がふくらんで残る（「ドン」の一撃はなし）
     titleOpen: () => {
-      tone(62, 0.6, { vol: 0.3, slide: 40, attack: 0.005 });
-      hiss(0.12, { vol: 0.06, filter: "lowpass", freq: 600, attack: 0.003 });
       tone(110, 1.8, { vol: 0.045, attack: 0.35, echo: 0.3 });
       tone(165, 1.6, { vol: 0.022, at: 0.08, attack: 0.45, echo: 0.3 });
     },
@@ -2675,7 +2673,7 @@ async function boot(autoCode) {
       + `<div class="subtitle">ANON-NET TERMINAL</div>`);
     SFX.titleLine();     // 0秒：光の線が伸びる。空気が流れるような「スゥッ」
     await wait(450);
-    SFX.titleOpen();     // 0.45秒：文字が開く。低い「ドン」と温かい和音
+    SFX.titleOpen();     // 0.45秒：文字が開く。温かい低音の和音がふくらむ
     await wait(1900);    // 2.35秒：副題まで出そろう
     titleNoise(logo.querySelector(".title-logo"));
     for (const l of ["[ ok ] kernel modules", "[ ok ] tor client  3 guards", "[ ok ] relay  uzu://safehouse … online"]) {
