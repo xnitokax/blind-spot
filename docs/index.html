@@ -50,7 +50,8 @@
   .line.node { white-space: normal; }
   .echo { color: var(--fg); }
   /* 自分が打ったコマンドの行：上に余白を入れて、あとから「ここで何をしたか」を見つけやすくする */
-  .line.echo { margin-top: 18px; }
+  .line.echo { margin-top: 29px; }
+  .line.echo.auto { margin-top: 4px; } /* 自動で流れる git のコマンドは、詰めて速く見せる */
   .echo .ps, .ps { color: var(--accent); }
   .dim { color: var(--dim); }
   .sys { color: var(--accent); }
@@ -68,6 +69,8 @@
   .doc p { margin: 4px 0; }
   .node p { margin: 6px 0; white-space: normal; }
   .log { background: #000; border: 1px solid var(--line); padding: 10px; overflow-x: auto; font-size: 13px; margin: 8px 0; white-space: pre; }
+  /* 人事DB で、ほかの記録にはない異質な項目（真壁の「対外表記」）：赤黒く浮かせる */
+  .log .odd { color: #c0344a; text-shadow: 0 0 8px rgba(160, 20, 40, .7); }
   .doc .log { margin: 4px 0; }
   .tlink { color: var(--accent); border-bottom: 1px dashed var(--accent); }
   .tag { color: var(--accent); }
@@ -83,7 +86,7 @@
   }
   .line.say + .line.say { margin-top: 0; }
   .line.say + .line:not(.say) { margin-top: 12px; }
-  .line.say + .line.echo { margin-top: 18px; } /* 師匠のセリフの後でも、自分が打った行の上は同じ余白に */
+  .line.say + .line.echo { margin-top: 29px; } /* 師匠のセリフの後でも、自分が打った行の上は同じ余白に */
   .say .who { display: inline-block; width: 3.6em; text-indent: 0; color: var(--dim); }
   .say .who::before { content: "▸ "; color: var(--voice); }
   .noise { font-size: 12px; opacity: .85; }
@@ -120,7 +123,12 @@
   /* 右の欄の手がかり：押すと、その EVIDENCE が出たところへ飛ぶ */
   #evi .o-clue.jump { cursor: pointer; }
   #evi .o-clue.jump:hover { text-decoration: underline; }
-  .evi-card.focus { animation: evidenceIn 1.6s ease-out; outline: 1px solid var(--warn); outline-offset: 2px; }
+  /* 飛んできたカード：枠が一瞬光って、すぐ消える（枠は残さない） */
+  .evi-card.focus { animation: eviFocus 1.2s ease-out; outline: 1px solid transparent; outline-offset: 2px; }
+  @keyframes eviFocus {
+    0%, 25% { outline-color: var(--warn); background: rgba(255,193,77,.3); }
+    100% { outline-color: transparent; background: transparent; }
+  }
   .dock.busy #next { opacity: .3; pointer-events: none; }
   #next { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; font-size: 13px; }
   #next:empty { display: none; }
@@ -1139,8 +1147,12 @@ $("term").addEventListener("scroll", () => {
 $("toBottom").addEventListener("click", e => {
   e.stopPropagation();
   SFX.select();
-  $("term").scrollTo({ top: $("term").scrollHeight, behavior: REDUCED ? "auto" : "smooth" });
-  focusCmd();
+  // 先に入力欄へ（スクロールさせずに）。スクロールのあとに focus すると、なめらかなスクロールが止まってしまう
+  if (finePointer) cmd.focus({ preventScroll: true });
+  const t = $("term");
+  t.scrollTo({ top: t.scrollHeight, behavior: REDUCED ? "auto" : "smooth" });
+  // なめらかなスクロールが途中で止められても、最後は必ずいちばん下へ
+  setTimeout(() => { if (t.scrollHeight - t.scrollTop - t.clientHeight > 40) t.scrollTop = t.scrollHeight; }, 700);
 });
 // 右の欄の手がかりを押すと、その EVIDENCE のカードが出たところへ飛ぶ
 $("evi").addEventListener("click", e => {
@@ -1423,6 +1435,12 @@ function renderObjectives(fresh) {
 
 // 目標が済んでいたら「OBJECTIVE CLEAR」→ 次の目標を出す（いくつか続けて済むこともある）
 async function checkObjectives() {
+  // 今の目標の手がかりが全部そろったら、師匠が次にやることを案内する（一度だけ）
+  const cur = nowObj();
+  if (cur?.ready && cur.clues?.length && !objDone(cur) && cur.clues.every(c => state.clues.includes(c))) {
+    const k = `ready:${cur.text}`;
+    if (!state.said.has(k)) { state.said.add(k); await speak(cur.ready, BEAT.react); }
+  }
   let cleared = false;
   while (nowObj() && objDone(nowObj())) {
     const o = nowObj();
@@ -1576,7 +1594,10 @@ async function connect(id, opt = {}) {
     const lock = node.lock, len = lockLen(lock);
     disablePicks();
     await busy(() => showLockScreen(node, lock, len));
-    if (!state.said.has("lock:" + id)) { state.said.add("lock:" + id); await speak(lock.say, BEAT.react); }
+    // 「この鍵を開ける」目標の手がかりがもうそろっているなら、「分からないな」という師匠の嘆きは言わない
+    const o = nowObj();
+    const ready = o?.until?.opened === id && o.clues?.length && o.clues.every(c => state.clues.includes(c));
+    if (!ready && !state.said.has("lock:" + id)) { state.said.add("lock:" + id); await speak(lock.say, BEAT.react); }
     if (lock.user) askUser(id, opt);
     else askPass(id, opt);
     return;
@@ -1619,7 +1640,7 @@ async function showLockScreen(node, lock, len) {
   await reveal(auth, `<div class="auth-need">認証が必要です。</div>`, 550);
   await reveal(auth, `<div class="auth-hint">${lines(lock.hint)}</div>`, 450);
   if (fields.length) await reveal(auth, `<div class="auth-fields">${fields.join("")}</div>`, 400);
-  await reveal(auth, `<div class="auth-notes">※ ${lock.prompt ? "間違えると" : "パスワードを間違えると"}トレースが上昇します<br>※ 何も入力せずに Enter（または back）で戻れます　<span class="n pick" data-cancel>[やめる]</span></div>`, BEAT.small);
+  await reveal(auth, `<div class="auth-notes">※ ${lock.prompt ? "間違えると" : "パスワードを間違えると"}トレースが上昇します<br>※ 何も入力せずに Enter で戻れます</div>`, BEAT.small);
 }
 // パスワードの文字数（showLength のときだけ見せる。公開データではビルド時に len を入れておく）
 // ユーザーID がある鍵では、アカウントごとに文字数が違う（owner 以外は user.lens）
@@ -1688,6 +1709,10 @@ async function search(arg) {
   if (!node.search) return print("search: ここには検索できるものがありません。", "dim");
   const q = arg.trim();
   const conf = node.search, limit = conf.limit ?? 3;
+  // 師匠のハンドルネームで検索すると、検索はせずに師匠がツッコむ
+  if (S.author?.handle && q && fold(q).replace(/\s+/g, "") === fold(S.author.handle)) {
+    return speak(["[師匠] それ俺じゃねーか。", "[師匠] ──おい、なんで俺のハンドルネーム知ってるんだ？"], BEAT.small);
+  }
   // 全体が言いかえに当たればそれを、当たらなければ言葉ごとに言いかえる
   const terms = fold(unalias(conf, q)).split(/\s+/).filter(Boolean).map(t => fold(unalias(conf, t)).replace(/\s+/g, "")).filter(Boolean);
   if (!terms.length) return print("使い方：search &lt;言葉&gt;（スペースで区切ると条件を重ねられます）", "dim");
@@ -1711,14 +1736,32 @@ async function search(arg) {
   });
 }
 
+// それらしい件数：記録の数と言葉の長さから決める（短い言葉ほど多くヒットする）。
+// 言葉から作った数で揺らすので、同じ言葉なら毎回同じ件数になる
+function plausibleTotal(conf, word) {
+  let h = 2166136261;
+  for (const c of word) h = Math.imul(h ^ c.codePointAt(0), 16777619) >>> 0;
+  const r = (h % 1000) / 1000;
+  const share = [0, 0.02, 0.004, 0.0009, 0.0002, 0.00006][Math.min([...word].length, 5)];
+  return Math.max(1, Math.round((conf.records ?? 10000) * share * (0.4 + r * 1.2)));
+}
+
 async function showResults(conf, q, terms, hits, shown, limit) {
   // 見せかけの総件数（totals）：その言葉1つだけで検索したときに、大企業らしい件数を出す
-  const key = Object.keys(conf.totals || {}).find(k => fold(k).replace(/\s+/g, "") === terms.join(""));
-  const total = hits.length ? Math.max(hits.length, key ? conf.totals[key] : 0) : 0;
+  const joined = terms.join("");
+  const key = Object.keys(conf.totals || {}).find(k => fold(k).replace(/\s+/g, "") === joined);
+  const exact = (conf.exact || []).some(w => fold(w).replace(/\s+/g, "") === joined);
+  let total = hits.length;
+  if (key) total = hits.length ? Math.max(hits.length, conf.totals[key]) : 0;
+  // fakeTotals：表にない言葉でも、それらしい件数にする
+  // （1〜2件しか見つからないときは、その件数のまま。「上位3件を表示」なのに1件しか出ない、を避ける）
+  else if (conf.fakeTotals && !exact && (hits.length === 0 || hits.length >= limit)) total = Math.max(hits.length, plausibleTotal(conf, joined));
+  // 何件かはあるが、目ぼしいものは1件もない（一覧は出さず、師匠がひとこと）
+  const nothing = !hits.length && total > 0;
   // 見出し：「何を探したか」を大きく、件数は小さく横に
-  print(`<div class="res-head${hits.length ? "" : " none"}"><span class="res-title">${esc(conf.label)} ─ 「${esc(q)}」</span>`
-    + `<span class="res-count">${hits.length ? `${total.toLocaleString()} 件${total > limit ? `（上位 ${limit} 件を表示）` : ""}` : "0 件"}</span></div>`);
-  if (!hits.length) print(esc(conf.empty || "該当するものはありません。"), "dim");
+  print(`<div class="res-head${total ? "" : " none"}"><span class="res-title">${esc(conf.label)} ─ 「${esc(q)}」</span>`
+    + `<span class="res-count">${total.toLocaleString()} 件${hits.length && total > limit ? `（上位 ${limit} 件を表示）` : ""}</span></div>`);
+  if (!total) print(esc(conf.empty || "該当するものはありません。"), "dim");
   // 結果は1件ずつ（解読しながら）出す
   await wait(BEAT.small);
   for (const e of shown) {
@@ -1746,6 +1789,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
       if ([].concat(n.when).some(w => terms.some(t => t.includes(fold(w))))) { state.said.add(key); lines.push(...n.say); }
     });
   }
+  if (nothing && !lines.length) lines.push("[師匠] この中に必要そうなものはなさそうだな。");
   await speak(lines, BEAT.react);
   await checkObjectives();
   if (goal) await runGoal(goal);
