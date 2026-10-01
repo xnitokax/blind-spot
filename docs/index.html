@@ -1082,8 +1082,8 @@ function updateNext() {
     chips = [chip("y", "y 進む", "ow"), chip("n", "n やめる")];
   } else if (state.current) {
     const node = here();
-    // 調べ終わったら、どこにいても一番左に save を出しておく
-    if (state.saveReady) chips.push(chip("save", "save 保存して引き上げる", "save"));
+    // 調べ終わったら、どこにいても一番左に return を出しておく
+    if (state.saveReady) chips.push(chip("return", "return 成果を持って帰る", "save"));
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
     for (const l of state.links) chips.push(chip(`ssh ${l.name}`, `ssh ${l.name}${l.oneway ? "（一方通行）" : ""}`, l.oneway ? "ow" : ""));
@@ -1357,8 +1357,8 @@ function renderObjectives(fresh) {
     html += li("o-now", `${esc(o.text)}${o.clues?.length ? `<span class="o-n">${objCount(o)}/${o.clues.length}</span>` : ""}`);
     html += clueItems(o);
   } else if (state.saveReady) {
-    // 調べ終わったら、最後の目標として save を案内する
-    html += li("o-now", "「save」で成果を保存する");
+    // 調べ終わったら、最後の目標として return を案内する
+    html += li("o-now", "「return」で成果を持って帰る");
   }
   // 見つけてはいるが、まだ出ていない目標の手がかり
   const shown = new Set([...mains.slice(0, state.objIdx + 1), ...sideObjs()].flatMap(x => x.clues || []));
@@ -1891,7 +1891,7 @@ async function runGoal(goal) {
   await showEnding(`${goal.report || ""}\n\n── ${goal.tag || "COMPLETE"}`, { cut, clues: !cut, todo: goal.todo });
 }
 
-// save 型の任務完了：師匠が締めたあとも探索を続けられ、「save」と打つと終わる
+// save 型の任務完了：師匠が締めたあとも探索を続けられ、「return」と打つと終わる
 async function readyToSave(goal) {
   state.saveReady = goal;
   await busy(async () => {
@@ -2036,7 +2036,7 @@ const COMMANDS = {
       ["search <言葉>", "検索できる場所で検索する（スペース区切りで条件を重ねる）"],
       ["cd <フォルダ名>", "ファイルサーバーでフォルダを移動する"],
       ["ls", "今いる場所の接続先をもう一度表示"],
-      ["save", "調べ終わったら、成果を保存して任務を終える"],
+      ["return", "調べ終わったら、成果を持って帰る（任務を終える）"],
       ["help", "この一覧"],
     ].map(([c, d]) => `<span class="n">${esc(c)}</span><span>${esc(d)}</span>`).join("");
     print(`<div class="ls">${rows}</div><span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中はクリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ ここでは cd が使えます" : ""}</span>`);
@@ -2088,9 +2088,13 @@ const COMMANDS = {
     await checkObjectives();
   },
   search,
-  save() {
-    if (!state.saveReady) return print("save: まだ保存するものがありません。調べ終わってから保存しよう。", "dim");
-    return saveAndEnd();
+  // 調べ終わったら、成果を持って帰る（git commit / push が流れて完了画面へ）
+  async "return"() {
+    if (state.saveReady) return saveAndEnd();
+    // 師匠のいないエピローグでは、帰る場所もない
+    if (!CH.objectives?.length) return print("return: 帰る場所がありません。", "dim");
+    // 調べ終わる前に打つと、師匠に止められる
+    await speak(["[師匠] まだ帰ってくるな。", "[師匠] 成果もなにもないだろ。"], BEAT.small);
   },
   back() {
     if (!state.history.length) return print("back: これ以上戻れません。", "dim");
@@ -2429,7 +2433,7 @@ function complete() {
   let pool, prefix, head;
   if (m && /^ssh$/i.test(m[1])) pool = state.links.map(l => l.name);
   else if (m && /^cd$/i.test(m[1])) pool = node.dir ? node.dir.map(d => d.name) : state.links.map(l => l.name);
-  else if (!m && /^\s*\S*$/.test(v)) pool = ["ssh", "back", "help", "ls", ...(node.search ? ["search"] : []), ...(node.dir ? ["cd"] : []), ...(state.saveReady ? ["save"] : [])];
+  else if (!m && /^\s*\S*$/.test(v)) pool = ["ssh", "back", "help", "ls", ...(node.search ? ["search"] : []), ...(node.dir ? ["cd"] : []), ...(state.saveReady ? ["return"] : [])];
   else return;
   if (m) { prefix = m[2]; head = v.slice(0, v.length - prefix.length); }
   else { prefix = v.trim(); head = ""; }
