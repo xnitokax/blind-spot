@@ -113,6 +113,12 @@ const NIPPO_TOTALS = {
   "パスワード": 1377, "ユーザーID": 318, "情シス": 2894,
 };
 
+// 検索の言いかえ（日報・人事DB で共通）。ひらがな・カタカナ、長音（ー）のあるなしは、言いかえなしでも同じに扱う
+const SEARCH_ALIASES = {
+  "ユーザーID": ["userid", "user id", "ユーザーアイディー", "ユーザーアイディ", "ログインID", "社員ID"],
+  "パスワード": ["password", "pass", "pw", "pwd", "パス"],
+};
+
 const nippo = (date, who, text, opt = {}) => ({
   html: `<p class="meta">${date}　${who}</p>${text.trim().split("\n").map(l => `<p>${l.trim()}</p>`).join("")}`,
   ...opt,
@@ -316,6 +322,42 @@ const hrEntries = (m, goal) => [
 上長所見      電話対応に定評あり。勤怠システム切り替えの問い合わせを、一人でさばいた。
 </pre>`,
   },
+  // 同じ名前の別人（「あや」「さつき」で調べたときに、何人か引っかかるように）
+  {
+    html: `<p class="meta">社員番号 T-170401</p>
+<p><b>村井 あやか</b>（むらい あやか）　31歳</p>
+<pre class="log">
+所属（現在）  営業本部 第一営業部
+</pre>`,
+  },
+  {
+    html: `<p class="meta">社員番号 T-120401</p>
+<p><b>高橋 綾乃</b>（たかはし あやの）　36歳</p>
+<pre class="log">
+所属（現在）  広報部
+</pre>`,
+  },
+  {
+    html: `<p class="meta">社員番号 T-050401</p>
+<p><b>中野 あや</b>（なかの あや）　43歳</p>
+<pre class="log">
+所属（現在）  品質保証部
+</pre>`,
+  },
+  {
+    html: `<p class="meta">社員番号 T-100401</p>
+<p><b>岡本 さつき</b>（おかもと さつき）　39歳</p>
+<pre class="log">
+所属（現在）  総務部
+</pre>`,
+  },
+  {
+    html: `<p class="meta">社員番号 T-230401</p>
+<p><b>田辺 皐月</b>（たなべ さつき）　25歳</p>
+<pre class="log">
+所属（現在）  法務部
+</pre>`,
+  },
 ];
 
 // 人事DB で名前を調べたときの、師匠のひとこと（小ネタ。「人事部」でまとめて出たときは言わない）
@@ -488,6 +530,7 @@ const SCENARIO = {
             label: "人事DB",
             records: 38112,
             totals: { "人事部": 214 },
+            aliases: SEARCH_ALIASES,
             entries: hrEntries(1, {
               script: [
                 { wait: 800 },
@@ -519,6 +562,7 @@ const SCENARIO = {
             records: 1284550,
             // 「プロジェクト室」（2件だけ）と「鷲尾」（0件）は、件数そのものが手がかりなので付けない
             totals: NIPPO_TOTALS,
+            aliases: SEARCH_ALIASES,
             entries: NIPPO(1),
             notes: [
               { when: "人事部", say: ["[師匠] 日報にパスワードの情報を言ってるやつはいるもんだ。", "[師匠] この中で一番口が軽そうなのは誰だ？ 名前で検索し直してみろ。"] },
@@ -600,6 +644,7 @@ const SCENARIO = {
             records: 1284550,
             // 「プロジェクト室」（2件だけ）と「鷲尾」（0件）は、件数そのものが手がかりなので付けない
             totals: NIPPO_TOTALS,
+            aliases: SEARCH_ALIASES,
             entries: NIPPO(2),
             notes: [
               { when: "プロジェクト室", say: ["[師匠] たった2件か。5年もある部屋なのに。", "[師匠] 書いたのは室長。当たり障りのないことしか書いてないな。名前で調べてみるか。"] },
@@ -617,6 +662,7 @@ const SCENARIO = {
             label: "人事DB",
             records: 38112,
             totals: { "人事部": 214 },
+            aliases: SEARCH_ALIASES,
             entries: hrEntries(2),
             notes: [
               ...HR_NOTES,

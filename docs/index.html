@@ -1584,24 +1584,38 @@ function checkUser(lock, raw) {
 }
 
 // ---------------- 検索 ----------------
+// 検索用に文字をそろえる：全角・半角、大文字・小文字、ひらがな・カタカナ、長音（ー）のあるなしを区別しない
+// （「ゆーざーID」「ユーザID」でも「ユーザーID」が見つかる）
+const fold = s => lower(s).replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).replace(/ー/g, "");
+
 function searchText(e) {
   if (!e._text) {
     const box = document.createElement("div");
     box.innerHTML = e.html;
     box.querySelectorAll(".nosearch").forEach(el => el.remove());
-    e._text = lower(box.textContent + " " + (e.keys || ""));
+    e._text = fold(box.textContent + " " + (e.keys || ""));
   }
   return e._text;
+}
+
+// 言いかえ（aliases）：「userid」→「ユーザーID」のように、同じ意味の言葉を1つにまとめる
+function unalias(conf, s) {
+  const k = fold(s).replace(/\s+/g, "");
+  for (const [canon, list] of Object.entries(conf.aliases || {})) {
+    if ([canon, ...list].some(a => fold(a).replace(/\s+/g, "") === k)) return canon;
+  }
+  return s;
 }
 
 async function search(arg) {
   const node = here();
   if (!node.search) return print("search: ここには検索できるものがありません。", "dim");
   const q = arg.trim();
-  if (!q) return print("使い方：search &lt;言葉&gt;（スペースで区切ると条件を重ねられます）", "dim");
-
   const conf = node.search, limit = conf.limit ?? 3;
-  const terms = lower(q).split(/\s+/);
+  // 全体が言いかえに当たればそれを、当たらなければ言葉ごとに言いかえる
+  const terms = fold(unalias(conf, q)).split(/\s+/).filter(Boolean).map(t => fold(unalias(conf, t)).replace(/\s+/g, "")).filter(Boolean);
+  if (!terms.length) return print("使い方：search &lt;言葉&gt;（スペースで区切ると条件を重ねられます）", "dim");
+
   const hits = conf.entries.filter(e => terms.every(t => searchText(e).includes(t)));
   const shown = hits.slice(0, limit);
   state.minutes += 1;
@@ -1623,7 +1637,7 @@ async function search(arg) {
 
 async function showResults(conf, q, terms, hits, shown, limit) {
   // 見せかけの総件数（totals）：その言葉1つだけで検索したときに、大企業らしい件数を出す
-  const key = Object.keys(conf.totals || {}).find(k => NZ.norm(k) === NZ.norm(q));
+  const key = Object.keys(conf.totals || {}).find(k => fold(k).replace(/\s+/g, "") === terms.join(""));
   const total = hits.length ? Math.max(hits.length, key ? conf.totals[key] : 0) : 0;
   // 見出し：「何を探したか」を大きく、件数は小さく横に
   print(`<div class="res-head${hits.length ? "" : " none"}"><span class="res-title">${esc(conf.label)} ─ 「${esc(q)}」</span>`
@@ -1653,7 +1667,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
     (conf.notes || []).forEach((n, i) => {
       const key = `${state.current}:note${i}`;
       if (state.said.has(key)) return;
-      if ([].concat(n.when).some(w => terms.some(t => t.includes(NZ.norm(w))))) { state.said.add(key); lines.push(...n.say); }
+      if ([].concat(n.when).some(w => terms.some(t => t.includes(fold(w))))) { state.said.add(key); lines.push(...n.say); }
     });
   }
   await speak(lines, BEAT.react);
