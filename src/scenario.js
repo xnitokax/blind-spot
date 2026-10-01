@@ -110,6 +110,10 @@
 //            { doc: "HTML", hidden, clue } … 文書を1件出す（hidden は赤い文字）
 //            { breach: { host, steps: [...] } } … 守りの壁が崩れて ACCESS GRANTED（システムに入るときと同じ演出）
 //            { trail: { head, hops: [{ name, sub, note, tag, alert }], end } } … お金や回線の行き先を、1つずつたどっていく
+//            { worldmap: { head, nodes:[{name,x,y,tag}], mode:"connect"|"trace", ms, note } } … 世界地図（x,y は 0〜1）。
+//              connect … 回線が中継点をつないで世界を回る ／ trace … 赤い光が、自分へ向かって逆探知してくる（connect で置いた中継点を再利用できる）
+//            { bigtitle: { big, sub, ms } } … 物語の要になる言葉を、画面の真ん中に大きく出す（例：千里眼）
+//            { split: { theirs:[...], mine:[...], mineLabel, theirsLabel, ms } } … 画面を2つに割り、師匠の端末が裏で打つコマンドを見せる（行頭 $ はコマンド）
 //            { cctv: { feeds: [{ id, name, art, blink }], focus, note } } … 監視カメラを乗っ取って映像を並べ、左上から順にチェックしていく
 //              最後の focus のカメラで止まり、しばらく照合してから「ブー」と鳴る（focus は最後に並べる）
 //              labels: { check, ok, hit } … 照合中・ほかのカメラ・focus のカメラに出す文字
@@ -1051,6 +1055,21 @@ const SCENARIO = {
                 ],
                 // 師匠が勝手に走らせる（打つのは師匠の端末）。終わるのを待たずに、プレイヤーは動ける
                 script: [
+                  // 画面が2つに割れて、師匠の端末が見える（裏で打っているコマンド）
+                  { split: {
+                    mineLabel: "{handle}@hr", theirsLabel: "師匠@safehouse", ms: 240,
+                    mine: ['<span class="dim">＞ 待機中……師匠の作業を見ている</span>'],
+                    theirs: [
+                      "$ ssh -J tor safehouse",
+                      "[OK] 鍵を交換しました",
+                      "$ sudo escalate --level 5 --force &",
+                      "[!] 上位システム：認証を要求",
+                      "$ inject --token kernel --spoof",
+                      "[OK] トークンを偽装",
+                      "$ run --background job#4471",
+                      "[OK] バックグラウンドで実行開始",
+                    ],
+                  } },
                   { auto: "escalate --level 5 --force &", as: "師匠@safehouse:~$" },
                   "[*] [1] 4471  escalate --level 5 を、バックグラウンドで実行中",
                   "[師匠] 時間がかかる。終わるまで、お前はお前で何か考えとけ。",
@@ -1204,7 +1223,7 @@ const SCENARIO = {
                 } },
                 { clue: "12億円の裏金伝票（9/12 02:47 に更新）" },
                 "[師匠] 2026/09/12 の 02:47……。",
-                "[師匠] 兄貴が死んだ日の、深夜だ。",
+                "[師匠] 汐里さんの兄貴が死んだ、あの日の深夜だ。",
                 { wait: 600 },
                 "[師匠] 相手先は空欄……だが、金は消えない。必ずどこかに着地してる。追うぞ。",
               ],
@@ -1244,12 +1263,14 @@ const SCENARIO = {
           title: "第一信託銀行　ケイマン支店",
           body: `<p class="dim">＞ 海外の銀行。口座の中身と、取引の履歴が見られる。</p>`,
           entry: [
-            { trail: { head: "ROUTE ── 海の向こうへ", hops: [
-              { name: "keiri.teiwa.local", sub: "帝和HD 財務会計", note: "0ms" },
-              { name: "exit node jp-07", sub: "Tor の出口　大阪", tag: "TOR", note: "11ms" },
-              { name: "relay-fra-3", sub: "中継　ドイツ・フランクフルト", note: "148ms" },
-              { name: "relay-pty-1", sub: "中継　パナマ", note: "231ms" },
-              { name: "caymantrust.ky", sub: "第一信託銀行　英領ケイマン諸島", tag: "ONLINE", note: "264ms" },
+            "[師匠] 回線を、海の向こうまで引っぱる。しっかり掴まってろ。",
+            // 回線が世界をまたいで、ケイマンの銀行まで走る（この中継点を、あとの逆探知でも使う）
+            { worldmap: { head: "ROUTE ── 海の向こうへ", ms: 700, nodes: [
+              { name: "東京（自分）", x: 0.888, y: 0.302, tag: "YOU", lp: "nw" },
+              { name: "大阪 jp-07", x: 0.876, y: 0.307, tag: "TOR", lp: "sw" },
+              { name: "フランクフルト", x: 0.524, y: 0.221, lp: "ne" },
+              { name: "パナマ", x: 0.279, y: 0.45, lp: "se" },
+              { name: "ケイマン", x: 0.274, y: 0.393, tag: "BANK", lp: "nw" },
             ] } },
             { breach: { host: "caymantrust.ky", steps: ["bypass offshore firewall", "spoof SWIFT terminal", "hook HSM key exchange", "mount account ledger"] } },
           ],
@@ -1276,27 +1297,27 @@ const SCENARIO = {
                 "[師匠] 入れてるのは帝和だけじゃない。カメラの会社に、通信の会社……。",
                 "[師匠] 出ていく先は、北海道のデータセンター。",
                 "[師匠] そして、届出の住所は霞が関。……役所の街だ。",
-                { wait: 400 },
+                { wait: 600 },
                 { flash: true },
-                "[!] 第一信託銀行：不正なアクセスを検知 ── 口座 SRG を凍結します",
-                { trace: 62, ms: 1600 },
-                "[師匠] ……見つかった。凍結される前に、履歴だけ抜くぞ。",
-                { auto: "dump --account SRG --history > srg.csv" },
+                { impact: 0.9 },
+                "[!] 第一信託銀行：不正アクセスを検知",
+                "[!] セキュリティが、接続元の逆探知を開始しました",
+                "[師匠] ……まずい。向こうが気づいた。",
+                "[師匠] こっちの回線を、逆から手繰ってきてやがる。",
+                // たどってきた経路を、赤い光が自分へ向かって遡ってくる（世界地図を再利用）
+                { worldmap: { mode: "trace", ms: 600, head: "TRACE ── 接続元を逆探知", note: "日本まで、あと1ホップ ── 回線を切れ" } },
+                "[!] 逆探知：接続元まで、あと1ホップ",
+                "[師匠] 日本に着いたら、俺たちの居場所がバレる。急げ、{handle}！",
+                "[師匠] 口座が凍る前に履歴だけ抜いて、来た道の足跡を全部消す。一気にやるぞ！",
+                { auto: "dump --account SRG --history > srg.csv && wipe --route --all" },
                 { race: { label: "口座の凍結まで", ms: 3200 } },
+                "[!] 口座 SRG は凍結されました",
                 { hex: 6 },
-                "[+] 取引の履歴をコピーしました（srg.csv）",
+                "[+] 取引の履歴は、凍結の直前に確保（srg.csv）",
+                "[+] 来た道の足跡を消去 ── 逆探知を断ち切りました",
+                "[師匠] ……ふぅ。間一髪だ。回線を切るぞ。",
               ],
-              next: { at: "bank", cmd: "wipe --trail --all", why: "銀行に残った足跡を消す。これ以上、ここまでたどられないように" },
-            },
-            // 足跡を消す。上がった TRACE は下がらない（ここまで来たことは、もう知られている）
-            "wipe --trail --all": {
-              script: [
-                { shred: 9 },
-                "[+] 足跡を消しました ── これ以上はたどられません",
-                "[師匠] 消せるのは、ここから先の足跡だけだ。見つかったことは、もう消せない。",
-                "[師匠] 長居は無用だ。……次は、誰が伝票を書き換えたのか。情シスの変更ログで洗う。",
-              ],
-              next: { at: "jyoshi", cmd: "search 09/12", go: "伝票は兄が死んだ夜に書きかえられた。変更ログへ", why: "兄が死んだ夜に、社内で何が変えられたのかを洗う" },
+              next: { at: "jyoshi", cmd: "search 09/12", go: "危ない橋だった。社内に戻って、変更ログを洗う", why: "兄が死んだ夜に、社内で何が変えられたのかを洗う" },
             },
           },
         },
@@ -1342,22 +1363,30 @@ const SCENARIO = {
                 ],
                 decodeMs: 2600,
                 hold: 3000,   // 復元した中身を読めるように、出しきってから3秒あける
-                html: `<pre class="log">2026/09/12 02:47:13  keiri.ledger      伝票 #88412  摘要を変更  by svc_maint（特権アカウント）
+                html: `<pre class="log reveal-diff">2026/09/12 02:47:13  keiri.ledger      伝票 #88412  摘要を変更  by svc_maint（特権アカウント）
 
-  <span class="alert">- 変更前：千里眼（SENRIGAN）計画 予算
-            「本件は国家治安庁の特命事業である。
+  <span class="alert">- 変更前：<span class="kw">千里眼（SENRIGAN）計画</span> 予算
+            「本件は<span class="kw">国家治安庁の特命事業</span>である。
               関係者は、事業の内容および予算の出所について、
               いかなる場合も口外してはならない。 ―― 国家治安庁 長官官房」
-            誰か、これを見つけてくれ。 M.M</span>
+            <span class="hand">誰か、これを見つけてくれ。 ―― M.M</span></span>
   <span class="sys">+ 変更後：調査委託費</span></pre>`,
                 goal: {
                   script: [
-                    { wait: 900 },
-                    "[師匠] ……消される前の文言だ。「国家治安庁の特命事業」。政府が関わってるのは、これで確定だな。",
-                    "[師匠] M.M ……真壁 湊。兄貴だ。誰かに気づいてほしくて、裏金の行に書き込んだんだ。",
-                    "[師匠] そして死んだその夜に、消された。",
-                    "[師匠] 千里眼（SENRIGAN）。名前のなかったフォルダ……あれの名前だろう。",
-                    "[師匠] 12億の行き先の「SRG」も、SENRIGAN の頭文字ってわけだ。",
+                    { wait: 1800 },
+                    "[師匠] ……消される前の、本当の摘要だ。",
+                    { wait: 1200 },
+                    "[師匠] 「国家治安庁の特命事業」。……政府が裏にいる。これで確定だ。",
+                    { wait: 1400 },
+                    "[師匠] そして──",
+                    { bigtitle: { big: "千里眼", sub: "SENRIGAN ── 国家治安庁の特命事業" } },
+                    "[師匠] 名前のなかった、あのフォルダ。……これが、その名前だ。",
+                    { wait: 1000 },
+                    "[師匠] 12億の行き先の「SRG」も、千里眼（SENRIGAN）の頭文字ってわけか。",
+                    { wait: 1200 },
+                    "[師匠] 「誰か、これを見つけてくれ。 M.M」……真壁 湊。汐里さんの兄貴だ。",
+                    "[師匠] 誰かに気づいてほしくて、裏金の行に、命がけで書き残した。",
+                    "[師匠] そして、書き込んだその夜に、消された。",
                     "[師匠] 調べたいことは調べたな。一度、持ち帰ってこい。",
                     "[師匠] 気が済んだら「return」だ。",
                   ],
