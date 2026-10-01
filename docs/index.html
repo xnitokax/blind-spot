@@ -1688,7 +1688,7 @@ function askUser(id, opt) {
 function askPass(id, opt, user) {
   const lock = nodeOf(id).lock;
   state.mode = { type: "password", id, opt, user, label: lock.prompt || "password" };
-  cmd.type = lock.prompt ? "text" : "password";
+  cmd.type = "text";   // パスワードも隠さずに見せる（推理しながら打つので、打った文字が見えたほうがいい）
   passPrompt();
   focusCmd();
 }
@@ -2528,7 +2528,7 @@ async function run(raw) {
     if (quit) return cancelAuth();
     state.mode = null;
     const node = nodeOf(mode.id);
-    const shown = node.lock.prompt ? esc(raw) : "*".repeat([...raw].length);
+    const shown = esc(raw);   // パスワードも伏せ字にしない
     print(`<span class="ps">${esc(mode.label)}:</span> ${shown}`, "echo");
     // 照合中の演出（復号が終わるまで、鍵がくるくる回る）
     const opened = await busy(async () => {
