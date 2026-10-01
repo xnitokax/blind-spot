@@ -355,10 +355,36 @@
   #log li, #evi li { color: var(--dim); border-bottom: 1px dotted var(--line); padding: 2px 0; }
   #log li.bad { color: var(--alert); }
   #log li.ow { color: var(--warn); }
-  #evi { list-style: none; padding: 0; margin: 0; font-size: 12px; max-height: 30vh; overflow-y: auto; }
+  #evi { list-style: none; padding: 0; margin: 0; font-size: 12px; max-height: 42vh; overflow-y: auto; }
   #evi li { color: var(--warn); }
   #evi li.new { animation: evidenceIn 1.6s ease-out; }
   .evi-head { display: flex; justify-content: space-between; }
+  /* 右の欄の目標：全体の目標 → 任務の目的 → 済んだ目標 → 今の目標（＋手がかり） → 気になること */
+  #evi .o-sec { color: var(--dim); font-size: 10px; letter-spacing: .3em; margin-top: 8px; border: 0; padding: 0; }
+  #evi .o-sec:first-child { margin-top: 0; }
+  #evi .o-case { color: var(--fg); border: 0; padding: 0 0 2px; }
+  #evi .o-mission { color: var(--fg); opacity: .75; border: 0; padding: 0 0 2px; }
+  #evi .o-done { color: var(--dim); }
+  #evi .o-done::before { content: "✔ "; color: var(--accent); }
+  #evi .o-now { color: var(--warn); border: 1px solid rgba(255,193,77,.4); border-radius: 3px; padding: 3px 6px; margin-top: 4px; background: rgba(255,193,77,.06); }
+  #evi .o-now .o-tag { background: var(--warn); color: var(--bg); padding: 0 4px; margin-right: 6px; font-size: 10px; letter-spacing: .1em; }
+  #evi .o-n { float: right; color: var(--dim); }
+  #evi .o-clue { padding-left: 1.2em; text-indent: -1.2em; border-bottom: 0; }
+  #evi .o-clue.miss { color: var(--dim); opacity: .6; }
+  #evi .o-side { color: var(--voice); margin-top: 4px; }
+  #evi .o-side ~ .o-clue:not(.miss) { color: var(--voice); }
+
+  /* 目標の達成・次の目標（ターミナルに出るカード） */
+  .obj-card {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: fit-content; max-width: 100%;
+    margin: 10px 0; padding: 5px 14px 5px 5px; border: 1px solid rgba(61,255,168,.45); border-radius: 3px;
+    background: linear-gradient(90deg, rgba(61,255,168,.1), transparent 80%); animation: cardIn .5s ease-out; white-space: normal;
+  }
+  .obj-card .o-tag { background: var(--accent); color: var(--bg); padding: 0 6px; font-size: 12px; letter-spacing: .14em; text-shadow: none; }
+  .obj-card.next { border-color: rgba(255,193,77,.5); background: linear-gradient(90deg, rgba(255,193,77,.08), transparent 80%); }
+  .obj-card.next .o-tag { background: var(--warn); }
+  .obj-card .o-text { color: var(--fg); letter-spacing: .06em; }
+  .obj-card.clear .o-text { color: var(--accent); }
 
   .flash { animation: flash .5s 2; }
   @keyframes flash { 50% { background: #3a0a12; } }
@@ -534,7 +560,7 @@
     <div class="bar"><i id="traceBar"></i></div>
     <h2>ACCESS LOG</h2>
     <ul id="log"></ul>
-    <h2 class="evi-head"><span>EVIDENCE</span><span id="eviCount"></span></h2>
+    <h2 class="evi-head"><span>CASE FILE</span><span id="eviCount"></span></h2>
     <ul id="evi"></ul>
   </aside>
 </div>
@@ -712,6 +738,12 @@ const SFX = (() => {
       tone(110, 0.25, { vol: 0.1 });
       tone(1318, 1.1, { vol: 0.035, echo: 0.6, attack: 0.005 });
       tone(1975, 1.0, { vol: 0.02, at: 0.07, echo: 0.6 });
+    },
+    // 目標の達成：低い一打のあと、澄んだ音が3つ上がっていく（ラ → ミ → ラ）
+    objective: () => {
+      tone(82, 0.5, { vol: 0.16, slide: 60 });
+      [880, 1318, 1760].forEach((f, i) => tone(f, 0.9, { vol: 0.03, at: 0.06 + i * 0.09, echo: 0.5, attack: 0.004 }));
+      hiss(0.3, { vol: 0.03, filter: "highpass", freq: 6000, sweep: 9000, attack: 0.02 });
     },
     static: () => hiss(0.18, { vol: 0.09, freq: 1200, q: 0.6 }),
     power: () => { tone(900, 0.6, { vol: 0.07, slide: 40 }); hiss(0.2, { vol: 0.07, filter: "lowpass", freq: 1500 }); },
@@ -1268,21 +1300,102 @@ function countClues(ch) {
   }
   return n;
 }
-function updateClueCount() {
-  const total = CH ? countClues(CH) : 0;
-  $("eviCount").textContent = total ? `${state.clues.length}/${total}` : "";
+// ---------------- 目標（objectives） ----------------
+// 任務の中の小さな目標を、上から順に1つずつ進める（書き方は src/scenario.js の先頭を参照）
+const mainObjs = () => (CH?.objectives || []).filter(o => !o.side);
+const sideObjs = () => (CH?.objectives || []).filter(o => o.side);
+const nowObj = () => mainObjs()[state.objIdx] || null;
+const objCount = o => (o.clues || []).filter(c => state.clues.includes(c)).length;
+// その手がかりが、どの目標のものか（今の目標・済んだ目標・気になること のうち、見えているものだけ）
+function objOf(label) {
+  return [...mainObjs().slice(0, state.objIdx + 1), ...sideObjs()].find(o => (o.clues || []).includes(label)) || null;
 }
+function objDone(o) {
+  const u = o.until || {};
+  if (u.opened) return state.opened.has(u.opened);
+  if (u.visited) return state.visited.has(u.visited);
+  if (u.clue) return state.clues.includes(u.clue);
+  return false;   // goal は任務完了のときに済ませる
+}
+
+function updateClueCount() {
+  const o = nowObj();
+  const total = CH ? countClues(CH) : 0;
+  $("eviCount").textContent = o?.clues?.length ? `${objCount(o)}/${o.clues.length}` : total ? `${state.clues.length}/${total}` : "";
+  renderObjectives();
+}
+
+// 右の欄：CASE（全体の目標）→ MISSION（任務の目的）→ 済んだ目標 → ▶ 今の目標と、その手がかり → 気になること
+function renderObjectives(fresh) {
+  const box = $("evi");
+  const li = (cls, html) => `<li class="${cls}">${html}</li>`;
+  const clueItems = o => (o.clues || []).map(c => state.clues.includes(c)
+    ? li(`o-clue${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`) : li("o-clue miss", "◇ ？？？")).join("");
+  let html = "";
+  if (S.caseGoal && CH?.objective) html += li("o-sec", "CASE") + li("o-case", esc(S.caseGoal));
+  if (CH?.objective) html += li("o-sec", "MISSION") + li("o-mission", esc(CH.objective));
+  if (!CH?.objectives?.length) {
+    // 目標のない任務（エピローグなど）は、手がかりを新しい順に並べるだけ
+    if (state.clues.length) html += li("o-sec", "EVIDENCE") + [...state.clues].reverse().map(c => li(c === fresh ? "new" : "", esc(c))).join("");
+    box.innerHTML = html;
+    return;
+  }
+  const mains = mainObjs();
+  html += li("o-sec", "OBJECTIVE");
+  mains.slice(0, state.objIdx).forEach(o => {
+    html += li("o-done", `${esc(o.text)}${o.clues?.length ? `<span class="o-n">${objCount(o)}/${o.clues.length}</span>` : ""}`);
+  });
+  const o = nowObj();
+  if (o) {
+    html += li("o-now", `<span class="o-tag">NOW</span>${esc(o.text)}${o.clues?.length ? `<span class="o-n">${objCount(o)}/${o.clues.length}</span>` : ""}`);
+    html += clueItems(o);
+  }
+  // 見つけてはいるが、まだ出ていない目標の手がかり
+  const shown = new Set([...mains.slice(0, state.objIdx + 1), ...sideObjs()].flatMap(x => x.clues || []));
+  const extra = state.clues.filter(c => !shown.has(c));
+  if (extra.length) html += li("o-sec", "MEMO") + extra.map(c => li(`o-clue${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`)).join("");
+  for (const s of sideObjs()) {
+    if (!objCount(s)) continue;   // ひとつも見つけていない「気になること」は、まだ出さない
+    html += li("o-sec o-side", `？ ${esc(s.text)}<span class="o-n">${objCount(s)}/${s.clues.length}</span>`) + clueItems(s);
+  }
+  box.innerHTML = html;
+}
+
+// 目標が済んでいたら「OBJECTIVE CLEAR」→ 次の目標を出す（いくつか続けて済むこともある）
+async function checkObjectives() {
+  let cleared = false;
+  while (nowObj() && objDone(nowObj())) {
+    const o = nowObj();
+    state.objIdx++;
+    await wait(cleared ? 300 : BEAT.small);
+    cleared = true;
+    SFX.objective();
+    print(`<div class="obj-card clear"><span class="o-tag">OBJECTIVE CLEAR</span><span class="o-text">${esc(o.text)}</span></div>`);
+    addLog(`CLEAR  ${o.text}`);
+    updateClueCount();
+  }
+  if (cleared && nowObj()) {
+    await wait(700);
+    showObjective(nowObj());
+    await wait(BEAT.small);
+  }
+}
+function showObjective(o, tag = "NEXT OBJECTIVE") {
+  if (!o) return;
+  SFX.select();
+  decode(print(`<div class="obj-card next"><span class="o-tag">${tag}</span><span class="o-text">${esc(o.text)}</span></div>`), 400);
+}
+
 function addClue(label) {
   if (!label || state.clues.includes(label)) return;
   state.clues.push(label);
-  const li = document.createElement("li");
-  li.textContent = label;
-  li.className = "new";
-  $("evi").prepend(li);
   updateClueCount();
-  const total = countClues(CH);
+  renderObjectives(label);
+  // カードの数字は「その目標の手がかり n / N」（目標のない手がかりは任務全体の数）
+  const o = objOf(label), total = countClues(CH);
+  const n = o ? `${esc(o.text)}　${objCount(o)} / ${o.clues.length}` : total ? `${state.clues.length} / ${total}` : "";
   print(`<div class="evi-card"><span class="evi-tag">EVIDENCE</span><span>${esc(label)}</span>`
-    + (total ? `<span class="evi-n">${state.clues.length} / ${total}</span>` : "") + `</div>`, "evidence");
+    + (n ? `<span class="evi-n">${n}</span>` : "") + `</div>`, "evidence");
   SFX.evidence();
 }
 
@@ -1373,6 +1486,7 @@ async function enterNode(id, opt = {}) {
       if (node.clue) { await wait(600); addClue(node.clue); }
       await speak(node.say, BEAT.react);
     }
+    await checkObjectives();
     if (node.goal) await runGoal(node.goal);
   });
 }
@@ -1542,6 +1656,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
     });
   }
   await speak(lines, BEAT.react);
+  await checkObjectives();
   if (goal) await runGoal(goal);
 }
 
@@ -1604,7 +1719,11 @@ async function startChapter(ch) {
     await wait(1300);
   });
   // 導入の台本（{ music: true } で師匠が音楽を流し始める）
-  await busy(() => play(CH.intro || []));
+  await busy(async () => {
+    await play(CH.intro || []);
+    // 最初の目標
+    if (nowObj()) { await wait(BEAT.small); showObjective(nowObj(), "OBJECTIVE"); await wait(900); }
+  });
   await enterNode(CH.start);
 }
 
@@ -1709,6 +1828,18 @@ async function runGoal(goal) {
     await wait(BEAT.react);
     await play(goal.script || []);
     await wait(900);
+    // 「任務完了まで」の目標は、師匠の締めのあとで済ませる（ぷつっと切れる結末では出さない）
+    const o = nowObj();
+    if (o?.until?.goal) {
+      state.objIdx++;
+      updateClueCount();
+      if (!cut) {
+        SFX.objective();
+        print(`<div class="obj-card clear"><span class="o-tag">OBJECTIVE CLEAR</span><span class="o-text">${esc(o.text)}</span></div>`);
+        addLog(`CLEAR  ${o.text}`);
+        await wait(1400);
+      }
+    }
     if (!cut) { await typeLine("[*] 回線を切断しました。"); await wait(700); }
   });
   if (cut) {
@@ -1853,6 +1984,7 @@ const COMMANDS = {
     await reveal(view, `<div class="dir-files${empty ? " dir-empty" : ""}">${files.join("<br>")}</div>`, 400);
     if (d.clue) { await wait(400); addClue(d.clue); }
     if (d.say && !state.said.has(d)) { state.said.add(d); await speak(d.say, BEAT.react); }
+    await checkObjectives();
   },
   search,
   back() {
@@ -2153,8 +2285,9 @@ async function run(raw) {
       pulse($("term"), "flash-ok", 600);
       print(panelHtml("unlock", "UNLOCKED", `ACCESS GRANTED ── ${esc(node.host)}`));
       addLog(`AUTH OK  ${node.host}`);
-      // 南京錠が開くのを見届けてから、中へ入る
+      // 南京錠が開くのを見届けてから（目標が済んだら、それも見せてから）、中へ入る
       await wait(1600);
+      await busy(() => checkObjectives());
       return enterNode(mode.id, mode.opt);
     }
     SFX.denied();
@@ -2313,7 +2446,7 @@ document.addEventListener("touchstart", e => lookAt(e.touches[0].clientX, e.touc
 function freshState() {
   return {
     current: null, history: [], visited: new Set(), opened: new Map(), links: [], said: new Set(), clues: [], cmdLog: [],
-    trace: 0, minutes: 0, commands: 0, over: false, mode: null, skip: false, endReady: false, retry: false,
+    trace: 0, minutes: 0, commands: 0, objIdx: 0, over: false, mode: null, skip: false, endReady: false, retry: false,
   };
 }
 

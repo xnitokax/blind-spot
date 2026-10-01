@@ -50,6 +50,22 @@ function check(cid, ch) {
     goals += (node.search?.entries || []).filter(e => e.goal).length;
   }
   if (!goals) ng("任務完了（goal）がひとつもありません");
+
+  // 目標（objectives）：手がかりの名前と until の書き間違い
+  const clues = new Set();
+  for (const node of Object.values(ch.nodes)) {
+    if (node.clue) clues.add(node.clue);
+    for (const e of node.search?.entries || []) if (e.clue) clues.add(e.clue);
+    for (const d of node.dir || []) if (d.clue) clues.add(d.clue);
+  }
+  for (const o of ch.objectives || []) {
+    for (const c of o.clues || []) if (!clues.has(c)) ng(`目標「${o.text}」の手がかり「${c}」が、どこにもありません`);
+    const u = o.until || {};
+    if (u.opened && !ch.nodes[u.opened]?.lock) ng(`目標「${o.text}」: until.opened ${u.opened} は鍵付きのノードではありません`);
+    if (u.visited && !ch.nodes[u.visited]) ng(`目標「${o.text}」: until.visited ${u.visited} がありません`);
+    if (u.clue && !clues.has(u.clue)) ng(`目標「${o.text}」: until.clue「${u.clue}」がありません`);
+    if (!o.side && !u.opened && !u.visited && !u.clue && !u.goal) ng(`目標「${o.text}」: until がありません`);
+  }
 }
 
 // 鍵付きノード：host・title・lock 以外を、パスワードごとに暗号化する
@@ -95,7 +111,7 @@ async function build() {
     chapters.push(box);
     log(`  🔒 任務全体を回線コードで暗号化しました`);
   }
-  const data = { title: SCENARIO.title, gameOver: SCENARIO.gameOver, case: SCENARIO.case, author: SCENARIO.author, chapters };
+  const data = { title: SCENARIO.title, gameOver: SCENARIO.gameOver, caseGoal: SCENARIO.caseGoal, case: SCENARIO.case, author: SCENARIO.author, chapters };
   const js = `// 自動生成ファイル（tools/build.html）。直接編集しないでください。\nwindow.SCENARIO_DATA = ${JSON.stringify(data, null, 2)};\n`;
   const res = await fetch("/__build", { method: "PUT", body: js });
   if (!res.ok) throw new Error(`書き込み失敗 (${res.status})`);
