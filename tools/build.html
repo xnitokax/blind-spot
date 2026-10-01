@@ -52,7 +52,10 @@ function check(cid, ch) {
   if (!goals) ng("任務完了（goal）がひとつもありません");
 
   // 「次の一手」（next）：行き先のノードがあるか
-  const checkNext = (where, n) => { if (n && !ch.nodes[n.at]) ng(`${where} の next.at「${n.at}」というノードがありません`); };
+  const checkNext = (where, n) => {
+    if (n && !ch.nodes[n.at]) ng(`${where} の next.at「${n.at}」というノードがありません`);
+    if (n && !n.why) ng(`${where} の next に why（行動の理由）がありません`);
+  };
   checkNext("任務", ch.next);
   for (const [id, node] of Object.entries(ch.nodes)) {
     checkNext(id, node.next);

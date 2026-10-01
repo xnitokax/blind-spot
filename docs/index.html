@@ -130,10 +130,10 @@
     100% { outline-color: transparent; background: transparent; }
   }
   .dock.busy #next { opacity: .3; pointer-events: none; }
-  /* 「次の一手」が光っているときだけ、そのすぐ上に師匠の理由を1行出す */
-  #why { color: var(--voice); font-size: 13px; margin: 0 0 6px; display: flex; gap: 8px; line-height: 1.5; }
+  /* 「次の一手」が光っているときだけ、そのすぐ上に「なぜそれをやるのか」を出す（ほかで使っていないピンク。少し大きめ） */
+  #why { color: #ff7ad9; font-size: 15px; margin: 0 0 8px; display: flex; gap: 8px; line-height: 1.6; letter-spacing: .03em; text-shadow: 0 0 10px rgba(255,122,217,.35); }
   #why:empty { display: none; }
-  #why .who { color: var(--dim); flex: none; }
+  #why .why-mark { flex: none; }
   #next { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; font-size: 13px; }
   #next:empty { display: none; }
   #next .next-label { color: var(--dim); font-size: 11px; letter-spacing: .25em; margin-right: 2px; }
@@ -1213,13 +1213,12 @@ function chip(fill, label, cls = "") {
 }
 // 師匠が言った「次の一手」 { at: ノードid, cmd: "search 鷲尾" }（シナリオの next で決める）
 //   その場所にいれば cmd を、いなければそこへ行く ssh を、NEXT 欄の先頭に出す
-// why … なぜそこが光っているのか。書かなければ、その案内を出したときの師匠の最後のセリフを使う
-function setGuide(g, lines) {
+// why … なぜそれをやるのか（行動の理由）。光るボタンのすぐ上に出す
+function setGuide(g) {
   if (!g) return;
-  state.guide = { ...g, why: g.why ?? lastSay(lines) };
+  state.guide = g;
   updateNext();
 }
-const lastSay = lines => [].concat(lines || []).reverse().find(x => typeof x === "string" && x.startsWith("[師匠]"))?.replace(/^\[師匠\]\s*/, "");
 function guideCmd() {
   const g = state.guide;
   if (!g || state.over) return null;
@@ -1257,7 +1256,7 @@ function updateNext() {
     if (g) {
       chips.push(`<span class="chip pick guide" data-fill="${esc(g)}" data-run>▶ ${esc(g)}</span>`);
       // なぜそこが光っているのか（師匠のひとこと）を、NEXT 欄のすぐ上に
-      if (state.guide.why) $("why").innerHTML = `<span class="who">師匠</span><span>${esc(shishou(fill(state.guide.why)))}</span>`;
+      if (state.guide.why) $("why").innerHTML = `<span class="why-mark">▸</span><span>${esc(fill(state.guide.why))}</span>`;
     }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
@@ -2117,7 +2116,7 @@ async function startChapter(ch) {
   await busy(async () => {
     await play(CH.intro || []);
     // 導入で師匠が言った「次の一手」（最初の場所に着いたら NEXT 欄に出る）
-    if (CH.next) state.guide = { ...CH.next, why: CH.next.why ?? lastSay(CH.intro) };
+    if (CH.next) state.guide = CH.next;
     // 最初の目標
     if (nowObj()) {
       await wait(BEAT.small);
