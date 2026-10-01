@@ -1321,7 +1321,7 @@ function objDone(o) {
 function updateClueCount() {
   const o = nowObj();
   const total = CH ? countClues(CH) : 0;
-  $("eviCount").textContent = o?.clues?.length ? `${objCount(o)}/${o.clues.length}` : total ? `${state.clues.length}/${total}` : "";
+  $("eviCount").textContent = CH?.objectives?.length && !state.objShown ? "" : o?.clues?.length ? `${objCount(o)}/${o.clues.length}` : total ? `${state.clues.length}/${total}` : "";
   renderObjectives();
 }
 
@@ -1340,6 +1340,8 @@ function renderObjectives(fresh) {
     box.innerHTML = html;
     return;
   }
+  // 最初の目標のカードがターミナルに出るまでは、右の欄にも目標を出さない
+  if (!state.objShown) { box.innerHTML = html; return; }
   const mains = mainObjs();
   html += li("o-sec", "OBJECTIVE");
   mains.slice(0, state.objIdx).forEach(o => {
@@ -1722,7 +1724,15 @@ async function startChapter(ch) {
   await busy(async () => {
     await play(CH.intro || []);
     // 最初の目標
-    if (nowObj()) { await wait(BEAT.small); showObjective(nowObj(), "OBJECTIVE"); await wait(900); }
+    if (nowObj()) {
+      await wait(BEAT.small);
+      showObjective(nowObj(), "OBJECTIVE");
+      // カードと同時に、右の欄にも目標が現れる
+      state.objShown = true;
+      updateClueCount();
+      $("evi").querySelector(".o-now")?.classList.add("new");
+      await wait(900);
+    }
   });
   await enterNode(CH.start);
 }
@@ -2446,7 +2456,7 @@ document.addEventListener("touchstart", e => lookAt(e.touches[0].clientX, e.touc
 function freshState() {
   return {
     current: null, history: [], visited: new Set(), opened: new Map(), links: [], said: new Set(), clues: [], cmdLog: [],
-    trace: 0, minutes: 0, commands: 0, objIdx: 0, over: false, mode: null, skip: false, endReady: false, retry: false,
+    trace: 0, minutes: 0, commands: 0, objIdx: 0, objShown: false, over: false, mode: null, skip: false, endReady: false, retry: false,
   };
 }
 
