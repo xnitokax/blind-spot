@@ -28,9 +28,7 @@
   .wrap {
     max-width: 1100px; height: 100%; margin: 0 auto; padding: 16px;
     display: grid; grid-template-columns: 1fr 260px; grid-template-rows: auto 1fr; gap: 16px;
-    animation: flicker 5s infinite;
   }
-  @keyframes flicker { 0%, 96%, 100% { opacity: 1; } 97% { opacity: .93; } 98% { opacity: 1; } 99% { opacity: .96; } }
   header { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
   header h1 { margin: 0; font-size: 18px; color: var(--accent); letter-spacing: .2em; text-shadow: 0 0 10px rgba(61,255,168,.5); flex: 1; }
   #mute, #bgm {
@@ -124,13 +122,40 @@
   .title-logo {
     font-size: clamp(30px, 8vw, 60px); letter-spacing: .12em; color: var(--accent); margin: 18px 0 6px; line-height: 1.2;
     text-shadow: 0 0 22px rgba(61,255,168,.45);
-    animation: rgbsplit 6s 3s infinite;
   }
-  @keyframes rgbsplit {
-    0%, 90%, 100% { transform: none; }
-    91% { transform: translate(-3px, 0) skewX(-8deg); text-shadow: -6px 0 rgba(255,0,80,.9), 6px 0 rgba(0,200,255,.9); }
-    93% { transform: translate(2px, 0); }
+  /* 待機中、ときどきロゴにノイズが走る（JS が .noise を一瞬だけ付ける）
+     赤と青に切れたロゴの破片が横にずれ、細かい走査線の帯が上から下へ通り抜ける */
+  .title-logo::before, .title-logo::after {
+    content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; white-space: nowrap;
+    pointer-events: none; text-shadow: none; opacity: 0;
   }
+  .title-logo::before { color: #ff2d6f; }
+  .title-logo::after { color: #2de2ff; }
+  .title-logo.noise::before { animation: tnA .32s steps(1); }
+  .title-logo.noise::after { animation: tnB .32s steps(1); }
+  .title-logo.noise { animation: tnShake .32s steps(1); }
+  @keyframes tnA {
+    0%   { opacity: .85; clip-path: inset(18% 0 62% 0); transform: translateX(-9px); }
+    25%  { clip-path: inset(62% 0 14% 0); transform: translateX(7px); }
+    50%  { clip-path: inset(38% 0 42% 0); transform: translateX(-5px); }
+    75%  { clip-path: inset(4% 0 82% 0);  transform: translateX(3px); }
+    100% { opacity: 0; }
+  }
+  @keyframes tnB {
+    0%   { opacity: .85; clip-path: inset(55% 0 25% 0); transform: translateX(8px); }
+    25%  { clip-path: inset(10% 0 72% 0); transform: translateX(-6px); }
+    50%  { clip-path: inset(72% 0 6% 0);  transform: translateX(4px); }
+    75%  { clip-path: inset(30% 0 50% 0); transform: translateX(-3px); }
+    100% { opacity: 0; }
+  }
+  @keyframes tnShake { 0% { transform: translateX(2px) skewX(-6deg); } 40% { transform: translateX(-2px); } 70% { transform: none; } }
+  .title-logo .tl-noise {
+    position: absolute; left: -2%; right: -2%; top: -20%; height: 22%; pointer-events: none; opacity: 0;
+    background: repeating-linear-gradient(to bottom, rgba(184,245,216,.35) 0 1px, transparent 1px 3px);
+    mix-blend-mode: screen;
+  }
+  .title-logo.noise .tl-noise { animation: tnBand .32s linear; }
+  @keyframes tnBand { 0% { top: -20%; opacity: .9; } 100% { top: 100%; opacity: .2; } }
   .subtitle { color: var(--dim); letter-spacing: .3em; font-size: 12px; margin-bottom: 14px; animation: tlSub 1s 1.6s ease-out both; }
 
   /* タイトルの登場（約2.3秒・スタイリッシュに）：
@@ -2301,6 +2326,21 @@ function freshState() {
   };
 }
 
+// 待機中、3.5〜8.5秒に一度、タイトルに一瞬ノイズを走らせる（タイトルが画面から消えたら止まる）
+let titleNoiseTimer = null;
+function titleNoise(el) {
+  clearTimeout(titleNoiseTimer);
+  if (!el || REDUCED) return;
+  titleNoiseTimer = setTimeout(() => {
+    if (!document.body.contains(el)) return;
+    el.classList.remove("noise");
+    void el.offsetWidth;
+    el.classList.add("noise");
+    setTimeout(() => el.classList.remove("noise"), 340);
+    titleNoise(el);
+  }, 3500 + Math.random() * 5000);
+}
+
 // タイトル画面：回線コードを待つ
 async function boot(autoCode) {
   CH = null;
@@ -2310,13 +2350,14 @@ async function boot(autoCode) {
     // タイトルの登場：光の線が伸びる → 線から文字が開く → 線が下線になる → 光が横切る → 副題（動きは CSS、音はここで合わせる）
     const t = esc(S.title);
     const styled = t.replace("//", `<span class="tl-sep">//</span>`); // 「//」だけ控えめな色に
-    print(`<div class="title-logo"><span class="tl-text">${styled}</span>`
-      + `<span class="tl-shine" aria-hidden="true">${t}</span><span class="tl-line"></span></div>`
+    const logo = print(`<div class="title-logo" data-text="${t}"><span class="tl-text">${styled}</span>`
+      + `<span class="tl-shine" aria-hidden="true">${t}</span><span class="tl-noise"></span><span class="tl-line"></span></div>`
       + `<div class="subtitle">ANON-NET TERMINAL</div>`);
     SFX.titleLine();     // 0秒：細い光の線が伸びる「シュン」
     await wait(450);
     SFX.titleOpen();     // 0.45秒：文字が開く。低く温かい音がふくらむ
     await wait(1900);    // 2.35秒：副題まで出そろう
+    titleNoise(logo.querySelector(".title-logo"));
     for (const l of ["[ ok ] kernel modules", "[ ok ] tor client  3 guards", "[ ok ] relay  uzu://safehouse … online"]) {
       await wait(140);
       print(esc(l), "dim");
