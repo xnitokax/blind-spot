@@ -120,6 +120,7 @@
   }
   #next .chip.ow, #next .chip.warn { color: var(--warn); border-color: rgba(255,193,77,.4); }
   #next .chip.go { border-color: rgba(61,255,168,.45); }
+  #next .chip.save { color: var(--bg); background: var(--accent); border-color: var(--accent); }
 
   /* タイトル */
   .title-logo {
@@ -1081,6 +1082,8 @@ function updateNext() {
     chips = [chip("y", "y 進む", "ow"), chip("n", "n やめる")];
   } else if (state.current) {
     const node = here();
+    // 調べ終わったら、どこにいても一番左に save を出しておく
+    if (state.saveReady) chips.push(chip("save", "save 保存して引き上げる", "save"));
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
     for (const l of state.links) chips.push(chip(`ssh ${l.name}`, `ssh ${l.name}${l.oneway ? "（一方通行）" : ""}`, l.oneway ? "ow" : ""));
@@ -1353,6 +1356,9 @@ function renderObjectives(fresh) {
   if (o) {
     html += li("o-now", `${esc(o.text)}${o.clues?.length ? `<span class="o-n">${objCount(o)}/${o.clues.length}</span>` : ""}`);
     html += clueItems(o);
+  } else if (state.saveReady) {
+    // 調べ終わったら、最後の目標として save を案内する
+    html += li("o-now", "「save」で成果を保存する");
   }
   // 見つけてはいるが、まだ出ていない目標の手がかり
   const shown = new Set([...mains.slice(0, state.objIdx + 1), ...sideObjs()].flatMap(x => x.clues || []));
@@ -1665,7 +1671,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   for (const e of shown) {
     if (e.say && !state.said.has(e)) { state.said.add(e); lines.push(...e.say); }
   }
-  const goal = shown.find(e => e.goal)?.goal;
+  const goal = state.saveReady ? null : shown.find(e => e.goal)?.goal;
   if (!goal) {
     (conf.notes || []).forEach((n, i) => {
       const key = `${state.current}:note${i}`;
@@ -1844,7 +1850,22 @@ async function play(steps) {
   }
 }
 
+// 「任務完了まで」の目標を済ませる（show のときは OBJECTIVE CLEAR のカードも出す）
+async function clearGoalObjective(show) {
+  const o = nowObj();
+  if (!o?.until?.goal) return;
+  state.objIdx++;
+  updateClueCount();
+  if (!show) return;
+  SFX.objective();
+  print(`<div class="obj-card clear"><span class="o-tag">OBJECTIVE CLEAR</span><span class="o-text">${esc(o.text)}</span></div>`);
+  addLog(`CLEAR  ${o.text}`);
+  await wait(1400);
+}
+
 async function runGoal(goal) {
+  if (state.saveReady) return;   // save 待ちのあいだに同じ結果をもう一度見ても、やり直さない
+  if (goal.save) return readyToSave(goal);
   state.over = true;
   updateNext();
   const cut = goal.end === "cut";
@@ -1855,17 +1876,7 @@ async function runGoal(goal) {
     await play(goal.script || []);
     await wait(900);
     // 「任務完了まで」の目標は、師匠の締めのあとで済ませる（ぷつっと切れる結末では出さない）
-    const o = nowObj();
-    if (o?.until?.goal) {
-      state.objIdx++;
-      updateClueCount();
-      if (!cut) {
-        SFX.objective();
-        print(`<div class="obj-card clear"><span class="o-tag">OBJECTIVE CLEAR</span><span class="o-text">${esc(o.text)}</span></div>`);
-        addLog(`CLEAR  ${o.text}`);
-        await wait(1400);
-      }
-    }
+    await clearGoalObjective(!cut);
     if (!cut) { await typeLine("[*] 回線を切断しました。"); await wait(700); }
   });
   if (cut) {
@@ -1878,6 +1889,69 @@ async function runGoal(goal) {
     await powerOff();
   }
   await showEnding(`${goal.report || ""}\n\n── ${goal.tag || "COMPLETE"}`, { cut, clues: !cut, todo: goal.todo });
+}
+
+// save 型の任務完了：師匠が締めたあとも探索を続けられ、「save」と打つと終わる
+async function readyToSave(goal) {
+  state.saveReady = goal;
+  await busy(async () => {
+    await wait(BEAT.react);
+    await play(goal.script || []);
+    await wait(600);
+    await clearGoalObjective(true);
+  });
+  addLog("SAVE READY");
+  updateClueCount();
+  updateNext();
+}
+
+// 自動で打たれるコマンド（速め）
+async function autoType(text) {
+  const d = print(`<span class="ps">${esc($("prompt").textContent)}</span> <span class="t"></span>`, "echo auto");
+  const t = d.querySelector(".t");
+  for (const ch of text) {
+    if (fast || REDUCED) break;
+    t.textContent += ch;
+    if (ch.trim()) SFX.key();
+    await sleep(14);
+  }
+  t.textContent = text;
+  SFX.enter();
+  await wait(160);
+}
+
+async function saveAndEnd() {
+  const goal = state.saveReady;
+  state.saveReady = null;
+  state.over = true;
+  updateNext();
+  await busy(async () => {
+    $("form").style.visibility = "hidden";
+    await wait(300);
+    const msg = goal.commit || "どう？楽しめた？";
+    const files = Math.max(1, state.clues.length);
+    const obj = 6 + files * 2, kb = (1.2 + files * 0.37).toFixed(2);
+    const hash = () => Math.random().toString(16).slice(2, 9);
+    const before = hash(), after = hash();
+    const emit = async (lines, ms = 45) => { for (const l of lines) { print(esc(l), "dim"); SFX.tick(); await wait(ms); } };
+    await autoType("git add evidence/");
+    await autoType(`git commit -m "${msg}"`);
+    await emit([`[main ${after}] ${msg}`, ` ${files} file${files > 1 ? "s" : ""} changed, ${files * 37 + 12} insertions(+)`]);
+    await wait(200);
+    await autoType("git push");
+    await emit([
+      `Enumerating objects: ${obj}, done.`,
+      `Counting objects: 100% (${obj}/${obj}), done.`,
+      `Writing objects: 100% (${obj}/${obj}), ${kb} KiB | ${kb} MiB/s, done.`,
+      "To uzu://safehouse/case-makabe.git",
+      `   ${before}..${after}  main -> main`,
+    ]);
+    await wait(900);
+    await typeLine("[*] 回線を切断しました。");
+    await wait(700);
+  });
+  await powerOff();
+  await showEnding(`${goal.report || ""}\n\n── ${goal.tag || "COMPLETE"}`, { clues: true, todo: goal.todo });
 }
 
 // 暗転 → 文章を1文字ずつ表示 → 回収した手がかり → 見出し
@@ -1962,6 +2036,7 @@ const COMMANDS = {
       ["search <言葉>", "検索できる場所で検索する（スペース区切りで条件を重ねる）"],
       ["cd <フォルダ名>", "ファイルサーバーでフォルダを移動する"],
       ["ls", "今いる場所の接続先をもう一度表示"],
+      ["save", "調べ終わったら、成果を保存して任務を終える"],
       ["help", "この一覧"],
     ].map(([c, d]) => `<span class="n">${esc(c)}</span><span>${esc(d)}</span>`).join("");
     print(`<div class="ls">${rows}</div><span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中はクリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ ここでは cd が使えます" : ""}</span>`);
@@ -2013,6 +2088,10 @@ const COMMANDS = {
     await checkObjectives();
   },
   search,
+  save() {
+    if (!state.saveReady) return print("save: まだ保存するものがありません。調べ終わってから保存しよう。", "dim");
+    return saveAndEnd();
+  },
   back() {
     if (!state.history.length) return print("back: これ以上戻れません。", "dim");
     return connect(state.history.pop(), { isBack: true });
@@ -2350,7 +2429,7 @@ function complete() {
   let pool, prefix, head;
   if (m && /^ssh$/i.test(m[1])) pool = state.links.map(l => l.name);
   else if (m && /^cd$/i.test(m[1])) pool = node.dir ? node.dir.map(d => d.name) : state.links.map(l => l.name);
-  else if (!m && /^\s*\S*$/.test(v)) pool = ["ssh", "back", "help", "ls", ...(node.search ? ["search"] : []), ...(node.dir ? ["cd"] : [])];
+  else if (!m && /^\s*\S*$/.test(v)) pool = ["ssh", "back", "help", "ls", ...(node.search ? ["search"] : []), ...(node.dir ? ["cd"] : []), ...(state.saveReady ? ["save"] : [])];
   else return;
   if (m) { prefix = m[2]; head = v.slice(0, v.length - prefix.length); }
   else { prefix = v.trim(); head = ""; }
@@ -2472,7 +2551,7 @@ document.addEventListener("touchstart", e => lookAt(e.touches[0].clientX, e.touc
 function freshState() {
   return {
     current: null, history: [], visited: new Set(), opened: new Map(), links: [], said: new Set(), clues: [], cmdLog: [],
-    trace: 0, minutes: 0, commands: 0, objIdx: 0, objShown: false, over: false, mode: null, skip: false, endReady: false, retry: false,
+    trace: 0, minutes: 0, commands: 0, objIdx: 0, objShown: false, saveReady: null, over: false, mode: null, skip: false, endReady: false, retry: false,
   };
 }
 
