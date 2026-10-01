@@ -1197,8 +1197,8 @@ async function decode(el, ms = 450) {
 }
 
 // 台本の1行：[師匠] はセリフ、[!] は警告、[*] [+] はシステム。1文字ずつ打ち出す
-// 師匠の話し方：「、」「。」の代わりに「,  」「.  」を使う（行末やカッコの前では空白を付けない）
-const shishou = s => s.replace(/、/g, ",  ").replace(/。/g, ".  ").replace(/ +(?=[」』）)]|\n|$)/g, "");
+// 師匠の話し方：「、」「。」の代わりに「, 」「. 」を使う（行末やカッコの前では空白を付けない）
+const shishou = s => s.replace(/、/g, ", ").replace(/。/g, ". ").replace(/ +(?=[」』）)]|\n|$)/g, "");
 
 function lineParts(s) {
   s = fill(s);
