@@ -553,6 +553,8 @@
     .mission .m-title { font-size: 18px; }
     .lockpanel { padding: 8px 18px; gap: 10px; }
     .lock-title { font-size: 20px; letter-spacing: .35em; margin-right: -.35em; }
+    /* 長いログ（伝票・変更ログ・人事DB）は、スマホでは折り返して全部見せる（横にはみ出して大事な数字が隠れないように） */
+    .log { white-space: pre-wrap; word-break: break-all; font-size: 12px; }
   }
 </style>
 </head>
@@ -1479,6 +1481,8 @@ async function checkObjectives() {
     await wait(700);
     showObjective(nowObj());
     await wait(BEAT.small);
+    // 新しい目標の案内（どこを探すか）
+    if (nowObj().intro) await speak(nowObj().intro, BEAT.small);
   }
 }
 function showObjective(o, tag = "NEXT OBJECTIVE") {
@@ -1713,7 +1717,8 @@ function searchText(e) {
     const box = document.createElement("div");
     box.innerHTML = e.html;
     box.querySelectorAll(".nosearch").forEach(el => el.remove());
-    e._text = fold(box.textContent + " " + (e.keys || ""));
+    // 空白は取りのぞいて比べる（「朝比奈さつき」と続けて打っても「朝比奈 さつき」が見つかるように）
+    e._text = fold(box.textContent + " " + (e.keys || "")).replace(/\s+/g, "");
   }
   return e._text;
 }
@@ -1783,7 +1788,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   const nothing = !hits.length && total > 0;
   // 見出し：「何を探したか」を大きく、件数は小さく横に
   print(`<div class="res-head${total ? "" : " none"}"><span class="res-title">${esc(conf.label)} ─ 「${esc(q)}」</span>`
-    + `<span class="res-count">${total.toLocaleString()} 件${hits.length && total > limit ? `（上位 ${limit} 件を表示）` : ""}</span></div>`);
+    + `<span class="res-count">${total.toLocaleString()} 件${hits.length && total > shown.length ? `（上位 ${shown.length} 件を表示）` : ""}</span></div>`);
   if (!total) print(esc(conf.empty || "該当するものはありません。"), "dim");
   // 結果は1件ずつ（解読しながら）出す
   await wait(BEAT.small);
