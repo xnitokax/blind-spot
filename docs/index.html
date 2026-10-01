@@ -1908,7 +1908,7 @@ async function authorLine() {
   await busy(() => fakeRoute(`${a.handle}.uzu`));
   await speak(authorCount === 1 ? [
     "[師匠] ……おい。そこは俺の回線だ。",
-    "[師匠] なんで俺と繋がりたがる。言っとくが、俺にそっちの趣味はないからな。",
+    "[師匠] まて、なんで{handle}が俺のハンドルネームを知っている。",
   ] : ["[師匠] ……また来たのか。{handle}、よく変なやつって言われるだろ。"], 1000);
   // プロフィールのカード（https:// で始まる中身はリンクにする）
   const val = v => /^https:\/\//.test(v)
@@ -1936,7 +1936,7 @@ async function authorLine() {
     await wait(500);
   });
   await speak(authorCount === 1 ? [
-    "[師匠] ……バレちまったもんは仕方ない。これが俺だ。",
+    "[師匠] ……まァ、バレちまったもんは仕方ない。これが俺だ。",
     "[師匠] 気が済んだら仕事に戻れ。俺から受け取ったコードを打て。",
   ] : ["[師匠] 用が済んだら、仕事に戻れ。"], BEAT.react);
 }
