@@ -12,6 +12,7 @@
   :root {
     --bg: #05090a; --panel: #0b1214; --line: #1c3a34;
     --fg: #b8f5d8; --dim: #5d8f7c; --accent: #3dffa8; --alert: #ff4d6a; --warn: #ffc14d; --voice: #8fc8ff;
+    --why: #ff5a8a;   /* 「次の一手」の理由の色：基調の色（--accent）の補色。ゾーンごとに変える（緑の補色は赤みのあるローズ） */
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -130,8 +131,8 @@
     100% { outline-color: transparent; background: transparent; }
   }
   .dock.busy #next { opacity: .3; pointer-events: none; }
-  /* 「次の一手」が光っているときだけ、そのすぐ上に「なぜそれをやるのか」を出す（ほかで使っていないピンク。少し大きめ） */
-  #why { color: #ff7ad9; font-size: 15px; margin: 0 0 8px; display: flex; gap: 8px; line-height: 1.6; letter-spacing: .03em; text-shadow: 0 0 10px rgba(255,122,217,.35); }
+  /* 「次の一手」が光っているときだけ、そのすぐ上に「なぜそれをやるのか」を出す（その場の基調の色の補色。少し大きめ） */
+  #why { color: var(--why); font-size: 15px; margin: 0 0 8px; display: flex; gap: 8px; line-height: 1.6; letter-spacing: .03em; text-shadow: 0 0 10px color-mix(in srgb, var(--why) 40%, transparent); }
   #why:empty { display: none; }
   #why .why-mark { flex: none; }
   #next { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; font-size: 13px; }
@@ -466,11 +467,11 @@
   /* ゾーン：システムに入ると、画面の色合いが少し変わる（任務2。node.zone）
      文字・線・強調の色を入れ替え、画面のふちに薄く色をのせる */
   body[data-zone] #fx { opacity: 1; background: radial-gradient(ellipse at center, transparent 55%, var(--tint)); }
-  body[data-zone="files"]  { --accent: #4fd8ff; --fg: #c3f0ff; --line: #173a4a; --dim: #5b8796; --tint: rgba(79,216,255,.13); }
-  body[data-zone="hr"]     { --accent: #c4a0ff; --fg: #e4d8ff; --line: #30284a; --dim: #8a7fa8; --tint: rgba(170,120,255,.14); }
-  body[data-zone="seek"]   { --accent: #9fd0ff; --fg: #edf6ff; --line: #27394c; --dim: #7f95ab; --tint: rgba(200,225,255,.12); }
-  body[data-zone="keiri"]  { --accent: #ffcc5c; --fg: #fbe9c0; --line: #3f3519; --dim: #a08a5a; --tint: rgba(255,190,70,.14); }
-  body[data-zone="jyoshi"] { --accent: #4ff0e0; --fg: #c8fbf4; --line: #12403b; --dim: #5a9890; --tint: rgba(60,240,220,.13); }
+  body[data-zone="files"]  { --why: #ffa65a; --accent: #4fd8ff; --fg: #c3f0ff; --line: #173a4a; --dim: #5b8796; --tint: rgba(79,216,255,.13); }
+  body[data-zone="hr"]     { --why: #63ffb4; --accent: #ff7ad9; --fg: #ffe0f4; --line: #4a2440; --dim: #a87f98; --tint: rgba(255,110,200,.14); }
+  body[data-zone="seek"]   { --why: #ffc27a; --accent: #9fd0ff; --fg: #edf6ff; --line: #27394c; --dim: #7f95ab; --tint: rgba(200,225,255,.12); }
+  body[data-zone="keiri"]  { --why: #7f9cff; --accent: #ffcc5c; --fg: #fbe9c0; --line: #3f3519; --dim: #a08a5a; --tint: rgba(255,190,70,.14); }
+  body[data-zone="jyoshi"] { --why: #ff8a7a; --accent: #4ff0e0; --fg: #c8fbf4; --line: #12403b; --dim: #5a9890; --tint: rgba(60,240,220,.13); }
   /* ゾーンに入った瞬間：光の帯が上から下へ走る */
   #fx.zone-in::after {
     content: ""; position: absolute; left: 0; right: 0; height: 30%; top: -30%;
@@ -479,6 +480,61 @@
   }
   @keyframes zoneSweep { to { top: 100%; } }
 
+  /* 任務2の見せ場の演出 */
+  .menu.compact { font-size: 13px; }
+  .flood { font-size: 11px; line-height: 1.35; color: var(--dim); max-height: 11em; overflow: hidden; white-space: pre; margin: 6px 0;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%); mask-image: linear-gradient(to bottom, transparent, #000 35%); }
+  .markline .mark { color: var(--warn); border: 1px solid var(--warn); padding: 1px 8px; animation: markBlink .5s steps(1) 3; }
+  @keyframes markBlink { 50% { opacity: .2; } }
+  .fx-panel { border: 1px solid var(--accent); border-radius: 4px; padding: 8px 12px; margin: 8px 0; white-space: normal;
+    background: color-mix(in srgb, var(--accent) 6%, transparent); box-shadow: 0 0 18px -8px var(--accent); }
+  .fx-head { color: var(--accent); font-size: 11px; letter-spacing: .25em; display: flex; justify-content: space-between; gap: 10px; }
+  .sc-bar, .bt-bar, .esc-bar, .rc-bar { color: var(--accent); font-size: 12px; white-space: pre; overflow: hidden; margin: 4px 0; }
+  .sc-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 2px 14px; font-size: 12px; }
+  .sc-cats div { display: flex; justify-content: space-between; }
+  .sc-c { color: var(--accent); }
+  .sc-found { margin-top: 6px; color: var(--warn); animation: markBlink .5s steps(1) 4; }
+  .battle .bt-log { font-size: 11px; }
+  .battle.lost { border-color: var(--alert); box-shadow: 0 0 18px -6px var(--alert); }
+  .battle.lost .bt-bar { color: var(--alert); }
+  .file-card .fc-body { font-size: 13px; line-height: 1.8; margin-top: 6px; color: var(--fg); }
+  .esc-panel .esc-log { font-size: 12px; }
+  .esc-bar.stall { animation: markBlink 1s steps(1) infinite; }
+  .race .rc-bar { color: var(--alert); }
+  .race.saved { border-color: var(--accent); }
+  /* 意図的に隠されていたデータ：赤い文字 */
+  .doc.hidden-data, .doc.hidden-data p, .doc.hidden-data .meta { color: #ff5a6e !important; text-shadow: 0 0 8px rgba(255,60,90,.4); }
+  /* 画面がはがれ落ちる → 組み直されて戻ってくる */
+  #term.peel-off { animation: peelOff 1.1s cubic-bezier(.6, 0, .9, .4) forwards; }
+  @keyframes peelOff {
+    0% { transform: none; filter: none; clip-path: inset(0 0 0 0); }
+    20% { transform: skewX(-4deg); filter: brightness(1.8) hue-rotate(30deg); }
+    60% { transform: translateY(40px) skewX(6deg); clip-path: inset(0 0 35% 0); opacity: .7; }
+    100% { transform: translateY(160px) rotate(2deg); clip-path: inset(0 0 100% 0); opacity: 0; }
+  }
+  /* モザイク処理された写真 */
+  .photo-card .ph-wrap { position: relative; width: min(240px, 100%); margin: 8px auto 4px; }
+  .photo-card .ph-grid { display: grid; grid-template-columns: repeat(12, 1fr); aspect-ratio: 12 / 7; filter: blur(8px) saturate(.6); opacity: 0; transition: opacity 1s, filter 1.4s; }
+  .photo-card.shown .ph-grid { opacity: 1; filter: blur(2px) saturate(.9); }
+  .photo-card .ph-grid i { display: block; }
+  .photo-card .ph-stamp { position: absolute; inset: auto 0 8px 0; text-align: center; color: var(--bg); background: var(--warn); font-size: 11px; letter-spacing: .2em; width: fit-content; margin: 0 auto; padding: 0 8px; }
+  .photo-card .ph-cap { font-size: 12px; color: var(--dim); text-align: center; }
+  /* 金庫のダイヤル */
+  .vault .vt-dial { font-size: 30px; letter-spacing: .15em; text-align: center; color: var(--dim); margin: 6px 0; }
+  .vault .vt-d.set { color: var(--accent); text-shadow: 0 0 12px var(--accent); }
+  .vault .vt-sep { color: var(--dim); }
+  /* メーターのように回る大きな数字 */
+  .count .ct-num { font-size: clamp(22px, 7.5vw, 32px); text-align: center; color: var(--fg); letter-spacing: .05em; margin: 4px 0; }
+  .count .ct-num.hit { color: var(--alert); text-shadow: 0 0 16px var(--alert); animation: stampIn .35s cubic-bezier(.2, 1.6, .5, 1) both; }
+  /* 崩れて消えていくログ */
+  .shred { font-size: 11px; line-height: 1.35; color: var(--alert); white-space: pre; overflow: hidden; margin: 6px 0; opacity: .85; }
+  #term.peel-in { animation: peelIn 1.2s ease-out; }
+  @keyframes peelIn {
+    0% { clip-path: inset(0 0 100% 0); filter: brightness(3); }
+    50% { clip-path: inset(0 0 30% 0); filter: brightness(1.6); }
+    100% { clip-path: inset(0 0 0 0); filter: none; }
+  }
+
   /* 侵入の演出（breach）：壁が崩れ、手順ごとのバーが埋まり、最後に ACCESS のはんこ */
   .breach-panel {
     border: 1px solid var(--accent); border-radius: 4px; padding: 8px 12px; margin: 8px 0; white-space: normal;
@@ -486,7 +542,7 @@
   }
   .bp-head { color: var(--accent); font-size: 11px; letter-spacing: .25em; display: flex; justify-content: space-between; }
   .bp-wall { font-size: 9px; line-height: 1.05; letter-spacing: 1px; color: var(--accent); opacity: .75; margin: 6px 0; white-space: pre; overflow: hidden; }
-  .bp-step { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; font-size: 12px; align-items: center; }
+  .bp-step { display: grid; grid-template-columns: minmax(0, 1fr) max-content; column-gap: 10px; font-size: 12px; align-items: center; }
   .bp-step .lab { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bp-step .bar { color: var(--accent); font-size: 11px; white-space: pre; }
   .bp-step.done .bar { color: var(--accent); text-shadow: 0 0 8px var(--accent); }
@@ -1118,6 +1174,8 @@ let fast = false; // 演出の早送り中
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // 早送りできる待ち時間。任務ごとのテンポ（tempo）を掛ける
 const wait = ms => sleep(fast ? Math.min(ms, 30) : ms * curTempo());
+// テンポに関係なく一定の待ち時間（師匠のセリフの間など。早送りはできる）
+const pause = ms => sleep(fast ? Math.min(ms, 30) : ms);
 // tempo：数字ならずっとその速さ。{ from, to, over } なら、打ったコマンドの数に合わせて from → to へだんだん速くなる
 // （任務2は、最初は普通の速さで始まり、実行を重ねるほど演出が速くなって、駆け抜ける感じになる）
 function curTempo() {
@@ -1256,7 +1314,9 @@ function updateNext() {
     if (g) {
       chips.push(`<span class="chip pick guide" data-fill="${esc(g)}" data-run>▶ ${esc(g)}</span>`);
       // なぜそこが光っているのか（師匠のひとこと）を、NEXT 欄のすぐ上に
-      if (state.guide.why) $("why").innerHTML = `<span class="why-mark">▸</span><span>${esc(fill(state.guide.why))}</span>`;
+      // 行き先へ向かう途中は go（移動の理由）、着いたら why（そこでやることの理由）
+      const why = state.current === state.guide.at ? state.guide.why : (state.guide.go ?? state.guide.why);
+      if (why) $("why").innerHTML = `<span class="why-mark">▸</span><span>${esc(fill(why))}</span>`;
     }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
@@ -1362,7 +1422,7 @@ async function decode(el, ms = 450) {
 
 // 台本の1行：[師匠] はセリフ、[!] は警告、[*] [+] はシステム。1文字ずつ打ち出す
 // 師匠の話し方：「、」「。」の代わりに「, 」「. 」を使う（行末やカッコの前では空白を付けない）
-const shishou = s => s.replace(/、/g, ", ").replace(/。/g, ". ").replace(/ +(?=[」』）)]|\n|$)/g, "");
+const shishou = s => s.replace(/…。/g, "…").replace(/、/g, ", ").replace(/。/g, ". ").replace(/ +(?=[」』）)]|\n|$)/g, "");
 
 function lineParts(s) {
   s = fill(s);
@@ -1395,7 +1455,8 @@ async function typeLine(s, opt = {}) {
     if (fast || REDUCED) break;
     t.textContent += chars[i];
     if (i % 6 === 0) scrollDown();
-    await sleep(opt.charMs ?? ("。、…！？".includes(chars[i]) ? 90 : say ? 28 : 16));
+    // 師匠のセリフは、読み切れるように少しゆっくり（「, 」「. 」でも一拍おく）
+    await sleep(opt.charMs ?? ("。、…！？.,".includes(chars[i]) ? 90 : say ? 33 : 16));
   }
   t.textContent = text;
   scrollDown();
@@ -1406,7 +1467,8 @@ async function speak(lines, beat = 0) {
   if (!lines?.length) return;
   await busy(async () => {
     if (beat) await wait(beat);
-    for (const s of lines) { await wait(200); await typeLine(s); await wait(380); }
+    // 師匠のセリフの間は、演出のテンポ（tempo）に関係なく一定（速くしない）
+    for (const s of lines) { await pause(220); await typeLine(s); await pause(560); }
   });
 }
 
@@ -1677,8 +1739,15 @@ function parseNode(html) {
 
 // 今いる場所でできること（フォルダ・検索・接続先）を、本文と間を空けた1つのかたまりにまとめて出す
 // フォルダ・検索・接続先を1つの表にまとめる（左に打つもの、右に説明。列がそろう）
-function printMenu() {
+function printMenu(force = false) {
   const node = here(), rows = [];
+  // compact（任務2）：一覧は出さない（行き先は NEXT 欄のボタンで足りる）。ls と打ったときだけ、名前を1行で出す
+  if (CH.compact) {
+    if (!force) return true;
+    const names = [...(node.dir || []).map(d => `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span>`), ...state.links.map(l => `<span class="n pick" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span>`)];
+    if (names.length) print(`<div class="menu compact reveal">${names.join(`<span class="dim"> · </span>`)}</div>`);
+    return names.length > 0;
+  }
   for (const d of node.dir || []) {
     rows.push(`<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`);
   }
@@ -1706,7 +1775,7 @@ async function showNode(opt = {}) {
   const node = here();
   // {login} … 鍵を開けたときのアカウント名（ほかのアカウントで入ると、その人の名前になる）
   const login = state.loginAs?.[state.current] || node.login || "";
-  const { html, links } = parseNode((node.body || "").replaceAll("{handle}", esc(who())).replaceAll("{login}", esc(login)));
+  let { html, links } = parseNode((node.body || "").replaceAll("{handle}", esc(who())).replaceAll("{login}", esc(login)));
   // nav：任務の中の主なシステムには、どこからでも直接移動できる（ポータルに戻らなくていい。任務2はテンポ重視）
   for (const id of CH.nav || []) {
     const n = CH.nodes[id];
@@ -1714,6 +1783,8 @@ async function showNode(opt = {}) {
     links.push({ name: n.host.split(/[./]/)[0], go: id, oneway: false, desc: fill(n.title) });
   }
   state.links = links;
+  // compact（任務2）：本文の説明（日本語）は出さない。情報は師匠のセリフから拾う
+  if (CH.compact && !node.keepBody) html = "";
   const head = print(`<span class="host">▶ ssh://${esc(node.host)}</span>`, "node-head");
   await wait(BEAT.small);
   head.insertAdjacentHTML("beforeend", `\n<b class="reveal">${esc(fill(node.title))}</b>`);
@@ -1749,7 +1820,9 @@ async function enterNode(id, opt = {}) {
     if (first) {
       if (node.clue) { await wait(600); addClue(node.clue); }
       if (!view.said) await speak(node.say, BEAT.react);
-      setGuide(node.next, node.say);
+      // scene：初めて来たときに流れる見せ場（台本）。終わってから「次の一手」を出す
+      if (node.scene) await play(node.scene);
+      setGuide(node.next);
     }
     await checkObjectives();
     if (node.goal) await runGoal(node.goal);
@@ -1822,8 +1895,11 @@ async function connect(id, opt = {}) {
     updateClock();
     // ゾーン：システムに入ると、画面の色合いが変わる
     setZone(node.zone);
-    // breach：初めて入るシステムでは、守りを破っていく演出が走る
-    if (node.breach && !state.visited.has(id)) await breach(node);
+    // entry：初めて入るときの、そのシステム専用の見せ場（金庫のダイヤルなど）。なければ breach（守りの壁が崩れる）
+    if (!state.visited.has(id)) {
+      if (node.entry) await play(node.entry);
+      else if (node.breach) await breach(node);
+    }
   });
 
   if (node.lock && !state.opened.has(id)) {
@@ -1948,13 +2024,16 @@ async function search(arg) {
   const conf = node.search, limit = conf.limit ?? 3;
   // 師匠のハンドルネームで検索すると、検索はせずに師匠がツッコむ
   if (S.author?.handle && q && fold(q).replace(/\s+/g, "") === fold(S.author.handle)) {
+    // 外の検索サイト（fanPage のある検索）では、謎のファンページが見つかる
+    if (conf.fanPage) return fanPage();
     return speak(["[師匠] それ俺じゃねーか。", "[師匠] ──おい、なんで俺のハンドルネーム知ってるんだ？"], BEAT.small);
   }
   // 全体が言いかえに当たればそれを、当たらなければ言葉ごとに言いかえる
   const terms = fold(unalias(conf, q)).split(/\s+/).filter(Boolean).map(t => fold(unalias(conf, t)).replace(/\s+/g, "")).filter(Boolean);
   if (!terms.length) return print("使い方：search &lt;言葉&gt;（スペースで区切ると条件を重ねられます）", "dim");
 
-  const hits = conf.entries.filter(e => terms.every(t => searchText(e).includes(t)));
+  // need … その flag が立っているときだけ見つかる結果（任務2：権限を上げたあとにだけ見える、隠されたデータ）
+  const hits = conf.entries.filter(e => (!e.need || state.flags[e.need]) && terms.every(t => searchText(e).includes(t)));
   const shown = hits.slice(0, limit);
   state.minutes += 1;
   updateClock();
@@ -2016,7 +2095,8 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   for (const e of shown) {
     // before：その結果を出す前に流れる演出（初めて見るときだけ。例：消された差分を復元する）
     if (e.before && !state.said.has(e.before)) { state.said.add(e.before); await play(e.before); await wait(BEAT.small); }
-    decode(print(`<div class="doc">${e.html}</div>`, "node result reveal"), 380);
+    // hidden … 意図的に隠されていたデータ（赤い文字で出す）
+    decode(print(`<div class="doc${e.hidden ? " hidden-data" : ""}">${e.html}</div>`, "node result reveal"), e.decodeMs || 380);
     await wait(450);
   }
 
@@ -2030,6 +2110,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   // 師匠のひとこと（それぞれ一度だけ）
   const lines = [];
   let next = null, nextLines = null;   // 師匠が言った「次の一手」と、そのときのセリフ
+  const noteScripts = [];
   for (const e of shown) {
     if (e.say && !state.said.has(e)) { state.said.add(e); lines.push(...e.say); }
     if (e.next) { next = e.next; nextLines = e.say; }
@@ -2039,11 +2120,21 @@ async function showResults(conf, q, terms, hits, shown, limit) {
     (conf.notes || []).forEach((n, i) => {
       const key = `${state.current}:note${i}`;
       if (state.said.has(key)) return;
-      if ([].concat(n.when).some(w => terms.some(t => t.includes(fold(w))))) { state.said.add(key); lines.push(...n.say); if (n.next) { next = n.next; nextLines = n.say; } }
+      // need … その flag が立っているときだけ ／ not … その flag が立っていないときだけ（同じ検索でも、状況で師匠の反応が変わる）
+      if (n.need && !state.flags[n.need]) return;
+      if (n.not && state.flags[n.not]) return;
+      if ([].concat(n.when).some(w => terms.some(t => t.includes(fold(w))))) {
+        state.said.add(key);
+        lines.push(...(n.say || []));
+        if (n.next) { next = n.next; nextLines = n.say; }
+        if (n.script) noteScripts.push(n.script);
+      }
     });
   }
   if (nothing && !lines.length) lines.push("[師匠] この中に必要そうなものはなさそうだな。");
   await speak(lines, BEAT.react);
+  // notes の script（師匠が話したあとの見せ場）
+  for (const sc of noteScripts) await play(sc);
   // after：師匠が話したあとに流れる演出（初めてのときだけ。例：監査に見つかって、足跡を消す）
   for (const e of shown) {
     if (e.after && !state.said.has(e.after)) { state.said.add(e.after); await wait(BEAT.small); await play(e.after); }
@@ -2132,10 +2223,248 @@ async function startChapter(ch) {
 }
 
 // ---------------- 任務完了 ----------------
+// ---------------- 任務2の見せ場の演出（台本の1ステップ） ----------------
+// どれも「見て楽しい」ための演出。サクサク進める場面とは逆に、たっぷり時間をかけて派手に見せる
+// （待ち時間は pause：任務2のテンポが上がっても短くならない）
+const FILE_WORDS = ["議事録", "見積書", "請求書", "週報", "設計書", "提案書", "契約書", "研修資料", "勤怠", "稟議", "仕様書", "予算案", "報告書", "名簿", "写真"];
+const FILE_EXT = [".xlsx", ".docx", ".pdf", ".pptx", ".csv", ".zip", ".jpg"];
+const fakeFile = () => `${pickOne(["/share", "/projects", "/home/sales", "/home/hr", "/archive"])}/${pickOne(FILE_WORDS)}_${2019 + Math.floor(Math.random() * 8)}${String(1 + Math.floor(Math.random() * 12)).padStart(2, "0")}${pickOne(FILE_EXT)}`;
+// 流れていく伝票の1行（見た目だけ）
+const fakeLedger = () => `伝票 #${80000 + Math.floor(Math.random() * 19999)}  2026/${String(1 + Math.floor(Math.random() * 9)).padStart(2, "0")}/${String(1 + Math.floor(Math.random() * 28)).padStart(2, "0")}  ${pickOne(["営業本部", "総務部", "人事部", "経理部", "情報システム部", "広報部"])}  ${pickOne(["交通費", "消耗品費", "会議費", "外注費", "保守費", "広告費"])}  ¥${(Math.floor(Math.random() * 9e6) + 1000).toLocaleString().padStart(11)}`;
+const bar = (p, w = 24) => `${"█".repeat(Math.round(p * w))}${"░".repeat(w - Math.round(p * w))}`;
+
+async function playFx(s) {
+  // { flood: 行数, kind: "file" | "log" } … ファイル（ログ）が画面にあふれ出てくる。だんだん速くなる
+  if (s.flood) {
+    const box = print(`<div class="flood"></div>`).querySelector(".flood");
+    for (let i = 0; i < s.flood; i++) {
+      box.textContent += (i ? "\n" : "") + (s.kind === "log" ? fakeLogLine() : s.kind === "ledger" ? fakeLedger() : fakeFile());
+      box.scrollTop = box.scrollHeight;
+      if (i % 3 === 0) SFX.tick();
+      await pause(Math.max(8, 60 - i * 1.2));
+    }
+  }
+  // { mark: "文字" } … あふれた中から、目立つ1行を浮かび上がらせる
+  if (s.mark) { SFX.alert(); print(`<span class="mark">${esc(fill(s.mark))}</span>`, "markline"); await pause(500); }
+  // { scan: { total, cats: [[名前, 数], ...], found } } … AIが分類していき、分類できないものが1つ残る
+  if (s.scan) {
+    const sc = s.scan;
+    const panel = print(`<div class="fx-panel scan-panel"><div class="fx-head"><span>AI SCAN</span><span class="sc-n">0 / ${sc.total.toLocaleString()}</span></div>
+      <div class="sc-bar"></div><div class="sc-cats">${sc.cats.map(([k]) => `<div><span>${esc(k)}</span><span class="sc-c">0</span></div>`).join("")}</div></div>`).querySelector(".scan-panel");
+    const nEl = panel.querySelector(".sc-n"), barEl = panel.querySelector(".sc-bar"), cEls = [...panel.querySelectorAll(".sc-c")];
+    const frames = 36;
+    for (let f = 1; f <= frames; f++) {
+      const p = f / frames;
+      nEl.textContent = `${Math.round(sc.total * p).toLocaleString()} / ${sc.total.toLocaleString()}`;
+      barEl.textContent = bar(p, 30);
+      sc.cats.forEach(([, n], i) => { cEls[i].textContent = Math.round(n * Math.min(1, p * (1 + i * 0.15))).toLocaleString(); });
+      if (f % 2 === 0) SFX.tick();
+      await pause(55);
+    }
+    if (sc.found) {
+      await pause(300);
+      SFX.alert();
+      panel.insertAdjacentHTML("beforeend", `<div class="sc-found">${esc(sc.foundLabel || "分類できないもの")}：${esc(fill(sc.found))}</div>`);
+      scrollDown();
+      await pause(900);
+    }
+  }
+  // { locked: "説明" } … 開こうとして、LOCKED で弾かれる
+  if (s.locked) {
+    SFX.denied();
+    pulse($("wrap"), "shake", 450);
+    print(panelHtml("lock", "LOCKED", esc(fill(s.locked))));
+    await pause(300); SFX.lock(); await pause(900);
+  }
+  // { battle: { lose: true } } … こちらと防壁の押し合い。押したり押し返されたりして、最後は負ける
+  if (s.battle) {
+    const line = print(`<div class="fx-panel battle"><div class="fx-head"><span>YOU</span><span>ICE</span></div><div class="bt-bar"></div><div class="bt-log dim"></div></div>`).querySelector(".battle");
+    const barEl = line.querySelector(".bt-bar"), log = line.querySelector(".bt-log");
+    let p = 0.5;
+    const moves = [0.08, 0.06, -0.1, 0.12, -0.05, 0.09, -0.14, 0.04, -0.12, -0.16, -0.2, -0.3];
+    for (const m of moves) {
+      for (let k = 0; k < 6; k++) {
+        p = Math.max(0, Math.min(1, p + m / 6 + (Math.random() - 0.5) * 0.02));
+        barEl.textContent = `${"▮".repeat(Math.round(p * 30))}│${"▯".repeat(30 - Math.round(p * 30))}`;
+        log.textContent = `${m > 0 ? "push" : "pull"}  0x${randHex(4).replace(/ /g, "")}  ${(p * 100).toFixed(1)}%`;
+        SFX.tick();
+        await pause(40);
+      }
+      if (m < -0.15) pulse($("term"), "jolt", 160);
+    }
+    barEl.textContent = `│${"▯".repeat(30)}`;
+    SFX.denied();
+    pulse($("wrap"), "shake", 450);
+    line.classList.add("lost");
+    await pause(700);
+  }
+  // { file: { name, lines: [...] } } … ファイルを開いて中身を見せる
+  if (s.file) {
+    SFX.card();
+    const card = print(`<div class="fx-panel file-card"><div class="fx-head"><span>FILE</span><span>${esc(fill(s.file.name))}</span></div>`
+      + `<div class="fc-body">${s.file.lines.map(l => esc(fill(l))).join("<br>")}</div></div>`);
+    await decode(card, 700);
+    await pause(800);
+  }
+  // { rebuild: true } … 画面がはがれ落ちて、新しく組み直されて戻ってくる（大きな権限を手に入れたとき）
+  if (s.rebuild) {
+    SFX.boom();
+    $("term").classList.add("peel-off");
+    await pause(1100);
+    for (let i = 0; i < 6; i++) { print(`0x${randHex(2).replace(/ /g, "")}  ${randHex(14)}`, "dim"); SFX.tick(); await pause(30); }
+    $("term").classList.remove("peel-off");
+    $("term").classList.add("peel-in");
+    SFX.warp();
+    await pause(1200);
+    $("term").classList.remove("peel-in");
+  }
+  // { layer: true } … 世界が少し作り変わる（色はそのまま、画面の文字が一度くずれて組み直される）
+  if (s.layer) {
+    const nodes = textNodes(out).slice(-160);
+    const orig = nodes.map(n => n.nodeValue);
+    pulse($("fx"), "zone-in", 650); SFX.static();
+    const end = Date.now() + 1400;
+    while (Date.now() < end) {
+      for (let i = 0; i < 30; i++) {
+        const k = Math.floor(Math.random() * nodes.length), n = nodes[k], chars = [...n.nodeValue];
+        if (!chars.length) continue;
+        const j = Math.floor(Math.random() * chars.length);
+        chars[j] = glyphFor(chars[j]); n.nodeValue = chars.join("");
+      }
+      if (Math.random() < 0.3) SFX.tick();
+      await sleep(45);
+    }
+    // 下から順に、元の文字へ戻していく
+    for (let i = nodes.length - 1; i >= 0; i--) { nodes[i].nodeValue = orig[i]; if (i % 8 === 0) { SFX.tick(); await sleep(12); } }
+    pulse($("fx"), "zone-in", 650); SFX.warp();
+    await pause(600);
+  }
+  // { breach: { host, steps: [...] } } … 守りの壁が崩れて ACCESS GRANTED になる演出（システムに入るときと同じもの）
+  if (s.breach) await breach({ host: s.breach.host, breach: s.breach.steps });
+  // { flag: "名前" } … 状況の印をつける（notes の need / not で、師匠の反応を変える）
+  if (s.flag) state.flags[s.flag] = true;
+  // { doc: "HTML", hidden, clue, ms } … 文書を1件、解読しながら出す（hidden は赤い文字）。clue があれば手がかりにする
+  if (s.doc) {
+    await decode(print(`<div class="doc${s.hidden ? " hidden-data" : ""}">${s.doc}</div>`, "node result reveal"), s.ms || 1200);
+    if (s.clue) { await pause(500); addClue(s.clue); }
+  }
+  // { escalate: { label, warn: [...], ok } } … 権限昇格。ok なら 100% まで行って GRANTED、そうでなければ途中で警告が出て止まる
+  if (s.escalate) {
+    const e = s.escalate;
+    const panel = print(`<div class="fx-panel esc-panel"><div class="fx-head"><span>PRIVILEGE ESCALATION</span><span>${esc(e.label || "")}</span></div><div class="esc-bar"></div><div class="esc-log"></div></div>`).querySelector(".esc-panel");
+    const barEl = panel.querySelector(".esc-bar"), log = panel.querySelector(".esc-log");
+    const warns = e.warn || [];
+    const steps = ["kernel token", "session ring", "policy table", "audit hook", "root ACL"];
+    for (let f = 1; f <= 40; f++) {
+      const p = e.ok ? f / 40 : Math.min(0.72, f / 40 * 0.9) + (Math.random() - 0.5) * 0.02;
+      barEl.textContent = `${bar(p, 30)} ${Math.round(p * 100)}%`;
+      const w = warns[Math.floor((f - 10) / 10)];
+      if (f >= 10 && f % 10 === 0 && w) { log.insertAdjacentHTML("beforeend", `<div class="alert">[!] ${esc(w)}</div>`); SFX.alert(); addTrace(4); }
+      if (e.ok && f % 8 === 0) { log.insertAdjacentHTML("beforeend", `<div class="dim">[+] patch ${esc(steps[f / 8 - 1] || "")} ... OK</div>`); SFX.hop(f / 8); }
+      SFX.tick();
+      await pause(70);
+    }
+    if (e.ok) {
+      panel.insertAdjacentHTML("beforeend", `<div class="bp-stamp">GRANTED</div>`);
+      SFX.granted();
+      scrollDown();
+      await pause(700);
+    } else {
+      barEl.classList.add("stall");
+      await pause(400);
+    }
+  }
+  // { race: { label, ms } } … 時間切れまでのバーが減っていく（ギリギリで間に合う）
+  if (s.race) {
+    const r = s.race, line = print(`<div class="fx-panel race"><div class="fx-head"><span>${esc(r.label)}</span><span class="rc-t"></span></div><div class="rc-bar"></div></div>`).querySelector(".race");
+    const t0 = Date.now(), total = (r.ms || 2400);
+    while (Date.now() - t0 < total * 0.92) {
+      const left = 1 - (Date.now() - t0) / total;
+      line.querySelector(".rc-bar").textContent = bar(left, 30);
+      line.querySelector(".rc-t").textContent = `${(left * (r.ms || 2400) / 1000).toFixed(2)}s`;
+      SFX.tick();
+      await sleep(50);
+    }
+    line.classList.add("saved");
+  }
+  // { photo: { name, caption } } … 画像ファイルを開く（モザイク処理された写真。中身は見せない）
+  if (s.photo) {
+    SFX.card();
+    const cells = Array.from({ length: 12 * 7 }, () => {
+      const h = 15 + Math.floor(Math.random() * 30), l = 18 + Math.floor(Math.random() * 40);
+      return `<i style="background:hsl(${h} ${25 + Math.random() * 30}% ${l}%)"></i>`;
+    }).join("");
+    const card = print(`<div class="fx-panel photo-card"><div class="fx-head"><span>IMAGE</span><span>${esc(fill(s.photo.name))}</span></div>`
+      + `<div class="ph-wrap"><div class="ph-grid">${cells}</div><div class="ph-stamp">モザイク処理済み</div></div>`
+      + (s.photo.caption ? `<div class="ph-cap">${esc(fill(s.photo.caption))}</div>` : "") + `</div>`).querySelector(".photo-card");
+    scrollDown();
+    await pause(400);
+    card.classList.add("shown");
+    await pause(1400);
+  }
+  // { vault: { code: "0412-88" } } … 金庫のダイヤルが回り、1桁ずつ合っていく
+  if (s.vault) {
+    const code = [...s.vault.code];
+    const panel = print(`<div class="fx-panel vault"><div class="fx-head"><span>VAULT</span><span>${esc(s.vault.label || "")}</span></div>`
+      + `<div class="vt-dial">${code.map(c => /\d/.test(c) ? `<span class="vt-d">0</span>` : `<span class="vt-sep">${esc(c)}</span>`).join("")}</div></div>`).querySelector(".vault");
+    const digits = [...panel.querySelectorAll(".vt-d")], want = code.filter(c => /\d/.test(c));
+    for (let lock = 0; lock < digits.length; lock++) {
+      for (let f = 0; f < 10 + lock * 2; f++) {
+        for (let k = lock; k < digits.length; k++) digits[k].textContent = Math.floor(Math.random() * 10);
+        SFX.tick();
+        await pause(40);
+      }
+      digits[lock].textContent = want[lock];
+      digits[lock].classList.add("set");
+      SFX.lock();
+      await pause(120);
+    }
+    panel.insertAdjacentHTML("beforeend", `<div class="bp-stamp">VAULT OPEN</div>`);
+    SFX.granted();
+    pulse($("term"), "flash-ok", 600);
+    scrollDown();
+    await pause(800);
+  }
+  // { count: { to: 1280000000, label, prefix } } … 大きな数字が、メーターのように一気に回って止まる
+  if (s.count) {
+    const c = s.count;
+    const panel = print(`<div class="fx-panel count"><div class="fx-head"><span>${esc(c.label || "")}</span></div><div class="ct-num"></div></div>`).querySelector(".count");
+    const el = panel.querySelector(".ct-num");
+    const frames = 40;
+    for (let f = 1; f <= frames; f++) {
+      const p = 1 - (1 - f / frames) ** 3;
+      el.textContent = `${c.prefix || ""}${Math.round(c.to * p).toLocaleString()}`;
+      SFX.tick();
+      await pause(45);
+    }
+    el.classList.add("hit");
+    SFX.boom();
+    pulse($("term"), "jolt", 200);
+    await pause(900);
+  }
+  // { shred: 行数 } … ログの行が、文字ごとにバラバラに崩れて消えていく（足跡を消す）
+  if (s.shred) {
+    const box = print(`<div class="shred"></div>`).querySelector(".shred");
+    const lines = Array.from({ length: s.shred }, () => fakeLogLine());
+    box.textContent = lines.join("\n");
+    await pause(400);
+    const chars = lines.map(l => [...l]);
+    for (let round = 0; round < 18; round++) {
+      for (const row of chars) for (let k = 0; k < 6; k++) { const j = Math.floor(Math.random() * row.length); row[j] = pickOne([" ", " ", "·", "░"]); }
+      box.textContent = chars.map(r => r.join("")).join("\n");
+      if (round % 2 === 0) SFX.tick();
+      await pause(55);
+    }
+    box.textContent = "";
+    box.remove();
+    SFX.static();
+  }
+}
+
 // 演出の台本を再生する（書き方は src/scenario.js の先頭を参照）
 async function play(steps) {
   for (const s of steps) {
-    if (typeof s === "string") { await typeLine(s); await wait(420); continue; }
+    if (typeof s === "string") { await typeLine(s); await (s.startsWith("[師匠]") ? pause(560) : wait(420)); continue; }
     if (s.wait) await wait(s.wait);
     if ("glitch" in s) $("wrap").classList.toggle("unstable", s.glitch);
     if ("mode" in s) {
@@ -2152,6 +2481,8 @@ async function play(steps) {
     if (s.flash) { SFX.alert(); pulse($("term"), "flash", 1000); }
     // { auto: "コマンド" } … 今のプロンプトに、コマンドが自動で打たれる（打っているのはプレイヤー、という体）
     if (s.auto) await autoType(fill(s.auto));
+    // 任務2の見せ場の演出（ファイルがあふれる・AIスキャン・攻防・画面がはがれる など）
+    await playFx(s);
     // { music: true } … 落ち着いた曲（calm）。{ music: "run" } … ボーナスタイムの、前へ進む曲。false で止める
     if ("music" in s) SFX.music(!!s.music, { track: typeof s.music === "string" ? s.music : "calm" });
     // { slow: "セリフ", ms: 1文字の間隔 } … ゆっくり1文字ずつ出す
@@ -2479,7 +2810,7 @@ const COMMANDS = {
     return connect(state.history.pop(), { isBack: true });
   },
   ls() {
-    if (!printMenu()) print("接続先はありません。", "dim");
+    if (!printMenu(true)) print("接続先はありません。", "dim");
   },
   // 隠しコマンド（help には出さない）
   reboot: () => boot(),
@@ -2574,6 +2905,31 @@ async function authorLine() {
     "[師匠] ……まァ、バレちまったもんは仕方ない。これが俺だ。",
     "[師匠] 気が済んだら仕事に戻れ。俺から受け取ったコードを打て。",
   ] : ["[師匠] 用が済んだら、仕事に戻れ。"], BEAT.react);
+}
+
+// 小ネタ：外の検索サイト（Seek）で師匠のハンドルネームを調べると、謎のファンページが見つかる
+// （connect nitoka と同じカードに、誰かが書いた賛辞。師匠は他人事のふりをする）
+async function fanPage() {
+  const a = S.author;
+  await busy(async () => {
+    print(`<div class="res-head"><span class="res-title">Seek ─ 「${esc(a.handle)}」</span><span class="res-count">1 件</span></div>`);
+    await wait(BEAT.small);
+    SFX.card();
+    await Promise.race([document.fonts?.load(`48px "${SIGN_FONT}"`), sleep(1500)]).catch(() => {});
+    const card = print(`<div class="profile"><div class="pf-head">FAN PAGE ── ${esc(a.handle)}</div>`
+      + `<div class="pf-msg">${(a.fan || []).map(m => esc(fill(m))).join("<br>")}</div>`
+      + (a.sign ? `<div class="pf-sign"></div>` : "") + `</div>`);
+    await decode(card, 600);
+    if (a.sign) {
+      await wait(500);
+      card.querySelector(".pf-sign").innerHTML = `<svg viewBox="0 0 240 72" aria-label="${esc(a.sign)}">`
+        + `<text x="228" y="54" text-anchor="end" font-family="'${SIGN_FONT}', cursive">${esc(a.sign)}</text></svg>`;
+      await wait(1250);
+      SFX.sparkle();
+      await wait(800);
+    }
+  });
+  await speak(["[師匠] ……これは、なんだろうな？", "[師匠] どうせ、どっかの誰かの黒歴史だろ。", "[師匠] ……見なかったことにしろ。"], BEAT.react);
 }
 
 // 本物っぽい接続の演出だけを見せる（小ネタ用）
@@ -2819,9 +3175,23 @@ async function run(raw) {
   // 「次の一手」を打ったら、案内は消す（結果を見て、師匠がまた次を言う）
   const g = state.guide;
   if (g && state.current === g.at && fold(raw).replace(/\s+/g, "") === fold(g.cmd).replace(/\s+/g, "")) state.guide = null;
+  // actions：その場所でだけ使える特別なコマンド（任務2の見せ場。押すと、たっぷり時間をかけた演出が流れる）
+  const acts = here()?.actions;
+  const act = acts && Object.entries(acts).find(([k]) => fold(k).replace(/\s+/g, "") === fold(raw).replace(/\s+/g, ""));
+  if (act) return runAction(act[0], act[1]);
   const fn = COMMANDS[name.toLowerCase()];
   if (!fn) return print(`${esc(name)}: コマンドが見つかりません（help で一覧）`, "alert");
   await fn(args.join(" "));
+}
+
+// actions の実行：{ script: [台本], next: 次の一手 }。一度やったら、もう一度は流さない
+async function runAction(key, a) {
+  const done = `act:${state.current}:${key}`;
+  if (state.said.has(done)) return print(`${esc(key)}: もう済んでいる。`, "dim");
+  state.said.add(done);
+  await busy(() => play(a.script || []));
+  setGuide(a.next);
+  await checkObjectives();
 }
 
 // Tab 補完：1語目はコマンド、ssh の後は接続先、cd の後はフォルダ
@@ -2956,7 +3326,7 @@ document.addEventListener("touchstart", e => lookAt(e.touches[0].clientX, e.touc
 function freshState() {
   return {
     current: null, history: [], visited: new Set(), opened: new Map(), links: [], said: new Set(), clues: [], cmdLog: [],
-    trace: 0, minutes: 0, commands: 0, objIdx: 0, objShown: false, saveReady: null, over: false, mode: null, skip: false, endReady: false, retry: false,
+    trace: 0, minutes: 0, commands: 0, flags: {}, objIdx: 0, objShown: false, saveReady: null, over: false, mode: null, skip: false, endReady: false, retry: false,
   };
 }
 

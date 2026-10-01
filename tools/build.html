@@ -62,6 +62,7 @@ function check(cid, ch) {
     for (const e of node.search?.entries || []) checkNext(`${id} の検索結果`, e.next);
     for (const n of node.search?.notes || []) checkNext(`${id} の検索の師匠のひとこと`, n.next);
     for (const d of node.dir || []) checkNext(`${id} のフォルダ ${d.name}`, d.next);
+    for (const [k, a] of Object.entries(node.actions || {})) checkNext(`${id} のコマンド ${k}`, a.next);
   }
   for (const o of ch.objectives || []) checkNext(`目標「${o.text}」`, o.next);
   for (const id of ch.nav || []) if (!ch.nodes[id]) ng(`nav の「${id}」というノードがありません`);
@@ -85,7 +86,8 @@ function check(cid, ch) {
 
 // 鍵付きノード：host・title・lock 以外を、パスワードごとに暗号化する
 async function lockNode(cid, id, node) {
-  const { host, title, lock, ...secret } = node;
+  // zone（画面の色合い）は鍵の画面でも使うので、暗号化せずに残す
+  const { host, title, lock, zone, ...secret } = node;
   const { pass, ...rest } = lock;
   // 文字数を見せる鍵は、文字数だけ残す（パスワードそのものは公開データから消える）
   if (lock.showLength) rest.len = [...[].concat(pass)[0]].length;
@@ -111,7 +113,7 @@ async function lockNode(cid, id, node) {
     rest.user = user;
   }
   log(`  🔒 ${id}: 暗号化しました（パスワード ${boxes.length + Object.keys(lock.user?.pass || {}).length} 通り）`);
-  return { host, title, lock: { ...rest, boxes } };
+  return { host, title, zone, lock: { ...rest, boxes } };
 }
 
 async function build() {
