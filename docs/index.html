@@ -1134,13 +1134,23 @@ function print(html, cls = "") {
   scrollDown();
   return d;
 }
-const scrollDown = () => { $("term").scrollTop = $("term").scrollHeight; };
 // 演出で行の中身があとから伸びても（照合中… など）、いちばん下についていく。
 // ただし、自分で上にスクロールしてログを読んでいるときは、勝手に引き戻さない
-let followBottom = true;
-$("term").addEventListener("scroll", () => {
+//   followBottom を false にするのは「自分で上へ戻したとき」だけ。下まで戻ってきたら、また追いかける
+//   （中身が伸びたせいで下から離れて見えても、追いかけるのはやめない）
+let followBottom = true, lastTop = 0;
+const scrollDown = () => {
   const t = $("term");
-  followBottom = t.scrollHeight - t.scrollTop - t.clientHeight < 40;
+  t.scrollTop = t.scrollHeight;
+  followBottom = true;
+  lastTop = t.scrollTop;
+  $("toBottom").classList.remove("show");
+};
+$("term").addEventListener("scroll", () => {
+  const t = $("term"), dist = t.scrollHeight - t.scrollTop - t.clientHeight;
+  if (dist < 40) followBottom = true;
+  else if (t.scrollTop < lastTop - 4) followBottom = false;
+  lastTop = t.scrollTop;
   // さかのぼって読んでいるときだけ「↓ 最新へ」を出す
   $("toBottom").classList.toggle("show", !followBottom);
 });
@@ -1173,6 +1183,7 @@ if (window.ResizeObserver) {
   const ro = new ResizeObserver(() => { if (followBottom) scrollDown(); });
   ro.observe($("out"));
   ro.observe($("dock"));
+  ro.observe($("term"));   // スマホで上の欄を開け閉めして、ターミナルの高さが変わったときも
 }
 function pulse(el, cls, ms = 600) {
   el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
@@ -1433,8 +1444,20 @@ function renderObjectives(fresh) {
   box.innerHTML = html;
 }
 
+const eviTipShown = () => { if (state.eviTipDone) return true; try { return localStorage.getItem("uzu-evi-tip") === "1"; } catch { return false; } };
+
 // 目標が済んでいたら「OBJECTIVE CLEAR」→ 次の目標を出す（いくつか続けて済むこともある）
 async function checkObjectives() {
+  // 初めて手がかりを見つけたら、どこにまとめてあるかを師匠が教える（この端末で一度だけ）
+  //   スマホでは手がかりの欄が画面の上にたたまれていて、気づきにくいので
+  if (state.clues.length && !eviTipShown()) {
+    state.eviTipDone = true;
+    try { localStorage.setItem("uzu-evi-tip", "1"); } catch {}
+    const phone = matchMedia("(max-width: 800px)").matches;
+    await speak(phone
+      ? ["[師匠] 見つけた手がかりは、画面の上の欄にまとめておいた。", "[師匠] 押すと開く。手がかりを押せば、見つけた場所に飛べるぞ。"]
+      : ["[師匠] 見つけた手がかりは、右の欄にまとめておいた。", "[師匠] 手がかりを押せば、見つけた場所に飛べるぞ。"], BEAT.react);
+  }
   // 今の目標の手がかりが全部そろったら、師匠が次にやることを案内する（一度だけ）
   const cur = nowObj();
   if (cur?.ready && cur.clues?.length && !objDone(cur) && cur.clues.every(c => state.clues.includes(c))) {
