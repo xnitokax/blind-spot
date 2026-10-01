@@ -269,7 +269,7 @@
   .pf-role { color: var(--fg); font-size: 16px; margin: 4px 0 10px; }
   .pf-fields { display: grid; grid-template-columns: max-content 1fr; column-gap: 16px; row-gap: 3px; font-size: 14px; }
   .pf-link { color: var(--voice); }
-  .pf-msg { color: var(--voice); line-height: 1.9; margin: 10px 0 4px; }
+  .pf-msg { color: var(--voice); line-height: 1.9; margin: 10px 0 4px; white-space: pre-wrap; }
   .profile .pf-fields { margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(143,200,255,.25); font-size: 12px; }
   /* サイン：オレンジの筆記体。ペンで書いていくように左から右へ現れ、書き終わりに一瞬強く光る */
   .pf-sign { display: flex; justify-content: flex-end; height: 64px; }
@@ -1090,7 +1090,7 @@ function updateNext() {
   } else if (state.current) {
     const node = here();
     // 調べ終わったら、どこにいても一番左に return を出しておく
-    if (state.saveReady) chips.push(chip("return", "return 成果を持って帰る", "save"));
+    if (state.saveReady) chips.push(chip("return", "return", "save"));
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
     for (const l of state.links) chips.push(chip(`ssh ${l.name}`, `ssh ${l.name}${l.oneway ? "（一方通行）" : ""}`, l.oneway ? "ow" : ""));
@@ -1156,9 +1156,12 @@ async function decode(el, ms = 450) {
 }
 
 // 台本の1行：[師匠] はセリフ、[!] は警告、[*] [+] はシステム。1文字ずつ打ち出す
+// 師匠の話し方：「、」「。」の代わりに「,  」「.  」を使う（行末やカッコの前では空白を付けない）
+const shishou = s => s.replace(/、/g, ",  ").replace(/。/g, ".  ").replace(/ +(?=[」』）)]|\n|$)/g, "");
+
 function lineParts(s) {
   s = fill(s);
-  if (s.startsWith("[師匠]")) return { cls: "say", text: s.replace(/^\[師匠\]\s*/, ""), say: true };
+  if (s.startsWith("[師匠]")) return { cls: "say", text: shishou(s.replace(/^\[師匠\]\s*/, "")), say: true };
   if (s.startsWith("[!")) return { cls: "alert", text: s };
   if (/^\[[*+]\]/.test(s)) return { cls: "sys", text: s };
   return { cls: "", text: s };
@@ -1341,8 +1344,9 @@ function updateClueCount() {
 function renderObjectives(fresh) {
   const box = $("evi");
   const li = (cls, html) => `<li class="${cls}">${html}</li>`;
-  const clueItems = o => (o.clues || []).map(c => state.clues.includes(c)
-    ? li(`o-clue${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`) : li("o-clue miss", "◇ ？？？")).join("");
+  // 見つけた手がかりだけを並べる（まだの分を「？？？」で先に見せることはしない）
+  const clueItems = o => (o.clues || []).filter(c => state.clues.includes(c))
+    .map(c => li(`o-clue${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`)).join("");
   let html = "";
   if (S.caseGoal && CH?.objective) html += li("o-sec", "CASE") + li("o-case", esc(S.caseGoal));
   if (CH?.objective) html += li("o-sec", "MISSION") + li("o-mission", esc(CH.objective));
@@ -1469,7 +1473,8 @@ function disablePicks() {
 }
 
 // 移動したときの表示：アドレス → 場所の名前 → 本文 → （間）→ 行き先の一覧、の順に1つずつ出す
-async function showNode() {
+// opt.say … 初めて来たときの師匠のセリフ。本文に <!--say--> があれば、その位置で話す（話したら opt.said = true）
+async function showNode(opt = {}) {
   disablePicks();
   const node = here();
   // {login} … 鍵を開けたときのアカウント名（ほかのアカウントで入ると、その人の名前になる）
@@ -1481,7 +1486,13 @@ async function showNode() {
   head.insertAdjacentHTML("beforeend", `\n<b class="reveal">${esc(fill(node.title))}</b>`);
   scrollDown();
   await wait(BEAT.block);
-  if (html.trim()) await decode(print(html, "node reveal"));
+  const [html1, html2] = html.split("<!--say-->");
+  if (html1.trim()) await decode(print(html1, "node reveal"));
+  if (html2 !== undefined) {
+    if (opt.say?.length) { await speak(opt.say, BEAT.react); opt.said = true; }
+    await wait(BEAT.block);
+    if (html2.trim()) await decode(print(html2, "node reveal"));
+  }
   await wait(BEAT.block);
   printMenu();
   normalPrompt();
@@ -1500,10 +1511,11 @@ async function enterNode(id, opt = {}) {
   state.visited.add(id);
 
   await busy(async () => {
-    await showNode();
+    const view = { say: first ? node.say : null };
+    await showNode(view);
     if (first) {
       if (node.clue) { await wait(600); addClue(node.clue); }
-      await speak(node.say, BEAT.react);
+      if (!view.said) await speak(node.say, BEAT.react);
     }
     await checkObjectives();
     if (node.goal) await runGoal(node.goal);
@@ -2191,7 +2203,7 @@ async function authorLine() {
     await Promise.race([document.fonts?.load(`48px "${SIGN_FONT}"`), sleep(1500)]).catch(() => {});
     const card = print(`<div class="profile"><div class="pf-head">PROFILE ── ${esc(a.handle)}</div>`
       + (a.role ? `<div class="pf-role">${esc(a.role)}</div>` : "")
-      + (a.message ? `<div class="pf-msg">${a.message.map(esc).join("<br>")}</div>` : "")
+      + (a.message ? `<div class="pf-msg">${a.message.map(m => esc(shishou(fill(m)))).join("<br>")}</div>` : "")
       + (a.sign ? `<div class="pf-sign"></div>` : "")
       + (a.profile?.length ? `<div class="pf-fields">${a.profile.map(([k, v]) => `<span class="dim">${esc(k)}</span><span>${val(v)}</span>`).join("")}</div>` : "")
       + `</div>`);
