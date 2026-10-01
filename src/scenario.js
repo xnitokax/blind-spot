@@ -296,11 +296,21 @@ const hrEntries = (m, goal) => [
 <p><b>石田 航</b>（いしだ わたる）　30歳</p>
 <pre class="log">
 所属（現在）  営業本部 第二営業部
-入社経路      縁故（父：石田 剛三　帝和ホールディングス 取締役）
+入社経路      縁故
 
 人事評価      C（3期連続）
 上長所見      遅刻と、経費の雑な申請が多い。注意すると「親父に言うぞ」と返される。
 人事部メモ    取扱注意。必要以上に関わらないこと。
+</pre>`,
+  },
+  // 石田の父（「石田」で調べると、息子と並んで出る → 縁故の理由が分かる）
+  {
+    html: `<p class="meta">社員番号 T-870401</p>
+<p><b>石田 剛三</b>（いしだ ごうぞう）　61歳</p>
+<pre class="log">
+所属（現在）  取締役（営業担当）
+人事評価      ―（役員のため対象外）
+家族          長男（営業本部 第二営業部 在籍）
 </pre>`,
   },
   {
@@ -370,8 +380,8 @@ const HR_NOTES = [
     say: [
       "[師匠] ……親の七光りで入った、お坊ちゃんか。",
       "[師匠] だから、致命的なユーザーIDの漏洩も、消されずに残ってたわけだ。誰も注意できやしない。",
-      "[師匠] 感謝なんて、されたことないだろ。俺らが代わりにしといてやるよ。",
-      "[師匠] その口の軽さに、乾杯だ。",
+      "[師匠] よかったな。3期連続のC。",
+      "[師匠] 俺らの評価はAだぜ。",
     ],
   },
   { when: "小野寺", say: ["[師匠] 予算は却下、穴は増える一方。……こっちとしては、ありがたい話だがな。"] },
@@ -499,11 +509,12 @@ const SCENARIO = {
               prompt: "ユーザーID",
               hint: "？？？", // 形式は謎。日報で「ユーザーID」を検索すると分かる
               ids: {
-                "asahina.satsuki": "asahina", "asahina": "asahina", "s.asahina": "asahina", "satsuki.asahina": "asahina", "朝比奈": "asahina", "朝比奈さつき": "asahina",
-                "kuroda.seiichi": "kuroda", "kuroda": "kuroda", "黒田": "kuroda", "黒田誠一": "kuroda",
+                "asahina.satsuki": "asahina", "asahina.satuki": "asahina", "satuki.asahina": "asahina", "asahina": "asahina", "s.asahina": "asahina", "satsuki.asahina": "asahina", "朝比奈": "asahina", "朝比奈さつき": "asahina",
+                "kuroda.seiichi": "kuroda", "kuroda.seiiti": "kuroda", "kuroda": "kuroda", "黒田": "kuroda", "黒田誠一": "kuroda",
                 "saeki.aya": "saeki", "saeki": "saeki", "佐伯": "saeki", "佐伯あや": "saeki",
                 "ishida.wataru": "ishida", "ishida": "ishida",
-                "onodera.jin": "onodera", "onodera": "onodera",
+                "ishida.gozo": "ishida_g", "ishida.gouzou": "ishida_g", "ishida.gozou": "ishida_g", "ishida.gouzo": "ishida_g",
+                "onodera.jin": "onodera", "onodera.zin": "onodera", "onodera": "onodera",
                 "makabe.minato": "makabe", "makabe": "makabe", "真壁": "makabe", "真壁湊": "makabe",
               },
               owner: "asahina",
@@ -511,6 +522,7 @@ const SCENARIO = {
               disabled: {
                 makabe: "このアカウントは停止されています（2026/09/12）",
                 ishida: "このユーザーには、人事データベースへのアクセス権限がありません（人事部のみ）",
+                ishida_g: "このユーザーには、人事データベースへのアクセス権限がありません（人事部のみ）",
                 onodera: "このユーザーには、人事データベースへのアクセス権限がありません（人事部のみ）",
               },
             },

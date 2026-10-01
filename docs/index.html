@@ -228,9 +228,11 @@
     animation: lockScan 2.6s linear infinite;
   }
   .lock-title { font-size: 26px; letter-spacing: .5em; margin-right: -.5em; text-shadow: 0 0 14px currentColor; }
-  .spanel .icon { width: 24px; height: 26px; flex: none; filter: drop-shadow(0 0 6px currentColor); }
+  /* overflow: visible … 持ち上がった掛け金（上の輪）が、アイコンの枠で切れないように */
+  .spanel .icon { width: 24px; height: 26px; flex: none; overflow: visible; filter: drop-shadow(0 0 6px currentColor); }
+  .spanel.unlock .icon { margin-right: 6px; }
   .spanel.lock .shackle { animation: shackleClose .35s .35s cubic-bezier(.5, 0, .7, 1.6) both; }
-  .spanel.unlock .shackle { animation: shackleOpen .4s .35s cubic-bezier(.3, 1.6, .6, 1) both; }
+  .spanel.unlock .shackle { animation: shackleOpen .6s .35s cubic-bezier(.3, 1.6, .6, 1) both; }
   .spanel.deny .lockpanel { animation: lockIn .5s ease-out both, denyShake .4s .45s both, lockPulse 2.2s 1s ease-in-out infinite; }
   .lock-sub { text-align: center; color: var(--c); opacity: .75; font-size: 11px; letter-spacing: .25em; margin-top: 6px; }
   @keyframes lockIn {
@@ -243,7 +245,8 @@
   @keyframes lockPulse { 50% { box-shadow: 0 0 30px -4px var(--c), 0 0 20px -6px var(--c) inset; } }
   @keyframes lockScan { to { top: 100%; } }
   @keyframes shackleClose { from { transform: translateY(-5px); } to { transform: none; } }
-  @keyframes shackleOpen { from { transform: none; } to { transform: translateY(-5px); } }
+  /* 開くとき：掛け金が上に抜けてから、右へずれる（開いた南京錠の形） */
+  @keyframes shackleOpen { 0% { transform: none; } 45% { transform: translateY(-5px); } 100% { transform: translate(6px, -4px); } }
   @keyframes denyShake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
   .auth-need { font-size: 17px; color: var(--warn); margin: 18px 0 10px; letter-spacing: .05em; }
   .auth-hint { line-height: 1.7; }
