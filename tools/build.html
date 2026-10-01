@@ -69,9 +69,6 @@ function check(cid, ch) {
       checkNext(`${id} の job`, x.job.next);
       if (x.job.stopAt && !ch.nodes[x.job.stopAt]) ng(`${id} の job の stopAt「${x.job.stopAt}」というノードがありません`);
     }
-    for (const d of node.detours || []) {
-      if (!d.cmd) ng(`${id} の寄り道（detours）に cmd がありません`);
-    }
     for (const d of node.dir || []) checkNext(`${id} のフォルダ ${d.name}`, d.next);
     for (const [k, a] of Object.entries(node.actions || {})) checkNext(`${id} のコマンド ${k}`, a.next);
   }
