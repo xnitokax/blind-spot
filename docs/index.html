@@ -2065,7 +2065,7 @@ async function play(steps) {
     if (s.sound) SFX[s.sound]?.();
     // { flash: true } … 画面が一瞬赤く光って警告音（監査に見つかった、など）
     if (s.flash) { SFX.alert(); pulse($("term"), "flash", 1000); }
-    // { auto: "コマンド" } … 今のプロンプトに、コマンドが自動で打たれる（師匠が代わりに打つ）
+    // { auto: "コマンド" } … 今のプロンプトに、コマンドが自動で打たれる（打っているのはプレイヤー、という体）
     if (s.auto) await autoType(fill(s.auto));
     if ("music" in s) SFX.music(s.music);
     // { slow: "セリフ", ms: 1文字の間隔 } … ゆっくり1文字ずつ出す
