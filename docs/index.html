@@ -421,13 +421,18 @@
   @keyframes flash { 50% { background: #3a0a12; } }
   .flash-ok { animation: flashOk .6s; }
   @keyframes flashOk { 30% { background: #0a3a24; } }
-  .shake { animation: shake .45s; }
-  @keyframes shake {
-    10%, 90% { transform: translate(-2px, 0); } 20%, 80% { transform: translate(4px, 1px); }
-    30%, 50%, 70% { transform: translate(-6px, -1px); } 40%, 60% { transform: translate(6px, 1px); }
+  .shake { animation: impact .55s cubic-bezier(.15, .9, .25, 1); }
+  @keyframes impact {
+    0%   { transform: scale(1.018) rotate(.3deg); filter: brightness(1.7) contrast(1.2); }
+    10%  { transform: translate(-9px, 2px) rotate(-.45deg) skewX(3deg); }
+    22%  { transform: translate(7px, -3px) rotate(.3deg) skewX(-2deg); filter: hue-rotate(25deg) saturate(1.6); }
+    36%  { transform: translate(-4px, 1px) rotate(-.15deg); }
+    52%  { transform: translate(2px, 0) rotate(.06deg); filter: none; }
+    70%  { transform: translate(-1px, 0); }
+    100% { transform: none; filter: none; }
   }
-  .jolt { animation: jolt .16s steps(2); }
-  @keyframes jolt { 50% { transform: translate(2px, -1px); filter: hue-rotate(120deg) saturate(3); } }
+  .jolt { animation: jolt .18s steps(3); }
+  @keyframes jolt { 33% { filter: hue-rotate(120deg) saturate(3) brightness(1.4); } 66% { filter: invert(.15) hue-rotate(-60deg); } }
 
   /* 回線をつなぐ演出 */
   .warp { animation: warp .8s ease-out; }
@@ -454,12 +459,13 @@
     75%  { transform: translate(-2px, -1px); filter: hue-rotate(-60deg); }
     100% { transform: translate(2px, 1px); filter: none; }
   }
+  /* 不安定な画面：色だけがときどき狂う（画面が裂ける動きは JS の setStorm がまとめて出す） */
   .unstable { animation: unstable 1.8s steps(1) infinite; }
   @keyframes unstable {
-    0%, 100% { transform: none; filter: none; }
-    82% { transform: translate(-3px, 1px); filter: hue-rotate(80deg) saturate(2.5); }
-    86% { transform: translate(2px, -1px); filter: invert(.9); }
-    90% { transform: none; filter: none; }
+    0%, 100% { filter: none; }
+    82% { filter: hue-rotate(80deg) saturate(2.5); }
+    86% { filter: invert(.9); }
+    90% { filter: none; }
   }
   /* 画面全体の色（赤＝警報、青＝師匠が回線を奪い返した） */
   #fx { position: fixed; inset: 0; pointer-events: none; z-index: 35; opacity: 0; transition: opacity .6s; }
@@ -504,14 +510,15 @@
   .race.saved { border-color: var(--accent); }
   /* 意図的に隠されていたデータ：赤い文字 */
   .doc.hidden-data, .doc.hidden-data p, .doc.hidden-data .meta { color: #ff5a6e !important; text-shadow: 0 0 8px rgba(255,60,90,.4); }
-  /* 画面がはがれ落ちる → 組み直されて戻ってくる */
-  #term.peel-off { animation: peelOff 1.1s cubic-bezier(.6, 0, .9, .4) forwards; }
-  @keyframes peelOff {
-    0% { transform: none; filter: none; clip-path: inset(0 0 0 0); }
-    20% { transform: skewX(-4deg); filter: brightness(1.8) hue-rotate(30deg); }
-    60% { transform: translateY(40px) skewX(6deg); clip-path: inset(0 0 35% 0); opacity: .7; }
-    100% { transform: translateY(160px) rotate(2deg); clip-path: inset(0 0 100% 0); opacity: 0; }
+  /* 画面が裂けて、一本の光に潰れる → 光の線から、弾むように組み直されて戻ってくる */
+  #term.shatter { animation: shatter 1s cubic-bezier(.7, 0, .84, 0) forwards; }
+  @keyframes shatter {
+    0%   { transform: none; filter: none; }
+    35%  { transform: scale(1.012) skewX(-2deg); filter: brightness(1.5) saturate(2); }
+    75%  { transform: scale(1.03, .82) skewX(3deg); filter: brightness(2.6) hue-rotate(40deg); }
+    100% { transform: scale(1.06, .004); filter: brightness(7); }
   }
+  #term.collapsed { transform: scale(1.06, .004); filter: brightness(7); }
   /* モザイク処理された写真 */
   .photo-card .ph-wrap { position: relative; width: min(240px, 100%); margin: 8px auto 4px; }
   .photo-card .ph-grid { display: grid; grid-template-columns: repeat(12, 1fr); aspect-ratio: 12 / 7; filter: blur(8px) saturate(.6); opacity: 0; transition: opacity 1s, filter 1.4s; }
@@ -528,11 +535,12 @@
   .count .ct-num.hit { color: var(--alert); text-shadow: 0 0 16px var(--alert); animation: stampIn .35s cubic-bezier(.2, 1.6, .5, 1) both; }
   /* 崩れて消えていくログ */
   .shred { font-size: 11px; line-height: 1.35; color: var(--alert); white-space: pre; overflow: hidden; margin: 6px 0; opacity: .85; }
-  #term.peel-in { animation: peelIn 1.2s ease-out; }
-  @keyframes peelIn {
-    0% { clip-path: inset(0 0 100% 0); filter: brightness(3); }
-    50% { clip-path: inset(0 0 30% 0); filter: brightness(1.6); }
-    100% { clip-path: inset(0 0 0 0); filter: none; }
+  #term.reform { animation: reform 1.15s both; }
+  @keyframes reform {
+    0%   { transform: scale(.01, .004); filter: brightness(9); animation-timing-function: cubic-bezier(.2, .8, .3, 1); }
+    28%  { transform: scale(1.04, .004); filter: brightness(6); animation-timing-function: cubic-bezier(.2, 1.5, .35, 1); }
+    62%  { transform: scale(.99, 1.025); filter: brightness(1.8) hue-rotate(-30deg); animation-timing-function: ease-out; }
+    100% { transform: none; filter: none; }
   }
 
   /* 侵入の演出（breach）：壁が崩れ、手順ごとのバーが埋まり、最後に ACCESS のはんこ */
@@ -542,13 +550,39 @@
   }
   .bp-head { color: var(--accent); font-size: 11px; letter-spacing: .25em; display: flex; justify-content: space-between; }
   .bp-wall { font-size: 9px; line-height: 1.05; letter-spacing: 1px; color: var(--accent); opacity: .75; margin: 6px 0; white-space: pre; overflow: hidden; }
-  .bp-step { display: grid; grid-template-columns: minmax(0, 1fr) max-content; column-gap: 10px; font-size: 12px; align-items: center; }
+  /* ※ ゲージのクラスは .bp-bar（.bar は TRACE のメーター用。高さ 10px・はみ出しを隠す指定があり、名前がかぶると中身が消える） */
+  .bp-step { display: grid; grid-template-columns: minmax(0, 1fr) max-content; column-gap: 10px; font-size: 12px; align-items: center; line-height: 1.7; }
   .bp-step .lab { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bp-step .bar { color: var(--accent); font-size: 11px; white-space: pre; }
-  .bp-step.done .bar { color: var(--accent); text-shadow: 0 0 8px var(--accent); }
+  .bp-step .lab::before { content: "› "; color: var(--dim); }
+  .bp-step .bp-bar { color: var(--accent); font-size: 11px; white-space: pre; }
+  .bp-step .bp-bar .hex { color: var(--dim); }
+  .bp-step .bp-bar .ok { color: var(--bg); background: var(--accent); padding: 0 5px; margin-left: 6px; letter-spacing: .1em; box-shadow: 0 0 10px var(--accent); }
+  .bp-step.done .lab { color: var(--accent); }
+  .bp-step.done .lab::before { content: "✔ "; color: var(--accent); }
+  .bp-step.done .bp-bar { text-shadow: 0 0 8px var(--accent); }
+  .bp-step.done { animation: stepDone .45s ease-out; }
+  @keyframes stepDone { 0% { background: color-mix(in srgb, var(--accent) 28%, transparent); } 100% { background: transparent; } }
+  /* 走査線が、パネルの上を流れ続ける */
+  .breach-panel::after {
+    content: ""; position: absolute; left: 0; right: 0; top: -30%; height: 30%; pointer-events: none;
+    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 16%, transparent), transparent);
+    animation: lockScan 1.6s linear infinite;
+  }
+  .bp-head .bp-live { animation: blink .5s steps(1) infinite; color: var(--alert); }
+  /* はんこ：大きく叩きつけられ、一瞬だけ裂けてから落ち着く */
   .bp-stamp {
-    margin-top: 6px; text-align: center; color: var(--bg); background: var(--accent); font-size: 13px; letter-spacing: .4em;
-    padding: 2px 0; animation: stampIn .35s cubic-bezier(.2, 1.6, .5, 1) both;
+    margin-top: 8px; text-align: center; color: var(--bg); background: var(--accent); font-size: 15px; letter-spacing: .5em;
+    padding: 4px 0; box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 70%, transparent);
+    animation: stampSlam .7s cubic-bezier(.2, 1.3, .4, 1) both;
+  }
+  .bp-stamp.bad { background: var(--alert); box-shadow: 0 0 26px rgba(255,77,106,.7); }
+  @keyframes stampSlam {
+    0%   { transform: scale(2.6); opacity: 0; filter: blur(8px) brightness(3); letter-spacing: 1.4em; }
+    40%  { transform: scale(.95); opacity: 1; filter: blur(0) brightness(2.2); letter-spacing: .5em; }
+    52%  { clip-path: inset(28% 0 42% 0); transform: translateX(-10px) scale(1.03); }
+    58%  { clip-path: inset(62% 0 8% 0); transform: translateX(8px); }
+    64%  { clip-path: inset(0 0 0 0); transform: none; filter: brightness(1.6); }
+    100% { transform: none; filter: none; }
   }
   @keyframes stampIn { from { transform: scale(1.6); opacity: 0; filter: blur(3px); } to { transform: none; opacity: 1; filter: none; } }
   body.red #fx { opacity: 1; background: radial-gradient(ellipse at center, rgba(255,0,40,.06), rgba(255,0,40,.38)); animation: redPulse 1s infinite; }
@@ -605,6 +639,75 @@
   #overlay .hint { margin-top: 48px; text-align: center; color: var(--dim); font-size: 13px; opacity: 0; transition: opacity 1s; }
   #overlay .hint.show { opacity: 1; }
 
+  /* ---------------- 画面が裂ける（グリッチ） ----------------
+     #stage に SVG のフィルター（#tear）をかけ、横の帯ごとに画面をずらし、赤と青の色をずらす。動かすのは JS の tear() / setStorm() */
+  #stage { height: 100%; }
+  #stage.tearing { filter: url(#tear); }
+  #fxdefs { position: absolute; width: 0; height: 0; }
+
+  /* 画面のひび（権限昇格が止まらず、画面が壊れ始める）。線は JS で作り、--crack（0〜1）が上がるほど伸びる */
+  #crack { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 36; opacity: 0; transition: opacity .4s; }
+  #crack.on { opacity: 1; }
+  #crack path { fill: none; stroke: rgba(235,250,255,.85); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: bevel;
+    filter: drop-shadow(0 0 3px rgba(160,230,255,.9)) drop-shadow(0 0 10px rgba(255,60,110,.45)); }
+  #crack path.thin { stroke-width: .7; stroke: rgba(235,250,255,.55); }
+  #crack.heal { opacity: 0; transition: opacity .9s ease-in; }
+  /* 壊れかけの画面：文字の色がずれ、画面のふちが赤く染まっていく（--crack に比例） */
+  body.cracking { --crack: 0; }
+  body.cracking #term { text-shadow: calc(var(--crack) * 2.6px) 0 rgba(255,40,90,.55), calc(var(--crack) * -2.6px) 0 rgba(40,220,255,.5); }
+  body.cracking #fx { opacity: 1; background: radial-gradient(ellipse at center, transparent 35%, rgba(255,20,60, calc(var(--crack) * .42))); }
+  body.cracking .esc-panel { border-color: var(--alert); box-shadow: 0 0 calc(var(--crack) * 30px) -6px var(--alert); }
+  .glitchline { animation: markBlink .12s steps(1) 3; }
+
+  /* 裏で動いている処理（師匠が回している権限昇格など）：入力欄のすぐ上に、ジョブの進み具合を出し続ける */
+  #job { display: none; font-size: 12px; color: var(--warn); margin: 0 0 8px; white-space: pre; overflow: hidden; text-overflow: ellipsis; gap: 10px; align-items: baseline; }
+  #job.on { display: flex; }
+  #job .jb-tag { color: var(--bg); background: var(--warn); padding: 0 6px; font-size: 11px; letter-spacing: .12em; flex: none; animation: npPulse 1s ease-in-out infinite; }
+  #job .jb-bar { color: var(--warn); }
+  #job.hot .jb-tag { background: var(--alert); }
+  #job.hot .jb-bar, #job.hot .jb-p { color: var(--alert); }
+  #job .jb-p { min-width: 3.2em; }
+
+  /* 寄り道（本筋とは別の、やってみると面白いこと）：NEXT 欄で、光るボタンのあとに出す */
+  #next .chip.side { color: var(--why); border-color: color-mix(in srgb, var(--why) 55%, transparent); border-style: dashed; }
+  #next .chip.side:hover { background: var(--why); color: var(--bg); }
+
+  /* 追跡（お金・回線の行き先を、ひとつずつたどっていく） */
+  .trail .tr-hop { display: grid; grid-template-columns: 1.4em minmax(0, 1fr) max-content; column-gap: 8px; font-size: 12px; align-items: baseline; }
+  .trail .tr-pin { color: var(--accent); text-align: center; text-shadow: 0 0 8px var(--accent); }
+  .trail .tr-name { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trail .tr-sub { color: var(--dim); font-size: 11px; display: block; white-space: normal; }
+  .trail .tr-note { color: var(--accent); font-size: 11px; text-align: right; }
+  .trail .tr-tag { font-size: 10px; letter-spacing: .15em; color: var(--bg); background: var(--warn); padding: 0 5px; margin-left: 6px; }
+  .trail .tr-link { color: var(--dim); font-size: 11px; padding-left: .45em; white-space: pre; line-height: 1.15; }
+  .trail .tr-link .flow { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
+  .trail .tr-hop.alert .tr-pin, .trail .tr-hop.alert .tr-name, .trail .tr-hop.alert .tr-note { color: var(--alert); text-shadow: 0 0 8px rgba(255,77,106,.6); }
+  .trail .tr-hop.alert .tr-tag { background: var(--alert); }
+  .trail .tr-end { margin-top: 6px; color: var(--alert); font-size: 12px; animation: markBlink .5s steps(1) 4; }
+
+  /* 監視カメラ（社内のカメラをまとめて乗っ取る） */
+  .cctv .cc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+  .cctv .cc-feed { position: relative; background: #020504; border: 1px solid var(--line); padding: 4px 6px 3px; overflow: hidden; transition: opacity .6s, transform .6s, border-color .6s; }
+  .cctv .cc-feed::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(255,255,255,.05) 0 1px, transparent 1px 2px); }
+  .cctv .cc-top, .cctv .cc-bot { display: flex; justify-content: space-between; font-size: 10px; color: var(--dim); gap: 6px; white-space: nowrap; }
+  .cctv .cc-rec { color: var(--alert); }
+  .cctv .cc-rec::before { content: "● "; animation: blink 1s steps(1) infinite; }
+  .cctv .cc-art { font-size: 9.5px; line-height: 1.12; white-space: pre; color: var(--fg); opacity: .82; margin: 3px 0; overflow: hidden; min-height: 9em; }
+  .cctv.focus .cc-feed { opacity: .25; }
+  .cctv.focus .cc-feed.zoom { opacity: 1; border-color: var(--alert); transform: scale(1.04); box-shadow: 0 0 22px -6px var(--alert); z-index: 1; }
+  .cctv .cc-feed.zoom .cc-art { color: #fff; }
+  .cctv .cc-note { margin-top: 6px; font-size: 12px; color: var(--alert); text-align: center; letter-spacing: .1em; }
+
+  /* ビルの明かり（窓が1つずつ消えていく） */
+  .building .bd-body { display: flex; justify-content: center; margin: 8px 0 2px; }
+  .building .bd-grid { font-size: 11px; line-height: 1.15; white-space: pre; padding: 4px 10px; border: 1px solid var(--line); border-bottom: 3px double var(--line); background: #020403; }
+  .building .w { color: #ffd36b; text-shadow: 0 0 6px rgba(255,200,90,.8); }
+  .building .w.off { color: #1c2a2a; text-shadow: none; }
+  .building .w.keep { color: #fff2c4; text-shadow: 0 0 10px #ffd36b, 0 0 20px #ffb84d; }
+  .building .fl { color: var(--dim); }
+  .building .bd-cap { text-align: center; font-size: 11px; color: var(--dim); letter-spacing: .2em; }
+
   @media (prefers-reduced-motion: reduce) {
     .wrap, .title-logo, .unstable, .glitch, body.red #fx { animation: none !important; }
     .title-logo .tl-shine { display: none; }
@@ -648,6 +751,7 @@
     #evi { display: none; grid-column: 1 / -1; }
     aside.open #evi { display: block; max-height: 20vh; margin-top: 6px; }
     .mission .m-title { font-size: 18px; }
+    #job .jb-name { display: none; }   /* スマホ：ジョブの名前は省いて、ゲージと % を見せる */
     .lockpanel { padding: 8px 18px; gap: 10px; }
     .lock-title { font-size: 20px; letter-spacing: .35em; margin-right: -.35em; }
     /* 長いログ（伝票・変更ログ・人事DB）は、スマホでは折り返して全部見せる（横にはみ出して大事な数字が隠れないように） */
@@ -656,6 +760,23 @@
 </style>
 </head>
 <body>
+<!-- 画面が裂ける演出のフィルター：横の帯ごとに画面をずらし（displacement）、赤と青の色をずらす（数値は JS の tear() が動かす） -->
+<svg id="fxdefs" aria-hidden="true">
+  <filter id="tear" x="-3%" y="0" width="106%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence id="tearNoise" type="fractalNoise" baseFrequency="0 0.05" numOctaves="1" seed="1" result="noise"/>
+    <feComponentTransfer in="noise" result="bands">
+      <feFuncR type="discrete" tableValues="0.5 0.5 0.12 0.5 0.5 0.86 0.5 0.3 0.5 0.5 0.7 0.5 0.04 0.5"/>
+      <feFuncG type="linear" slope="0" intercept="0.5"/>
+    </feComponentTransfer>
+    <feDisplacementMap id="tearMap" in="SourceGraphic" in2="bands" scale="0" xChannelSelector="R" yChannelSelector="G" result="torn"/>
+    <feColorMatrix in="torn" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="red"/>
+    <feOffset id="tearR" in="red" dx="0" result="red2"/>
+    <feColorMatrix in="torn" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="cyan"/>
+    <feOffset id="tearB" in="cyan" dx="0" result="cyan2"/>
+    <feBlend in="red2" in2="cyan2" mode="screen"/>
+  </filter>
+</svg>
+<div id="stage">
 <div class="wrap" id="wrap">
   <header>
     <h1 id="gameTitle">BLIND//SPOT</h1>
@@ -669,6 +790,7 @@
     <div id="out"></div>
     <div class="dock" id="dock">
       <button id="toBottom" type="button" aria-label="いちばん下へ">↓ 最新へ</button>
+      <div id="job" aria-live="polite"></div>
       <div id="why" aria-live="polite"></div>
       <div id="next" aria-label="次にできること"></div>
       <form class="row" id="form" autocomplete="off">
@@ -688,6 +810,8 @@
     <ul id="evi"></ul>
   </aside>
 </div>
+</div>
+<svg id="crack" aria-hidden="true"></svg>
 
 <div id="fx"></div>
 <div id="overlay"></div>
@@ -868,6 +992,21 @@ const SFX = (() => {
       hiss(0.3, { vol: 0.03, filter: "highpass", freq: 6000, sweep: 9000, attack: 0.02 });
     },
     static: () => hiss(0.18, { vol: 0.09, freq: 1200, q: 0.6 }),
+    // 画面が裂けた瞬間の「ジッ」：毎回少しずつ違う高さの、短いノイズ
+    glitch: () => {
+      hiss(0.05 + Math.random() * 0.09, { vol: 0.06, freq: 700 + Math.random() * 3200, q: 5 });
+      tone(90 + Math.random() * 260, 0.06, { type: "sawtooth", filter: 1400, vol: 0.035 });
+    },
+    // 画面にひびが走る：ガラスが軋むような高いノイズと、低い「ミシッ」
+    crack: () => {
+      hiss(0.22, { vol: 0.09, filter: "highpass", freq: 4200, sweep: 1600, q: 0.8 });
+      tone(62, 0.35, { vol: 0.18, slide: 38 });
+    },
+    // 照明が落ちる「ガコン」
+    clunk: () => {
+      tone(58, 0.22, { vol: 0.2, slide: 40 });
+      hiss(0.06, { vol: 0.07, filter: "lowpass", freq: 900 });
+    },
     // 画面が消える「ぴちゅん」：高い音が一瞬で落ち、短い残響だけ残る
     power: () => {
       tone(2600, 0.08, { vol: 0.06, slide: 700, attack: 0.002 });
@@ -1318,14 +1457,29 @@ function updateNext() {
       const why = state.current === state.guide.at ? state.guide.why : (state.guide.go ?? state.guide.why);
       if (why) $("why").innerHTML = `<span class="why-mark">▸</span><span>${esc(fill(why))}</span>`;
     }
+    // 寄り道：本筋とは別に、やってみると面白いこと（押すとすぐ実行。一度やったら消える）
+    const side = detoursHere();
+    if (side.length) {
+      chips.push(`<span class="next-label">寄り道</span>`);
+      for (const d of side) chips.push(`<span class="chip pick side" data-fill="${esc(d.cmd)}" data-run${d.label ? ` title="${esc(fill(d.label))}"` : ""}>✦ ${esc(d.cmd)}</span>`);
+    }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
     for (const l of state.links) chips.push(chip(`ssh ${l.name}`, `ssh ${l.name}${l.oneway ? "（一方通行）" : ""}`, l.oneway ? "ow" : ""));
     if (state.history.length) chips.push(chip("back"));
   }
   box.innerHTML = chips.length ? `<span class="next-label">NEXT</span>${chips.join("")}` : "";
+  box.scrollLeft = 0;   // スマホ（横にスクロールする1行）で、先頭の光るボタンが見えるように
   // NEXT 欄の高さが変わると最後の行が隠れるので、いちばん下までスクロールし直す
   scrollDown();
+}
+
+// 今いる場所の寄り道（node.detours）のうち、まだやっていないもの
+//   after … その手がかり（または flag）を手に入れてから出す
+const detourKey = d => `detour:${state.current}:${fold(d.cmd).replace(/\s+/g, "")}`;
+function detoursHere() {
+  const node = state.current && here();
+  return (node?.detours || []).filter(d => !state.said.has(detourKey(d)) && (!d.after || state.clues.includes(d.after) || state.flags[d.after]));
 }
 
 // ---------------- 表示 ----------------
@@ -1391,6 +1545,53 @@ if (window.ResizeObserver) {
 function pulse(el, cls, ms = 600) {
   el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
   setTimeout(() => el.classList.remove(cls), ms);
+}
+
+// ---------------- 画面が裂ける（グリッチ） ----------------
+// 横の帯ごとに画面がずれ、赤と青の色がずれる（#stage にかけた SVG フィルター #tear を、コマごとに動かす）
+//   tear(ms, power) … 一度だけ裂ける（強さは power。だんだん弱まり、ところどころ元に戻るコマを挟んでカクつかせる）
+//   setStorm(level) … level（0〜1）が高いほど、ひとりでに何度も裂ける（0 で止まる）
+//   impact(power)   … 衝撃：画面が弾かれて、一瞬裂ける（ロック・失敗・警告など）
+const TEAR = { stage: $("stage"), noise: $("tearNoise"), map: $("tearMap"), r: $("tearR"), b: $("tearB") };
+const tearState = { until: 0, ms: 1, power: 0, storm: 0, raf: 0 };
+function tear(ms = 300, power = 1) {
+  if (REDUCED) return;
+  const now = performance.now(), t = tearState;
+  // 今の裂け方より強いときだけ、上書きする
+  const left = t.until > now ? t.power * (t.until - now) / t.ms : 0;
+  if (power >= left) Object.assign(t, { until: now + ms, ms, power });
+  if (!t.raf) t.raf = requestAnimationFrame(tearFrame);
+}
+function setStorm(level) {
+  tearState.storm = REDUCED ? 0 : Math.max(0, level || 0);
+  if (tearState.storm && !tearState.raf) tearState.raf = requestAnimationFrame(tearFrame);
+}
+function tearFrame(now) {
+  const t = tearState;
+  // 嵐のときは、ときどき、ひとりでに裂ける
+  if (t.storm && now >= t.until && Math.random() < 0.04 + t.storm * 0.16) {
+    const ms = 60 + Math.random() * 280 * t.storm;
+    Object.assign(t, { until: now + ms, ms, power: 0.2 + Math.random() * t.storm });
+    if (Math.random() < 0.45) SFX.glitch();
+  }
+  let s = now < t.until ? t.power * (0.3 + 0.7 * (t.until - now) / t.ms) : 0;
+  if (s > 0 && Math.random() < 0.22) s *= 0.1;   // ところどころ、元に戻るコマを挟む
+  if (s < 0.03) TEAR.stage.classList.remove("tearing");
+  else {
+    TEAR.noise.setAttribute("seed", Math.floor(Math.random() * 999));
+    TEAR.noise.setAttribute("baseFrequency", `0 ${(0.006 + Math.random() * 0.07).toFixed(3)}`);
+    TEAR.map.setAttribute("scale", (s * (25 + Math.random() * 115)).toFixed(1));
+    const d = s * (2 + Math.random() * 7);
+    TEAR.r.setAttribute("dx", d.toFixed(1));
+    TEAR.b.setAttribute("dx", (-d * (0.6 + Math.random() * 0.6)).toFixed(1));
+    TEAR.stage.classList.add("tearing");
+  }
+  if (now < t.until || t.storm) t.raf = requestAnimationFrame(tearFrame);
+  else { t.raf = 0; TEAR.stage.classList.remove("tearing"); }
+}
+function impact(power = 1) {
+  pulse($("wrap"), "shake", 560);
+  tear(240 + power * 240, power);
 }
 
 // 文字化けした状態から、左から順に正しい文字に戻っていく（解読の演出）
@@ -1519,7 +1720,7 @@ function addTrace(n) {
   state.trace += n;
   updateTrace();
   pulse($("term"), "flash", 1000);
-  pulse($("wrap"), "shake", 450);
+  impact();
   if (state.trace >= 100) {
     state.over = true;
     cmd.disabled = true;
@@ -1528,6 +1729,7 @@ function addTrace(n) {
       SFX.boom();
       print("*** CONNECTION LOST ***", "alert");
       $("wrap").classList.add("glitch");
+      setStorm(1);
       await sleep(1200);
       await powerOff();
       showEnding(S.gameOver, { retry: true });
@@ -1549,6 +1751,7 @@ async function raceTrace(to, ms) {
 
 // 画面が消える（ブラウン管の電源を切ったように）
 async function powerOff() {
+  killJob();
   SFX.siren(false);
   SFX.music(false);
   SFX.power();
@@ -1568,7 +1771,8 @@ function maybeNoise() {
   const pkt = Math.floor(Math.random() * 0xffff).toString(16).padStart(4, "0");
   const d = print(`[pred-feed] pkt#${pkt} → 送信エラー（destination unreachable）`, "alert noise");
   SFX.static();
-  pulse($("term"), "jolt", 160);
+  pulse($("term"), "jolt", 180);
+  tear(150, .45);
   setTimeout(() => d.remove(), 650);
 }
 
@@ -1580,6 +1784,7 @@ function countClues(ch) {
     if (node.clue) n++;
     n += (node.search?.entries || []).filter(e => e.clue).length;
     n += (node.dir || []).filter(d => d.clue).length;
+    n += Object.values(node.actions || {}).flatMap(a => a.script || []).filter(x => x?.clue).length;
   }
   return n;
 }
@@ -1834,14 +2039,164 @@ function setZone(zone) {
   const now = document.body.dataset.zone || "";
   if ((zone || "") === now) return;
   if (zone) document.body.dataset.zone = zone; else delete document.body.dataset.zone;
-  if (zone) { pulse($("fx"), "zone-in", 650); SFX.titleLine(); }   // 空気が流れるような「スゥッ」
+  if (zone) { pulse($("fx"), "zone-in", 650); SFX.titleLine(); tear(320, .6); }   // 空気が流れるような「スゥッ」と、一瞬の裂け
+}
+
+// ---------------- 裏で動く処理（ジョブ） ----------------
+// 台本の { job: {...} } で始まる（書き方は src/scenario.js の先頭）。師匠が裏で回している権限昇格など。
+// プレイヤーは操作を続けられる。ゲージが上がるにつれて、画面が少しずつ壊れていく：
+//   文字がちらつく → 色がずれて画面のふちが赤くなる → ひびが走る → 監査のログが流れ込み、TRACE がじわじわ上がる
+// stopAt のノードへ ssh すると、stop の台本が流れて止まる（台本の { jobKill: true } で KILLED になる）
+let jobRun = 0;   // ジョブのループの番号（止めるときに1つ進めて、動いているループを終わらせる）
+function startJob(j) {
+  killJob();
+  const id = ++jobRun;
+  const job = state.job = { ...j, id, p: 0, done: new Set(), t0: Date.now() };
+  job.panel = print(`<div class="fx-panel esc-panel"><div class="fx-head"><span>${esc(j.title || "PRIVILEGE ESCALATION")}</span><span>${esc(j.label || "")}</span></div>`
+    + `<div class="esc-bar"></div><div class="esc-log"></div></div>`).querySelector(".esc-panel");
+  $("job").classList.add("on");
+  document.body.classList.add("cracking");
+  makeCracks();
+  SFX.alert();
+  jobLoop(job, id);
+}
+async function jobLoop(job, id) {
+  const cap = (job.cap ?? 78) / 100, barEl = job.panel.querySelector(".esc-bar"), log = job.panel.querySelector(".esc-log");
+  const once = (k, fn) => { if (!job.done.has(k)) { job.done.add(k); fn(); } };
+  while (jobRun === id) {
+    const sec = (Date.now() - job.t0) / 1000;
+    // はじめは速く上がり、天井（cap）に近づくほど遅くなる。天井の手前でほぼ止まる
+    job.p = Math.max(0, cap * (1 - Math.exp(-sec / (job.pace ?? 9))) + (Math.random() - 0.5) * 0.006);
+    const pct = Math.round(job.p * 100);
+    const lvl = Math.max(0, Math.min(1, (job.p - 0.26) / (cap - 0.26)));   // 壊れ具合（0〜1）
+    const stalled = job.p > cap - 0.025;
+    barEl.textContent = `${bar(job.p, 30)} ${pct}%${stalled ? "  ── STALLED" : ""}`;
+    barEl.classList.toggle("stall", stalled);
+    $("job").classList.toggle("hot", lvl > 0.55);
+    $("job").innerHTML = `<span class="jb-tag">[1] ${stalled ? "STALLED" : "RUNNING"}</span><span class="jb-name">${esc(job.name || "")}</span>`
+      + `<span class="jb-bar">${bar(job.p, 14)}</span><span class="jb-p">${pct}%</span>`;
+    // 壊れていく画面
+    document.body.style.setProperty("--crack", lvl.toFixed(3));
+    drawCracks(lvl);
+    setStorm(lvl * 0.7);
+    if (lvl > 0.25 && Math.random() < lvl * 0.45) flickerText();
+    if (lvl > 0.5 && Math.random() < lvl * 0.2) addLog(`AUDIT ⇄ ${randIp()}  session check`, "bad");
+    if (lvl > 0.4 && state.trace < (job.traceMax ?? 42)) { state.trace = Math.min(job.traceMax ?? 42, state.trace + lvl * 0.3); updateTrace(); }
+    if (Math.random() < lvl * 0.035) SFX.crack();
+    // 警告（[パーセント, 文字]）と、師匠のつぶやき（[パーセント, セリフ]）。それぞれ一度だけ
+    for (const [at, w] of job.warn || []) if (pct >= at) once(`w${at}`, () => {
+      log.insertAdjacentHTML("beforeend", `<div class="alert glitchline">[!] ${esc(fill(w))}</div>`);
+      SFX.alert(); impact(0.5 + lvl * 0.6); scrollDown();
+    });
+    for (const [at, line] of job.mutter || []) if (pct >= at) once(`m${at}`, () => { duckBgm(); typeLine(line); });
+    // 「次の一手」は、画面が壊れ始めてから出す（それまでは、ただ見守る）
+    if (pct >= (job.nextAt ?? 0) && job.next) once("next", () => setGuide(job.next));
+    await sleep(120);
+  }
+}
+// 裏の処理を、stopAt で止める（stop の台本。途中の { jobKill: true } で KILLED になる）
+async function stopJob() {
+  const job = state.job;
+  if (!job) return;
+  jobRun++;              // ゲージはそこで止まる（画面は壊れたまま、師匠が話す）
+  setStorm(0.2);
+  await play(job.stop || []);
+  if (state.job) await killJobFx();
+}
+// KILLED のはんこ → ひびが消え、画面が元に戻る
+async function killJobFx() {
+  const job = state.job;
+  if (!job) return;
+  job.panel.querySelector(".esc-bar").classList.remove("stall");
+  job.panel.insertAdjacentHTML("beforeend", `<div class="bp-stamp bad">KILLED</div>`);
+  SFX.power();
+  tear(520, 1.2);
+  killJob({ heal: true });
+  scrollDown();
+  await pause(450);
+  pulse($("fx"), "zone-in", 650);
+  pulse($("term"), "flash-ok", 600);
+  SFX.granted();
+  await pause(700);
+}
+// 止める（画面の壊れも元に戻す）。heal … ひびがゆっくり消える
+function killJob(opt = {}) {
+  jobRun++;
+  if (state) state.job = null;
+  setStorm(0);
+  document.body.classList.remove("cracking");
+  document.body.style.removeProperty("--crack");
+  $("job").classList.remove("on", "hot");
+  $("job").innerHTML = "";
+  const cr = $("crack");
+  if (opt.heal && cr.classList.contains("on")) {
+    cr.classList.add("heal");
+    cr.classList.remove("on");
+    setTimeout(() => { if (!cr.classList.contains("on")) { cr.innerHTML = ""; cr.classList.remove("heal"); } }, 1000);
+  } else { cr.classList.remove("on", "heal"); cr.innerHTML = ""; }
+}
+// ひび：画面のどこか1点から、ギザギザの線が何本も伸びる（線は壊れ具合に合わせて少しずつ描かれていく）
+function makeCracks() {
+  const cr = $("crack"), W = innerWidth, H = innerHeight;
+  const cx = W * (0.45 + Math.random() * 0.25), cy = H * (0.3 + Math.random() * 0.3);
+  const paths = [];
+  const branch = (x, y, a, len, thin, delay) => {
+    let d = `M${x.toFixed(0)} ${y.toFixed(0)}`;
+    const n = 6 + Math.floor(Math.random() * 6), step = len / n;
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      a += (Math.random() - 0.5) * 0.7;
+      x += Math.cos(a) * step * (0.6 + Math.random() * 0.8);
+      y += Math.sin(a) * step * (0.6 + Math.random() * 0.8);
+      d += ` L${x.toFixed(0)} ${y.toFixed(0)}`;
+      pts.push([x, y, a]);
+    }
+    paths.push({ d, thin, delay });
+    return pts;
+  };
+  const N = 7 + Math.floor(Math.random() * 4), diag = Math.hypot(W, H);
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 + Math.random() * 0.5;
+    const pts = branch(cx, cy, a, diag * (0.15 + Math.random() * 0.35), false, i / N * 0.5);
+    // 枝分かれ（細い線）
+    for (let k = 0; k < 2; k++) {
+      if (Math.random() < 0.6) {
+        const [x, y, aa] = pickOne(pts.slice(1));
+        branch(x, y, aa + (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.8), diag * (0.04 + Math.random() * 0.1), true, 0.4 + i / N * 0.4);
+      }
+    }
+  }
+  cr.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  cr.innerHTML = paths.map(p => `<path d="${p.d}" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" data-delay="${p.delay.toFixed(2)}"${p.thin ? ' class="thin"' : ""}/>`).join("");
+  cr.classList.remove("heal");
+}
+function drawCracks(lvl) {
+  const cr = $("crack");
+  // 壊れ具合が 0.35 を越えたところから、ひびが走り始める
+  const k = Math.max(0, (lvl - 0.35) / 0.65);
+  cr.classList.toggle("on", k > 0);
+  cr.querySelectorAll("path").forEach(p => {
+    const v = Math.max(0, Math.min(1, (k - +p.dataset.delay * 0.6) * 2.2));
+    p.setAttribute("stroke-dashoffset", (1 - v).toFixed(3));
+  });
+}
+// 画面の文字が一瞬だけ化けて、すぐ戻る
+function flickerText() {
+  const nodes = textNodes(out).slice(-140);
+  if (!nodes.length) return;
+  const n = pickOne(nodes), orig = n.nodeValue, chars = [...orig];
+  for (let k = 0; k < 2 + Math.random() * 6; k++) { const j = Math.floor(Math.random() * chars.length); chars[j] = glyphFor(chars[j]); }
+  const broken = chars.join("");
+  n.nodeValue = broken;
+  setTimeout(() => { if (n.nodeValue === broken) n.nodeValue = orig; }, 120 + Math.random() * 380);
 }
 
 // 侵入の演出：守りの壁が崩れていき、手順ごとのバーが埋まって、最後に ACCESS GRANTED のはんこ
+//   バーのクラスは .bp-bar（.bar にすると TRACE のメーターの見た目になり、高さ 10px で中身が隠れてしまう）
 async function breach(node) {
-  const cols = 34, rows = 3;
+  const cols = 40, rows = 4;
   const panel = print(`<div class="breach-panel">
-    <div class="bp-head"><span>BREACH</span><span>${esc(node.host)}</span></div>
+    <div class="bp-head"><span>BREACH <span class="bp-live">●</span></span><span>${esc(node.host)}</span></div>
     <div class="bp-wall"></div><div class="bp-steps"></div></div>`).querySelector(".breach-panel");
   const wallEl = panel.querySelector(".bp-wall"), steps = panel.querySelector(".bp-steps");
   const wall = Array.from({ length: rows }, () => Array(cols).fill("█"));
@@ -1855,39 +2210,47 @@ async function breach(node) {
     drawWall();
   };
   drawWall();
+  tear(220, .55);
   const per = Math.ceil((cols * rows * 3) / (node.breach.length * 10));
   for (const label of node.breach) {
     const row = document.createElement("div");
     row.className = "bp-step";
-    row.innerHTML = `<span class="lab">${esc(label)}</span><span class="bar"></span>`;
+    row.innerHTML = `<span class="lab">${esc(label)}</span><span class="bp-bar"></span>`;
     steps.appendChild(row);
-    const bar = row.querySelector(".bar");
+    const gauge = row.querySelector(".bp-bar");
     for (let f = 1; f <= 10; f++) {
-      bar.textContent = `[${"▮".repeat(f)}${"·".repeat(10 - f)}] ${randHex(2)}`;
+      gauge.innerHTML = `[${"▮".repeat(f)}${"·".repeat(10 - f)}] <span class="hex">${randHex(2)}</span>`;
       crumble(per);
       SFX.tick();
+      scrollDown();
       await wait(34);
     }
-    bar.textContent = "[▮▮▮▮▮▮▮▮▮▮]  OK";
+    gauge.innerHTML = `[▮▮▮▮▮▮▮▮▮▮]<span class="ok">OK</span>`;
     row.classList.add("done");
     SFX.hop(0);
+    tear(110, .3);
     scrollDown();
-    await wait(90);
+    await wait(110);
   }
-  // 残りの壁が一気に崩れる
-  for (let i = 0; i < 4; i++) { crumble(cols * rows); await wait(40); }
+  // 残りの壁が、一気に砕け散る
+  SFX.crack();
+  tear(520, 1.1);
+  for (let i = 0; i < 5; i++) { crumble(cols * rows); await wait(45); }
   wallEl.remove();   // 崩れきった壁は消して、はんこだけ残す
+  panel.querySelector(".bp-live").remove();
   panel.insertAdjacentHTML("beforeend", `<div class="bp-stamp">ACCESS GRANTED</div>`);
   SFX.granted();
   pulse($("term"), "flash-ok", 600);
   scrollDown();
-  await wait(500);
+  await wait(650);
 }
 
 // 転移（演出つき）。鍵付きなら先にパスワードを聞く
 async function connect(id, opt = {}) {
   const node = nodeOf(id);
   await busy(async () => {
+    // 裏で動いている処理（師匠の権限昇格など）が、この行き先で止まるなら、先に止める（「なるほどな」）
+    if (state.job && state.job.stopAt === id) await stopJob();
     const line = print(`Connecting to ${esc(node.host)} `, "dim");
     for (let i = 0; i < 8; i++) { await wait(50); line.innerHTML += "▓"; SFX.tick(); scrollDown(); }
     line.innerHTML += ` <span class="sys">${10 + Math.floor(Math.random() * 60)}ms</span>`;
@@ -1944,7 +2307,7 @@ async function showLockScreen(node, lock, len) {
   if (len && !lock.user) fields.push(`<span class="dim">パスワード</span><span><span class="warn slots">${"_".repeat(len)}</span>（${len}文字）</span>`);
   // LOCKED が出て、掛け金が「ガチャッ」と閉まるのを見せてから、案内を読む順番に1つずつ出す
   SFX.alert();
-  pulse($("wrap"), "shake", 450);
+  impact();
   const auth = print(`<div class="auth"></div>`).querySelector(".auth");
   await reveal(auth, panelHtml("lock", "LOCKED", `ACCESS RESTRICTED ── ${esc(node.host)}`), 520);
   SFX.lock();
@@ -2147,6 +2510,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
 // ---------------- 任務の開始 ----------------
 function resetScreen() {
   fast = false;
+  killJob();
   SFX.siren(false);
   SFX.music(false, { fast: true });
   document.body.classList.remove("red", "blue");
@@ -2231,6 +2595,7 @@ const FILE_EXT = [".xlsx", ".docx", ".pdf", ".pptx", ".csv", ".zip", ".jpg"];
 const fakeFile = () => `${pickOne(["/share", "/projects", "/home/sales", "/home/hr", "/archive"])}/${pickOne(FILE_WORDS)}_${2019 + Math.floor(Math.random() * 8)}${String(1 + Math.floor(Math.random() * 12)).padStart(2, "0")}${pickOne(FILE_EXT)}`;
 // 流れていく伝票の1行（見た目だけ）
 const fakeLedger = () => `伝票 #${80000 + Math.floor(Math.random() * 19999)}  2026/${String(1 + Math.floor(Math.random() * 9)).padStart(2, "0")}/${String(1 + Math.floor(Math.random() * 28)).padStart(2, "0")}  ${pickOne(["営業本部", "総務部", "人事部", "経理部", "情報システム部", "広報部"])}  ${pickOne(["交通費", "消耗品費", "会議費", "外注費", "保守費", "広告費"])}  ¥${(Math.floor(Math.random() * 9e6) + 1000).toLocaleString().padStart(11)}`;
+let lastBuilding = null;   // { building } で描いたビル（{ lights: "on" } で明かりを戻す）
 const bar = (p, w = 24) => `${"█".repeat(Math.round(p * w))}${"░".repeat(w - Math.round(p * w))}`;
 
 async function playFx(s) {
@@ -2272,7 +2637,7 @@ async function playFx(s) {
   // { locked: "説明" } … 開こうとして、LOCKED で弾かれる
   if (s.locked) {
     SFX.denied();
-    pulse($("wrap"), "shake", 450);
+    impact();
     print(panelHtml("lock", "LOCKED", esc(fill(s.locked))));
     await pause(300); SFX.lock(); await pause(900);
   }
@@ -2290,11 +2655,11 @@ async function playFx(s) {
         SFX.tick();
         await pause(40);
       }
-      if (m < -0.15) pulse($("term"), "jolt", 160);
+      if (m < -0.15) { pulse($("term"), "jolt", 180); tear(160, .5); }
     }
     barEl.textContent = `│${"▯".repeat(30)}`;
     SFX.denied();
-    pulse($("wrap"), "shake", 450);
+    impact();
     line.classList.add("lost");
     await pause(700);
   }
@@ -2307,22 +2672,33 @@ async function playFx(s) {
     await pause(800);
   }
   // { rebuild: true } … 画面がはがれ落ちて、新しく組み直されて戻ってくる（大きな権限を手に入れたとき）
+  //   画面が裂けながら一本の光に潰れる → 光の線のまま中身が書きかわる → 線から弾むように組み直される
   if (s.rebuild) {
+    const term = $("term");
     SFX.boom();
-    $("term").classList.add("peel-off");
-    await pause(1100);
-    for (let i = 0; i < 6; i++) { print(`0x${randHex(2).replace(/ /g, "")}  ${randHex(14)}`, "dim"); SFX.tick(); await pause(30); }
-    $("term").classList.remove("peel-off");
-    $("term").classList.add("peel-in");
+    SFX.crack();
+    setStorm(0.9);
+    tear(1000, 1.5);
+    term.classList.add("shatter");
+    await pause(1000);
+    setStorm(0);
+    term.classList.replace("shatter", "collapsed");
+    SFX.power();
+    for (let i = 0; i < 8; i++) { print(`0x${randHex(2).replace(/ /g, "")}  ${randHex(14)}`, "dim"); SFX.tick(); await pause(55); }
+    await pause(250);
+    term.classList.replace("collapsed", "reform");
     SFX.warp();
-    await pause(1200);
-    $("term").classList.remove("peel-in");
+    tear(800, 0.9);
+    await pause(1150);
+    term.classList.remove("reform");
+    pulse($("fx"), "zone-in", 650);
   }
   // { layer: true } … 世界が少し作り変わる（色はそのまま、画面の文字が一度くずれて組み直される）
   if (s.layer) {
     const nodes = textNodes(out).slice(-160);
     const orig = nodes.map(n => n.nodeValue);
     pulse($("fx"), "zone-in", 650); SFX.static();
+    setStorm(0.45); tear(500, 1);
     const end = Date.now() + 1400;
     while (Date.now() < end) {
       for (let i = 0; i < 30; i++) {
@@ -2334,8 +2710,10 @@ async function playFx(s) {
       if (Math.random() < 0.3) SFX.tick();
       await sleep(45);
     }
+    setStorm(0);
     // 下から順に、元の文字へ戻していく
     for (let i = nodes.length - 1; i >= 0; i--) { nodes[i].nodeValue = orig[i]; if (i % 8 === 0) { SFX.tick(); await sleep(12); } }
+    tear(400, 0.7);
     pulse($("fx"), "zone-in", 650); SFX.warp();
     await pause(600);
   }
@@ -2346,8 +2724,9 @@ async function playFx(s) {
   // { doc: "HTML", hidden, clue, ms } … 文書を1件、解読しながら出す（hidden は赤い文字）。clue があれば手がかりにする
   if (s.doc) {
     await decode(print(`<div class="doc${s.hidden ? " hidden-data" : ""}">${s.doc}</div>`, "node result reveal"), s.ms || 1200);
-    if (s.clue) { await pause(500); addClue(s.clue); }
   }
+  // { clue: "名前" } … 手がかりを記録する（doc と一緒に書けば、文書を出したあとに記録する）
+  if (s.clue) { await pause(500); addClue(s.clue); }
   // { escalate: { label, warn: [...], ok } } … 権限昇格。ok なら 100% まで行って GRANTED、そうでなければ途中で警告が出て止まる
   if (s.escalate) {
     const e = s.escalate;
@@ -2367,6 +2746,8 @@ async function playFx(s) {
     if (e.ok) {
       panel.insertAdjacentHTML("beforeend", `<div class="bp-stamp">GRANTED</div>`);
       SFX.granted();
+      tear(450, 1);
+      pulse($("term"), "flash-ok", 600);
       scrollDown();
       await pause(700);
     } else {
@@ -2439,8 +2820,135 @@ async function playFx(s) {
     }
     el.classList.add("hit");
     SFX.boom();
-    pulse($("term"), "jolt", 200);
+    pulse($("term"), "jolt", 180);
+    tear(420, 1);
     await pause(900);
+  }
+  // { jobKill: true } … 裏で動いている処理を止める（KILLED のはんこ → ひびが消えて、画面が元に戻る）
+  if (s.jobKill) await killJobFx();
+  // { trail: { head, hops: [{ name, sub, note, tag, alert }], end } } … お金や回線の行き先を、1つずつたどっていく
+  if (s.trail) {
+    const tr = s.trail;
+    const panel = print(`<div class="fx-panel trail"><div class="fx-head"><span>${esc(fill(tr.head || "TRACE"))}</span><span class="tr-n"></span></div><div class="tr-body"></div></div>`).querySelector(".trail");
+    const body = panel.querySelector(".tr-body"), nEl = panel.querySelector(".tr-n");
+    for (const [i, h] of tr.hops.entries()) {
+      if (i) {
+        // 線が伸びていく（光が上から下へ流れる）
+        const link = document.createElement("div");
+        link.className = "tr-link";
+        body.appendChild(link);
+        for (let f = 0; f < 8; f++) {
+          link.innerHTML = [0, 1, 2].map(r => r === f % 4 ? `<span class="flow">┃</span>` : "│").join("\n");
+          if (f % 2 === 0) SFX.tick();
+          scrollDown();
+          await pause(48);
+        }
+        link.textContent = "│\n│\n▼";
+      }
+      const row = document.createElement("div");
+      row.className = `tr-hop reveal${h.alert ? " alert" : ""}`;
+      row.innerHTML = `<span class="tr-pin">${i ? "◆" : "◉"}</span>`
+        + `<span class="tr-name">${esc(fill(h.name))}${h.tag ? `<span class="tr-tag">${esc(h.tag)}</span>` : ""}${h.sub ? `<span class="tr-sub">${esc(fill(h.sub))}</span>` : ""}</span>`
+        + `<span class="tr-note">${esc(fill(h.note || ""))}</span>`;
+      body.appendChild(row);
+      nEl.textContent = `HOP ${i + 1} / ${tr.hops.length}`;
+      decode(row, 380);
+      if (h.alert) { SFX.denied(); impact(0.9); } else { SFX.hop(i); tear(130, 0.35); }
+      scrollDown();
+      await pause(h.alert ? 800 : 560);
+    }
+    if (tr.end) {
+      await pause(250);
+      SFX.alert();
+      panel.insertAdjacentHTML("beforeend", `<div class="tr-end">${esc(fill(tr.end))}</div>`);
+      scrollDown();
+      await pause(1000);
+    }
+  }
+  // { cctv: { feeds: [{ id, name, art, blink }], focus, note, ms } } … 社内の監視カメラを乗っ取って、映像を並べる
+  //   砂嵐から1つずつ映像になる → 時刻が進み、ノイズの帯が流れる（ライブ）→ focus のカメラだけが寄って、ほかは暗くなる
+  if (s.cctv) {
+    const c = s.cctv;
+    const panel = print(`<div class="fx-panel cctv"><div class="fx-head"><span>CCTV ── LIVE</span><span class="cc-n">0 / ${c.feeds.length}</span></div>`
+      + `<div class="cc-grid">${c.feeds.map((f, i) => `<div class="cc-feed" data-i="${i}"><div class="cc-top"><span>${esc(f.id)}</span><span class="cc-rec">REC</span></div>`
+      + `<div class="cc-art"></div><div class="cc-bot"><span>${esc(fill(f.name))}</span><span class="cc-ts"></span></div></div>`).join("")}</div></div>`).querySelector(".cctv");
+    const feeds = c.feeds.map((f, i) => ({ f, el: panel.querySelector(`[data-i="${i}"]`), rows: f.art.split("\n"), on: false, roll: Math.floor(Math.random() * 8) }));
+    const noisy = (r, k) => [...r].map(ch => Math.random() < k ? pickOne("░▒▓.:") : ch).join("");
+    let sec = Math.floor(Math.random() * 60);
+    const draw = () => {
+      const ts = `${clockText()}:${String(sec % 60).padStart(2, "0")}`;
+      for (const x of feeds) {
+        x.el.querySelector(".cc-ts").textContent = ts;
+        if (!x.on) { x.el.querySelector(".cc-art").textContent = x.rows.map(r => noisy(r.replace(/\S/g, " ").padEnd(r.length, " "), 0.7)).join("\n"); continue; }
+        x.roll = (x.roll + 1) % (x.rows.length + 4);
+        const blink = x.f.blink || "";
+        x.el.querySelector(".cc-art").textContent = x.rows.map((r, j) => {
+          if (blink) r = [...r].map(ch => blink.includes(ch) && Math.random() < 0.3 ? pickOne([...blink]) : ch).join("");
+          return j === x.roll ? noisy(r, 0.45) : r;
+        }).join("\n");
+      }
+    };
+    const live = async ms => { const end = Date.now() + ms; while (Date.now() < end && !fast) { sec++; draw(); await sleep(100); } };
+    for (const [i, x] of feeds.entries()) {
+      for (let k = 0; k < 5; k++) { draw(); SFX.tick(); await pause(55); }
+      x.on = true;
+      draw();
+      panel.querySelector(".cc-n").textContent = `${i + 1} / ${feeds.length}`;
+      SFX.hop(i);
+      tear(120, 0.35);
+      scrollDown();
+      await pause(220);
+    }
+    await live(c.ms || 2200);
+    const target = feeds.find(x => x.f.id === c.focus);
+    if (target) {
+      panel.classList.add("focus");
+      target.el.classList.add("zoom");
+      SFX.boom();
+      tear(380, 0.8);
+      if (c.note) { panel.insertAdjacentHTML("beforeend", `<div class="cc-note">${esc(fill(c.note))}</div>`); scrollDown(); }
+      await live(c.focusMs || 2400);
+    }
+  }
+  // { building: { floors, cols, keep: [上から何階目, 左から何番目], label, cap } } … ビルの窓の明かりが、上の階から順に落ちていく（keep の窓だけ残る）
+  // { lights: "on" } … 消した明かりを、下の階から戻す
+  if (s.building) {
+    const b = s.building, F = b.floors || 10, C = b.cols || 8, keep = b.keep || [0, C - 2];
+    const grid = Array.from({ length: F }, () => Array.from({ length: C }, () => Math.random() < 0.85));
+    grid[keep[0]][keep[1]] = true;
+    const panel = print(`<div class="fx-panel building"><div class="fx-head"><span>${esc(fill(b.label || "BUILDING CONTROL"))}</span><span class="bd-n">ONLINE</span></div>`
+      + `<div class="bd-body"><div class="bd-grid"></div></div>${b.cap ? `<div class="bd-cap">${esc(fill(b.cap))}</div>` : ""}</div>`).querySelector(".building");
+    const g = panel.querySelector(".bd-grid"), n = panel.querySelector(".bd-n");
+    const draw = () => {
+      g.innerHTML = grid.map((row, r) => `<span class="fl">${String(F - r).padStart(2, "0")}F </span>`
+        + row.map((on, c) => `<span class="w${on ? "" : " off"}${on && r === keep[0] && c === keep[1] ? " keep" : ""}">▮</span>`).join(" ")).join("\n");
+    };
+    draw();
+    scrollDown();
+    await pause(900);
+    for (let r = 0; r < F; r++) {
+      grid[r] = grid[r].map((on, c) => r === keep[0] && c === keep[1] ? on : false);
+      draw();
+      n.textContent = `${F - r}F OFF`;
+      SFX.clunk();
+      if (r % 3 === 0) tear(90, 0.25);
+      await pause(170);
+    }
+    n.textContent = "ALL OFF";
+    lastBuilding = { grid, draw, n };
+    await pause(900);
+  }
+  if (s.lights === "on" && lastBuilding) {
+    const { grid, draw, n } = lastBuilding;
+    for (let r = grid.length - 1; r >= 0; r--) {
+      grid[r] = grid[r].map(() => Math.random() < 0.85);
+      draw();
+      SFX.tick();
+      await pause(70);
+    }
+    n.textContent = "RESTORED";
+    SFX.granted();
+    await pause(500);
   }
   // { shred: 行数 } … ログの行が、文字ごとにバラバラに崩れて消えていく（足跡を消す）
   if (s.shred) {
@@ -2466,13 +2974,19 @@ async function play(steps) {
   for (const s of steps) {
     if (typeof s === "string") { await typeLine(s); await (s.startsWith("[師匠]") ? pause(560) : wait(420)); continue; }
     if (s.wait) await wait(s.wait);
-    if ("glitch" in s) $("wrap").classList.toggle("unstable", s.glitch);
+    if ("glitch" in s) { $("wrap").classList.toggle("unstable", s.glitch); setStorm(s.glitch ? 0.6 : 0); }
+    // { tear: ミリ秒, power } … 画面が一度だけ裂ける ／ { storm: 0〜1 } … 裂け続ける（0 で止まる） ／ { impact: 強さ } … 衝撃
+    if (s.tear) tear(s.tear, s.power ?? 1);
+    if ("storm" in s) setStorm(s.storm);
+    if (s.impact) impact(s.impact);
+    // { job: {...} } … 裏で動く処理を始める（プレイヤーは操作を続けられる。書き方は src/scenario.js の先頭）
+    if (s.job) startJob(s.job);
     if ("mode" in s) {
       document.body.classList.remove("red", "blue");
       if (s.mode) document.body.classList.add(s.mode);
       SFX.siren(s.mode === "red");
       // 警報で音楽がテープのように止まり、師匠が回線を奪い返すと戻ってくる
-      if (s.mode === "red") SFX.music(false, { tape: true });
+      if (s.mode === "red") { SFX.music(false, { tape: true }); tear(600, 1.2); }
       if (s.mode === "blue") SFX.music(true);
       if (s.mode === "blue") SFX.granted();
     }
@@ -2480,7 +2994,8 @@ async function play(steps) {
     // { flash: true } … 画面が一瞬赤く光って警告音（監査に見つかった、など）
     if (s.flash) { SFX.alert(); pulse($("term"), "flash", 1000); }
     // { auto: "コマンド" } … 今のプロンプトに、コマンドが自動で打たれる（打っているのはプレイヤー、という体）
-    if (s.auto) await autoType(fill(s.auto));
+    // as … 打つ人のプロンプト（例：師匠の端末から打たれる）
+    if (s.auto) await autoType(fill(s.auto), s.as && fill(s.as));
     // 任務2の見せ場の演出（ファイルがあふれる・AIスキャン・攻防・画面がはがれる など）
     await playFx(s);
     // { music: true } … 落ち着いた曲（calm）。{ music: "run" } … ボーナスタイムの、前へ進む曲。false で止める
@@ -2573,6 +3088,7 @@ async function clearGoalObjective(show) {
 
 async function runGoal(goal) {
   if (state.saveReady) return;   // save 待ちのあいだに同じ結果をもう一度見ても、やり直さない
+  killJob();
   if (goal.save) return readyToSave(goal);
   state.over = true;
   updateNext();
@@ -2593,6 +3109,7 @@ async function runGoal(goal) {
     SFX.music(false, { fast: true });
     document.body.classList.remove("red", "blue");
     $("wrap").classList.remove("glitch", "unstable");
+    setStorm(0);
   } else {
     await powerOff();
   }
@@ -2614,8 +3131,8 @@ async function readyToSave(goal) {
 }
 
 // 自動で打たれるコマンド（速め）
-async function autoType(text) {
-  const d = print(`<span class="ps">${esc($("prompt").textContent)}</span> <span class="t"></span>`, "echo auto");
+async function autoType(text, as) {
+  const d = print(`<span class="ps">${esc(as || $("prompt").textContent)}</span> <span class="t"></span>`, "echo auto");
   const t = d.querySelector(".t");
   for (const ch of text) {
     if (fast || REDUCED) break;
@@ -2680,6 +3197,7 @@ async function showEnding(text, opt = {}) {
   ov.classList.add("visible");
   await sleep(opt.cut ? 3000 : 1400);
   $("wrap").classList.remove("glitch", "unstable");
+  setStorm(0);
 
   const el = ov.querySelector(".text");
   state.skip = false;
@@ -2756,7 +3274,7 @@ const COMMANDS = {
     if (link.oneway) {
       disablePicks();
       SFX.alert();
-      pulse($("wrap"), "shake", 450);
+      impact();
       // ONE-WAY が点く → 間 → 「進みますか？」 → 選択肢
       const box = print(`<div class="auth"></div>`).querySelector(".auth");
       await busy(async () => {
@@ -2951,7 +3469,7 @@ async function fakeRoute(dest, opt = {}) {
     // 出発点に戻ってきた：エラーとして接続を止める
     await wait(250);
     SFX.denied();
-    pulse($("wrap"), "shake", 450);
+    impact();
     print("[ERROR] 回線がループしています", "alert");
     await wait(350);
     print("[ERROR] 接続を停止しました。", "alert");
@@ -2972,7 +3490,7 @@ async function mentorLine() {
     line.textContent = "回線コードを照合中... done";
   });
   SFX.denied();
-  pulse($("wrap"), "shake", 450);
+  impact();
   print("回線コードが違います。師匠に確認してください。", "alert");
   await busy(async () => {
     await wait(1200);
@@ -3074,7 +3592,7 @@ async function connectLine(code) {
     });
     if (!ch) {
       SFX.denied();
-      pulse($("wrap"), "shake", 450);
+      impact();
       return print("回線コードが違います。師匠に確認してください。", "alert");
     }
     state.mode = null;
@@ -3175,6 +3693,11 @@ async function run(raw) {
   // 「次の一手」を打ったら、案内は消す（結果を見て、師匠がまた次を言う）
   const g = state.guide;
   if (g && state.current === g.at && fold(raw).replace(/\s+/g, "") === fold(g.cmd).replace(/\s+/g, "")) state.guide = null;
+  // 寄り道をやったら、そのボタンは消す
+  const det = detoursHere().find(d => fold(d.cmd).replace(/\s+/g, "") === fold(raw).replace(/\s+/g, ""));
+  if (det) state.said.add(detourKey(det));
+  // 使い終わったボタンは、すぐに NEXT 欄から消す（結果に「次の一手」がないと、古いボタンが残ってしまうので）
+  if (state.guide !== g || det) updateNext();
   // actions：その場所でだけ使える特別なコマンド（任務2の見せ場。押すと、たっぷり時間をかけた演出が流れる）
   const acts = here()?.actions;
   const act = acts && Object.entries(acts).find(([k]) => fold(k).replace(/\s+/g, "") === fold(raw).replace(/\s+/g, ""));
