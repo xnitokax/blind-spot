@@ -332,7 +332,7 @@ const hrEntries = (m, goal) => [
   },
   {
     html: hrRecord({
-      no: "T-260401", name: "佐伯 まゆ", kana: "さえき まゆ", age: 23,
+      no: "T-260401", name: "佐伯 まゆ", kana: "さえき まゆ", age: 22,
       rows: [
         ["所属（現在）", "人事部 給与課"],
         ["職種", "事務職　給与計算"],
