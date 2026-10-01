@@ -131,7 +131,68 @@
     91% { transform: translate(-3px, 0) skewX(-8deg); text-shadow: -6px 0 rgba(255,0,80,.9), 6px 0 rgba(0,200,255,.9); }
     93% { transform: translate(2px, 0); }
   }
-  .subtitle { color: var(--dim); letter-spacing: .3em; font-size: 12px; margin-bottom: 14px; }
+  .subtitle { color: var(--dim); letter-spacing: .3em; font-size: 12px; margin-bottom: 14px; animation: tlSub .9s 3s ease-out both; }
+
+  /* タイトルの登場（約3秒）：
+     破片が集まる（0〜0.9秒）→ ドンと確定（0.9秒）→ 光が走る（1.1秒）→ 死角が通り過ぎる（1.6〜3秒）→ 下線と副題（3秒） */
+  .title-logo { position: relative; display: inline-block; }
+  .title-logo .tl-text { display: inline-block; opacity: 0; animation: tlShow .35s .9s ease-out forwards; }
+  /* 破片：赤と青のロゴを横に細く切り、左右にずらしながら集める */
+  .title-logo::before, .title-logo::after {
+    content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; text-shadow: none;
+    animation: tlSliceA .9s steps(1) both;
+  }
+  .title-logo::before { color: #ff2d6f; }
+  .title-logo::after { color: #2de2ff; animation-name: tlSliceB; }
+  @keyframes tlSliceA {
+    0%   { clip-path: inset(10% 0 75% 0); transform: translateX(-42px); }
+    15%  { clip-path: inset(55% 0 20% 0); transform: translateX(28px); }
+    30%  { clip-path: inset(30% 0 50% 0); transform: translateX(-18px); }
+    45%  { clip-path: inset(70% 0 5% 0);  transform: translateX(12px); }
+    60%  { clip-path: inset(5% 0 60% 0);  transform: translateX(-8px); }
+    75%  { clip-path: inset(40% 0 35% 0); transform: translateX(4px); }
+    90%  { clip-path: inset(0 0 0 0); transform: translateX(-2px); opacity: .7; }
+    100% { clip-path: inset(0 0 0 0); transform: none; opacity: 0; }
+  }
+  @keyframes tlSliceB {
+    0%   { clip-path: inset(60% 0 15% 0); transform: translateX(38px); }
+    15%  { clip-path: inset(15% 0 65% 0); transform: translateX(-30px); }
+    30%  { clip-path: inset(45% 0 30% 0); transform: translateX(20px); }
+    45%  { clip-path: inset(0 0 80% 0);   transform: translateX(-14px); }
+    60%  { clip-path: inset(65% 0 10% 0); transform: translateX(9px); }
+    75%  { clip-path: inset(20% 0 55% 0); transform: translateX(-5px); }
+    90%  { clip-path: inset(0 0 0 0); transform: translateX(2px); opacity: .7; }
+    100% { clip-path: inset(0 0 0 0); transform: none; opacity: 0; }
+  }
+  @keyframes tlShow { from { opacity: 0; filter: brightness(3) blur(2px); } to { opacity: 1; filter: none; } }
+  /* 光の帯：文字の上だけを、左から右へサッと横切る */
+  .title-logo .tl-shine {
+    position: absolute; left: 0; top: 0; color: transparent; text-shadow: none; pointer-events: none;
+    background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.85) 50%, transparent 62%);
+    background-size: 300% 100%; background-position: 150% 0; -webkit-background-clip: text; background-clip: text;
+    animation: tlShine .8s 1.1s ease-in-out both;
+  }
+  @keyframes tlShine { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+  /* 死角：黒い円がゆっくり横切り、重なった文字だけが見えなくなる */
+  .title-logo .tl-spot {
+    position: absolute; top: 50%; left: -30%; width: 2.1em; height: 2.1em; margin-top: -1.05em; border-radius: 50%;
+    pointer-events: none; background: radial-gradient(circle, var(--panel) 55%, transparent 72%);
+    opacity: 0; animation: tlSpot 1.4s 1.6s cubic-bezier(.45, 0, .55, 1) both;
+  }
+  @keyframes tlSpot {
+    0% { left: -30%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { left: 105%; opacity: 0; }
+  }
+  /* 下線：真ん中から左右へ伸びる */
+  .title-logo .tl-line {
+    position: absolute; left: 0; right: 0; bottom: -4px; height: 1px; transform: scaleX(0);
+    background: linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow: 0 0 8px var(--accent);
+    animation: tlLine .7s 3s ease-out forwards;
+  }
+  @keyframes tlLine { to { transform: scaleX(1); } }
+  @keyframes tlSub { from { opacity: 0; letter-spacing: .9em; } to { opacity: 1; letter-spacing: .3em; } }
 
   /* 任務開始のカード */
   .mission {
@@ -400,6 +461,9 @@
 
   @media (prefers-reduced-motion: reduce) {
     .wrap, .title-logo, .unstable, .glitch, body.red #fx { animation: none !important; }
+    .title-logo::before, .title-logo::after, .title-logo .tl-shine, .title-logo .tl-spot { display: none; }
+    .title-logo .tl-text, .subtitle { animation: none !important; opacity: 1; }
+    .title-logo .tl-line { animation: none !important; transform: none; }
   }
 
   /* スマホ：TRACE は1行、アクセスログは最新1件だけ（タップで開閉）
@@ -637,6 +701,11 @@ const SFX = (() => {
       hiss(0.02, { vol: 0.05, filter: "bandpass", freq: 3200, q: 1.5, at: 1.5 });
       tone(1500, 0.012, { vol: 0.015, at: 1.5 });
       hiss(0.08, { vol: 0.045, filter: "bandpass", freq: 2800, sweep: 3800, q: 0.9, at: 1.62, attack: 0.01 });
+    },
+    // タイトルの「死角」が通り過ぎる：低くうねる「ゴォ…」
+    spot: () => {
+      tone(70, 1.5, { vol: 0.12, slide: 48, attack: 0.35 });
+      hiss(1.4, { vol: 0.05, filter: "lowpass", freq: 220, sweep: 900, q: 0.7, attack: 0.5 });
     },
     // 南京錠が閉まる「ガチャッ」：低い衝撃と、金属の小さな響き
     lock: () => {
@@ -2259,9 +2328,20 @@ async function boot(autoCode) {
   state = freshState();
   resetScreen();
   await busy(async () => {
-    const logo = print(`<div class="title-logo">${esc(S.title)}</div><div class="subtitle">ANON-NET TERMINAL</div>`);
+    // タイトルの登場：破片が集まる → ドンと確定 → 光が走る → 死角が通り過ぎる → 下線と副題（動きは CSS、音はここで合わせる）
+    const t = esc(S.title);
+    print(`<div class="title-logo" data-text="${t}"><span class="tl-text">${t}</span>`
+      + `<span class="tl-shine" aria-hidden="true">${t}</span><span class="tl-spot"></span><span class="tl-line"></span></div>`
+      + `<div class="subtitle">ANON-NET TERMINAL</div>`);
     SFX.warp();
-    await decode(logo, 900);
+    SFX.static();
+    await wait(320);
+    SFX.static();
+    await wait(580);
+    SFX.card();          // 0.9秒：破片が集まって確定
+    await wait(700);
+    SFX.spot();          // 1.6秒：死角が通り過ぎる
+    await wait(1900);    // 3.5秒：下線と副題が出そろう
     for (const l of ["[ ok ] kernel modules", "[ ok ] tor client  3 guards", "[ ok ] relay  uzu://safehouse … online"]) {
       await wait(140);
       print(esc(l), "dim");
