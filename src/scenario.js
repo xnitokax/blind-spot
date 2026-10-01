@@ -39,7 +39,8 @@
 //            ※ 師匠のセリフの「、」「。」は、画面では「, 」「. 」になる（師匠の話し方。ここでは普通に書いてよい）
 //    clue:   初めて来たときに記録される「手がかり」の名前（画面右の EVIDENCE 欄に集まる）
 //            search の entries[] と dir[] にも clue を付けられる。任務完了の画面に「回収 n/N」と出る
-//    breach: ["文字", ...] … 初めて入るときに、守りを破っていく短い演出が1行ずつ走る（任務2）
+//    breach: ["文字", ...] … 初めて入るときに、守りの壁が崩れ、手順ごとのバーが埋まって ACCESS GRANTED になる演出（任務2）
+//    zone:   "files" / "hr" / "seek" / "keiri" / "jyoshi" … 入ると画面の色合いが変わる（docs/index.html の body[data-zone]）
 //    next:   { at: ノードid, cmd: "search 鷲尾" } … 師匠が言った「次の一手」。NEXT 欄の先頭に光るボタンで出て、押すだけで実行される
 //            ノードの say のほか、search の entries[] / notes[]、dir[]、目標（objectives の intro と一緒に）、任務（導入のあと）に書ける
 //    lock:   { pass: "パスワード" or [...], hint, prompt, penalty, say, showLength, user }
@@ -58,6 +59,8 @@
 //            totals: { 言葉: 件数 } … その言葉1つだけで検索したとき、結果の件数をこの数で表示する（見た目だけ）
 //            　件数の少なさが手がかりになる検索（プロジェクト室 → 2件 など）には付けない
 //            stream: true … 検索中に、ログが高速で流れる演出（変更ログなど）
+//            entries[].before / after … その結果を出す前／師匠が話したあとに流れる演出（台本。初めてのときだけ）
+//              台本では { auto: "コマンド" }（自動で打たれる）、{ flash: true }（赤く光って警告音）も使える
 //            search <言葉> で entries を検索し、上から limit 件（既定 3 件）だけ表示する
 //            スペース区切りで AND 検索。本文の文字と keys が検索対象
 //            本文の中で class="nosearch" を付けた部分は検索に引っかからない
@@ -339,6 +342,16 @@ const hrEntries = (m, goal) => [
       ],
     }),
     clue: m === 2 && "室長の人事記録：「室長」以外は空欄",
+    // 任務2：保護された記録を、師匠が無理やりこじ開ける（それでも中身は空っぽ）
+    before: m === 2 ? [
+      { sound: "denied" },
+      "[!] この社員の情報は保護されています（閲覧レベル 4 以上）",
+      { wait: 400 },
+      "[師匠] 貸せ。",
+      { auto: "override --clearance 4 --ttl 30s" },
+      { hex: 3 },
+      "[+] 閲覧レベルを一時的に引き上げました",
+    ] : undefined,
   },
   // ── ここから下は小ネタ：日報に出てきた人を調べると、人事の評価と師匠のひとことが出る ──
   {
@@ -781,8 +794,9 @@ const SCENARIO = {
         "[師匠] いつものやつ、流しとくぞ。",
         { music: true },
         { wait: 1500 },
+        "[師匠] まずはお疲れさん。最初の仕事にしちゃ、やるじゃないか。",
         "[師匠] 今夜は「特別プロジェクト室」を洗う。何をしている部屋なのか、正体を暴け。",
-        "[師匠] 今夜はテンポよく行く。道は俺が指す。ついて来い。",
+        "[師匠] ここからはボーナスタイムだ。道は俺が出す。光ってるのを押していけば、勝手に進む。",
         "[師匠] プロジェクトの資料なら、ファイルサーバーにあるはずだ。まずはそこからだな。",
       ],
       next: { at: "files", cmd: "cd ??????" },
@@ -798,7 +812,8 @@ const SCENARIO = {
 
         files: {
           host: "files.teiwa.local/projects",
-          breach: ["mount //files/projects"],
+          zone: "files",
+          breach: ["scan SMB shares", "mount //files/projects"],
           title: "ファイルサーバー",
           body: FILES_BODY + `
 <ul class="links">
@@ -831,7 +846,8 @@ const SCENARIO = {
 
         hr: {
           host: "hr.teiwa.local",
-          breach: ["reuse session: asahina.satsuki", "skip 2FA (internal network)"],
+          zone: "hr",
+          breach: ["reuse session: asahina.satsuki", "skip 2FA (internal network)", "load personnel index"],
           title: "人事データベース",
           say: ["[師匠] 前回のパスワードがまだ生きてる。助かるな。"],
           login: "朝比奈 さつき（人事部 採用課）",
@@ -852,7 +868,8 @@ const SCENARIO = {
 
         seek: {
           host: "seek.jp",
-          breach: ["route via exit node jp-07", "spoof user agent"],
+          zone: "seek",
+          breach: ["leave intranet via exit node jp-07", "spoof user agent", "connect seek.jp"],
           title: "Seek ── 検索サイト（社外）",
           body: `
 <p class="dim">＞ 社外のサイト。<br>＞ ニュースや公開情報を検索できる。</p>
@@ -888,7 +905,8 @@ const SCENARIO = {
 
         keiri: {
           host: "keiri.teiwa.local/ledger",
-          breach: ["bypass ledger gateway", "spoof role: 経理部 監査", "mount /ledger (read-only)"],
+          zone: "keiri",
+          breach: ["bypass ledger gateway", "spoof role: 経理部 監査", "mount /ledger read-only"],
           title: "財務会計システム",
           body: `
 <p class="dim">＞ 社内ネットワークからの閲覧のみ許可されている。</p>
@@ -914,6 +932,17 @@ const SCENARIO = {
               {
                 keys: "裏金 使途不明 相手先不明 不明",
                 next: { at: "jyoshi", cmd: "search 09/12" },
+                // 見つけた直後に監査が反応 → 師匠が足跡を消す
+                after: [
+                  { flash: true },
+                  "[!] 監査ログ：伝票 #88412 への不審な閲覧を検知しました",
+                  { wait: 300 },
+                  "[師匠] ……監査が反応したか。慌てるな、消せばいい。",
+                  { auto: "wipe /var/log/audit --last 1" },
+                  { hex: 4 },
+                  "[+] 足跡を消しました",
+                  "[師匠] よし。次だ。",
+                ],
                 clue: "12億円の裏金伝票（9/12 02:47 に更新）",
                 say: [
                   "[師匠] 相手先が空欄で、12億。……裏金だな。",
@@ -940,6 +969,7 @@ const SCENARIO = {
 
         jyoshi: {
           host: "jyoshi.teiwa.local/changelog",
+          zone: "jyoshi",
           breach: ["inject log reader", "grant read /var/log/changes", "hide own session"],
           title: "情報システム部　変更ログ",
           body: `
@@ -962,6 +992,13 @@ const SCENARIO = {
               { html: `<pre class="log">2026/09/12 01:30:00  cam.stairs-B      非常階段Bカメラ  保守のため停止（01:30-02:00）</pre>`, clue: "事件の夜、非常階段のカメラが止められていた" },
               {
                 clue: "兄が裏金の行に残した、政府からの文言",
+                // 結果を出す前に、消された差分を目の前で復元する
+                before: [
+                  "[*] 削除された差分を検出：伝票 #88412 の摘要",
+                  { auto: "restore --diff ledger#88412@2026-09-12T02:47:13" },
+                  { hex: 6 },
+                  "[+] 復元しました",
+                ],
                 html: `<pre class="log">2026/09/12 02:47:13  keiri.ledger      伝票 #88412  摘要を変更  by svc_maint（特権アカウント）
 
   <span class="alert">- 変更前：千里眼（SENRIGAN）計画 予算

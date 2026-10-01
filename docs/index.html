@@ -458,6 +458,39 @@
   }
   /* 画面全体の色（赤＝警報、青＝師匠が回線を奪い返した） */
   #fx { position: fixed; inset: 0; pointer-events: none; z-index: 35; opacity: 0; transition: opacity .6s; }
+
+  /* ゾーン：システムに入ると、画面の色合いが少し変わる（任務2。node.zone）
+     文字・線・強調の色を入れ替え、画面のふちに薄く色をのせる */
+  body[data-zone] #fx { opacity: 1; background: radial-gradient(ellipse at center, transparent 55%, var(--tint)); }
+  body[data-zone="files"]  { --accent: #4fd8ff; --fg: #c3f0ff; --line: #173a4a; --dim: #5b8796; --tint: rgba(79,216,255,.13); }
+  body[data-zone="hr"]     { --accent: #c4a0ff; --fg: #e4d8ff; --line: #30284a; --dim: #8a7fa8; --tint: rgba(170,120,255,.14); }
+  body[data-zone="seek"]   { --accent: #9fd0ff; --fg: #edf6ff; --line: #27394c; --dim: #7f95ab; --tint: rgba(200,225,255,.12); }
+  body[data-zone="keiri"]  { --accent: #ffcc5c; --fg: #fbe9c0; --line: #3f3519; --dim: #a08a5a; --tint: rgba(255,190,70,.14); }
+  body[data-zone="jyoshi"] { --accent: #4ff0e0; --fg: #c8fbf4; --line: #12403b; --dim: #5a9890; --tint: rgba(60,240,220,.13); }
+  /* ゾーンに入った瞬間：光の帯が上から下へ走る */
+  #fx.zone-in::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 30%; top: -30%;
+    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 35%, transparent), transparent);
+    animation: zoneSweep .6s ease-out forwards;
+  }
+  @keyframes zoneSweep { to { top: 100%; } }
+
+  /* 侵入の演出（breach）：壁が崩れ、手順ごとのバーが埋まり、最後に ACCESS のはんこ */
+  .breach-panel {
+    border: 1px solid var(--accent); border-radius: 4px; padding: 8px 12px; margin: 8px 0; white-space: normal;
+    background: color-mix(in srgb, var(--accent) 6%, transparent); box-shadow: 0 0 18px -8px var(--accent); position: relative; overflow: hidden;
+  }
+  .bp-head { color: var(--accent); font-size: 11px; letter-spacing: .25em; display: flex; justify-content: space-between; }
+  .bp-wall { font-size: 9px; line-height: 1.05; letter-spacing: 1px; color: var(--accent); opacity: .75; margin: 6px 0; white-space: pre; overflow: hidden; }
+  .bp-step { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; font-size: 12px; align-items: center; }
+  .bp-step .lab { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bp-step .bar { color: var(--accent); font-size: 11px; white-space: pre; }
+  .bp-step.done .bar { color: var(--accent); text-shadow: 0 0 8px var(--accent); }
+  .bp-stamp {
+    margin-top: 6px; text-align: center; color: var(--bg); background: var(--accent); font-size: 13px; letter-spacing: .4em;
+    padding: 2px 0; animation: stampIn .35s cubic-bezier(.2, 1.6, .5, 1) both;
+  }
+  @keyframes stampIn { from { transform: scale(1.6); opacity: 0; filter: blur(3px); } to { transform: none; opacity: 1; filter: none; } }
   body.red #fx { opacity: 1; background: radial-gradient(ellipse at center, rgba(255,0,40,.06), rgba(255,0,40,.38)); animation: redPulse 1s infinite; }
   body.blue #fx { opacity: 1; background: radial-gradient(ellipse at center, rgba(80,160,255,.04), rgba(80,160,255,.3)); }
   @keyframes redPulse { 50% { opacity: .45; } }
@@ -1375,6 +1408,7 @@ async function powerOff() {
   $("wrap").classList.remove("glitch", "unstable");
   $("wrap").classList.add("crt-off");
   document.body.classList.remove("red", "blue");
+  delete document.body.dataset.zone;   // 画面が消えるときは、色合いも元に戻す
   await sleep(320);
 }
 
@@ -1637,6 +1671,61 @@ async function enterNode(id, opt = {}) {
   });
 }
 
+// ゾーン（画面の色合い）を切りかえる。入った瞬間に光の帯が走る
+function setZone(zone) {
+  const now = document.body.dataset.zone || "";
+  if ((zone || "") === now) return;
+  if (zone) document.body.dataset.zone = zone; else delete document.body.dataset.zone;
+  if (zone) { pulse($("fx"), "zone-in", 650); SFX.titleLine(); }   // 空気が流れるような「スゥッ」
+}
+
+// 侵入の演出：守りの壁が崩れていき、手順ごとのバーが埋まって、最後に ACCESS GRANTED のはんこ
+async function breach(node) {
+  const cols = 34, rows = 3;
+  const panel = print(`<div class="breach-panel">
+    <div class="bp-head"><span>BREACH</span><span>${esc(node.host)}</span></div>
+    <div class="bp-wall"></div><div class="bp-steps"></div></div>`).querySelector(".breach-panel");
+  const wallEl = panel.querySelector(".bp-wall"), steps = panel.querySelector(".bp-steps");
+  const wall = Array.from({ length: rows }, () => Array(cols).fill("█"));
+  const drawWall = () => { wallEl.textContent = wall.map(r => r.join("")).join("\n"); };
+  // 壁を少しずつ崩す（残っている █ を、▓ → ░ → 空白 の順に）
+  const crumble = n => {
+    for (let k = 0; k < n; k++) {
+      const r = Math.floor(Math.random() * rows), c = Math.floor(Math.random() * cols);
+      wall[r][c] = { "█": "▓", "▓": "░", "░": " " }[wall[r][c]] ?? " ";
+    }
+    drawWall();
+  };
+  drawWall();
+  const per = Math.ceil((cols * rows * 3) / (node.breach.length * 10));
+  for (const label of node.breach) {
+    const row = document.createElement("div");
+    row.className = "bp-step";
+    row.innerHTML = `<span class="lab">${esc(label)}</span><span class="bar"></span>`;
+    steps.appendChild(row);
+    const bar = row.querySelector(".bar");
+    for (let f = 1; f <= 10; f++) {
+      bar.textContent = `[${"▮".repeat(f)}${"·".repeat(10 - f)}] ${randHex(2)}`;
+      crumble(per);
+      SFX.tick();
+      await wait(34);
+    }
+    bar.textContent = "[▮▮▮▮▮▮▮▮▮▮]  OK";
+    row.classList.add("done");
+    SFX.hop(0);
+    scrollDown();
+    await wait(90);
+  }
+  // 残りの壁が一気に崩れる
+  for (let i = 0; i < 4; i++) { crumble(cols * rows); await wait(40); }
+  wallEl.remove();   // 崩れきった壁は消して、はんこだけ残す
+  panel.insertAdjacentHTML("beforeend", `<div class="bp-stamp">ACCESS GRANTED</div>`);
+  SFX.granted();
+  pulse($("term"), "flash-ok", 600);
+  scrollDown();
+  await wait(500);
+}
+
 // 転移（演出つき）。鍵付きなら先にパスワードを聞く
 async function connect(id, opt = {}) {
   const node = nodeOf(id);
@@ -1646,16 +1735,10 @@ async function connect(id, opt = {}) {
     line.innerHTML += ` <span class="sys">${10 + Math.floor(Math.random() * 60)}ms</span>`;
     state.minutes += 2 + Math.floor(Math.random() * 4);
     updateClock();
-    // breach：初めて入るシステムでは、守りを破っていく短い演出が走る（1〜2秒）
-    if (node.breach && !state.visited.has(id)) {
-      for (const step of node.breach) {
-        const l = print(`<span class="sys">[+]</span> ${esc(step)} `, "dim breach");
-        for (let i = 0; i < 5; i++) { await wait(28); l.innerHTML += "."; SFX.tick(); }
-        l.innerHTML += ` <span class="sys">OK</span>`;
-        await wait(60);
-      }
-      SFX.enter();
-    }
+    // ゾーン：システムに入ると、画面の色合いが変わる
+    setZone(node.zone);
+    // breach：初めて入るシステムでは、守りを破っていく演出が走る
+    if (node.breach && !state.visited.has(id)) await breach(node);
   });
 
   if (node.lock && !state.opened.has(id)) {
@@ -1846,6 +1929,8 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   // 結果は1件ずつ（解読しながら）出す
   await wait(BEAT.small);
   for (const e of shown) {
+    // before：その結果を出す前に流れる演出（初めて見るときだけ。例：消された差分を復元する）
+    if (e.before && !state.said.has(e.before)) { state.said.add(e.before); await play(e.before); await wait(BEAT.small); }
     decode(print(`<div class="doc">${e.html}</div>`, "node result reveal"), 380);
     await wait(450);
   }
@@ -1874,6 +1959,10 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   }
   if (nothing && !lines.length) lines.push("[師匠] この中に必要そうなものはなさそうだな。");
   await speak(lines, BEAT.react);
+  // after：師匠が話したあとに流れる演出（初めてのときだけ。例：監査に見つかって、足跡を消す）
+  for (const e of shown) {
+    if (e.after && !state.said.has(e.after)) { state.said.add(e.after); await wait(BEAT.small); await play(e.after); }
+  }
   setGuide(next);
   await checkObjectives();
   if (goal) await runGoal(goal);
@@ -1885,6 +1974,7 @@ function resetScreen() {
   SFX.siren(false);
   SFX.music(false, { fast: true });
   document.body.classList.remove("red", "blue");
+  delete document.body.dataset.zone;
   $("overlay").className = "";
   $("wrap").classList.remove("glitch", "unstable", "crt-off");
   $("form").style.visibility = "";
@@ -1973,6 +2063,10 @@ async function play(steps) {
       if (s.mode === "blue") SFX.granted();
     }
     if (s.sound) SFX[s.sound]?.();
+    // { flash: true } … 画面が一瞬赤く光って警告音（監査に見つかった、など）
+    if (s.flash) { SFX.alert(); pulse($("term"), "flash", 1000); }
+    // { auto: "コマンド" } … 今のプロンプトに、コマンドが自動で打たれる（師匠が代わりに打つ）
+    if (s.auto) await autoType(fill(s.auto));
     if ("music" in s) SFX.music(s.music);
     // { slow: "セリフ", ms: 1文字の間隔 } … ゆっくり1文字ずつ出す
     if (s.slow) { await typeLine(s.slow, { charMs: s.ms || 350 }); await wait(700); }
