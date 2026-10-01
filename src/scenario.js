@@ -362,9 +362,17 @@ const SCENARIO = {
       ],
       start: "portal",
       nodes: {
-        portal: portal(`
+        portal: {
+          ...portal(`
   <li><a data-go="hr">hr.teiwa.local　── 人事データベース（社員名簿）</a></li>
   <li><a data-go="nippo">nippo.teiwa.local　── 日報共有システム</a></li>`),
+          // 移動のチュートリアル（最初に着いたときだけ）
+          say: [
+            "[師匠] やり方は分かっているな？",
+            "[師匠] 「ssh 場所」で移動できる。",
+            "[師匠] hr：人事データベースに移動してみろ。",
+          ],
+        },
 
         hr: {
           host: "hr.teiwa.local",
