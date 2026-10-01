@@ -39,6 +39,9 @@
 //            ※ 師匠のセリフの「、」「。」は、画面では「, 」「. 」になる（師匠の話し方。ここでは普通に書いてよい）
 //    clue:   初めて来たときに記録される「手がかり」の名前（画面右の EVIDENCE 欄に集まる）
 //            search の entries[] と dir[] にも clue を付けられる。任務完了の画面に「回収 n/N」と出る
+//    breach: ["文字", ...] … 初めて入るときに、守りを破っていく短い演出が1行ずつ走る（任務2）
+//    next:   { at: ノードid, cmd: "search 鷲尾" } … 師匠が言った「次の一手」。NEXT 欄の先頭に光るボタンで出て、押すだけで実行される
+//            ノードの say のほか、search の entries[] / notes[]、dir[]、目標（objectives の intro と一緒に）、任務（導入のあと）に書ける
 //    lock:   { pass: "パスワード" or [...], hint, prompt, penalty, say, showLength, user }
 //            pass は全角・半角、大文字・小文字、空白を区別しない
 //            パスワードを間違えても入力画面のまま続けて打てる。何も入力せずに Enter / back / Esc で戻る
@@ -54,6 +57,7 @@
 //            records は検索中の演出で回る「総件数」（見た目だけ）
 //            totals: { 言葉: 件数 } … その言葉1つだけで検索したとき、結果の件数をこの数で表示する（見た目だけ）
 //            　件数の少なさが手がかりになる検索（プロジェクト室 → 2件 など）には付けない
+//            stream: true … 検索中に、ログが高速で流れる演出（変更ログなど）
 //            search <言葉> で entries を検索し、上から limit 件（既定 3 件）だけ表示する
 //            スペース区切りで AND 検索。本文の文字と keys が検索対象
 //            本文の中で class="nosearch" を付けた部分は検索に引っかからない
@@ -759,6 +763,7 @@ const SCENARIO = {
           until: { goal: true },
           // この目標になったときの師匠のひとこと（どこを探すかの案内）
           intro: ["[師匠] 国の金が動いてるなら、帳簿のどこかに跡が残ってるはずだ。", "[師匠] 財務会計システムを当たってみろ。"],
+          next: { at: "keiri", cmd: "search 裏金" },
         },
         { text: "気になること", side: true, clues: ["事件発生率、過去最低", "ここ数日、事件がわずかに増加", "謎のプロセス mm_zero（兄が死ぬ前日）"] },
       ],
@@ -766,13 +771,21 @@ const SCENARIO = {
       clock: "23:05",
       route: ["uzu://safehouse", "tor-entry.anon", "tor-relay-19.anon", "tor-relay-02.anon", "tor-exit-jp.anon", "vpn.teiwa.local"],
       noise: true,
+      // 任務2は「考えずに、スピード感でシステムを楽しむ」任務（任務1で疲れているので）
+      //   tempo … 演出の間を短くする（1 が標準）
+      //   nav   … どのシステムからでも、ほかのシステムへ直接移動できる
+      //   next  … 師匠が言った「次の一手」。NEXT 欄の先頭に光るボタンで出て、押すだけで実行される
+      tempo: 0.65,
+      nav: ["portal", "files", "nippo", "hr", "seek", "keiri", "jyoshi"],
       intro: [
         "[師匠] いつものやつ、流しとくぞ。",
         { music: true },
         { wait: 1500 },
         "[師匠] 今夜は「特別プロジェクト室」を洗う。何をしている部屋なのか、正体を暴け。",
+        "[師匠] 今夜はテンポよく行く。道は俺が指す。ついて来い。",
         "[師匠] プロジェクトの資料なら、ファイルサーバーにあるはずだ。まずはそこからだな。",
       ],
+      next: { at: "files", cmd: "cd ??????" },
       start: "portal",
       nodes: {
         portal: portal(`
@@ -785,6 +798,7 @@ const SCENARIO = {
 
         files: {
           host: "files.teiwa.local/projects",
+          breach: ["mount //files/projects"],
           title: "ファイルサーバー",
           body: FILES_BODY + `
 <ul class="links">
@@ -793,6 +807,7 @@ const SCENARIO = {
           dir: filesDir({
             text: "ファイルがありません。",
             say: ["[師匠] 名前のないフォルダ……中身も空、か。いや、名前が分からないから開けないだけかもしれない。", "[師匠] 日報で「プロジェクト室」を探ってみろ。"],
+            next: { at: "nippo", cmd: "search プロジェクト室" },
           }),
         },
 
@@ -808,14 +823,15 @@ const SCENARIO = {
             exact: ["プロジェクト室", "鷲尾", "恭介", "鷲尾恭介", "室長"], // この言葉は、本当の件数をそのまま出す（件数が手がかり）
             entries: NIPPO(2),
             notes: [
-              { when: "プロジェクト室", say: ["[師匠] たった2件か。5年もある部屋なのに。", "[師匠] 書いたのは室長。当たり障りのないことしか書いてないな。名前で調べてみるか。"] },
-              { when: "鷲尾", say: ["[師匠] ……出てこない？ 本人が書いた日報があるのに、名前じゃ引っかからないのか。", "[師匠] 人事DBで調べてみろ。"] },
+              { when: "プロジェクト室", say: ["[師匠] たった2件か。5年もある部屋なのに。", "[師匠] 書いたのは室長。当たり障りのないことしか書いてないな。名前で調べてみるか。"], next: { at: "nippo", cmd: "search 鷲尾" } },
+              { when: "鷲尾", say: ["[師匠] ……出てこない？ 本人が書いた日報があるのに、名前じゃ引っかからないのか。", "[師匠] 人事DBで調べてみろ。"], next: { at: "hr", cmd: "search 鷲尾" } },
             ],
           },
         },
 
         hr: {
           host: "hr.teiwa.local",
+          breach: ["reuse session: asahina.satsuki", "skip 2FA (internal network)"],
           title: "人事データベース",
           say: ["[師匠] 前回のパスワードがまだ生きてる。助かるな。"],
           login: "朝比奈 さつき（人事部 採用課）",
@@ -829,13 +845,14 @@ const SCENARIO = {
             entries: hrEntries(2),
             notes: [
               ...HR_NOTES,
-              { when: "鷲尾", say: ["[師匠] 「室長」としか書いてない。入社月も、前の所属もない。……何者だ？", "[師匠] 社内に記録がないなら、外で調べるしかないな。"] },
+              { when: "鷲尾", say: ["[師匠] 「室長」としか書いてない。入社月も、前の所属もない。……何者だ？", "[師匠] 社内に記録がないなら、外で調べるしかないな。"], next: { at: "seek", cmd: "search 鷲尾" } },
             ],
           },
         },
 
         seek: {
           host: "seek.jp",
+          breach: ["route via exit node jp-07", "spoof user agent"],
           title: "Seek ── 検索サイト（社外）",
           body: `
 <p class="dim">＞ 社外のサイト。<br>＞ ニュースや公開情報を検索できる。</p>
@@ -871,6 +888,7 @@ const SCENARIO = {
 
         keiri: {
           host: "keiri.teiwa.local/ledger",
+          breach: ["bypass ledger gateway", "spoof role: 経理部 監査", "mount /ledger (read-only)"],
           title: "財務会計システム",
           body: `
 <p class="dim">＞ 社内ネットワークからの閲覧のみ許可されている。</p>
@@ -895,6 +913,7 @@ const SCENARIO = {
             相手先：―</pre>` },
               {
                 keys: "裏金 使途不明 相手先不明 不明",
+                next: { at: "jyoshi", cmd: "search 09/12" },
                 clue: "12億円の裏金伝票（9/12 02:47 に更新）",
                 say: [
                   "[師匠] 相手先が空欄で、12億。……裏金だな。",
@@ -921,6 +940,7 @@ const SCENARIO = {
 
         jyoshi: {
           host: "jyoshi.teiwa.local/changelog",
+          breach: ["inject log reader", "grant read /var/log/changes", "hide own session"],
           title: "情報システム部　変更ログ",
           body: `
 <div class="doc">
@@ -932,6 +952,7 @@ const SCENARIO = {
 </ul>`,
           search: {
             label: "変更ログ",
+            stream: true, // 検索中にログが高速で流れる
             records: 5120774,
             // 日付だけで検索すると大量に出る → 時刻まで絞らせる。「02:47」（1件）は付けない
             totals: { "2026/09/12": 1847, "09/12": 1847, "9/12": 1847 },
@@ -981,7 +1002,7 @@ const SCENARIO = {
               { html: `<pre class="log">2026/08/25 10:00:00  ad.policy         パスワード定期変更の通知を送信</pre>` },
             ],
             notes: [
-              { when: ["09/12", "2026/09/12"], say: ["[師匠] その日だけでもログが多いな。時刻まで絞れ。"] },
+              { when: ["09/12", "2026/09/12"], say: ["[師匠] その日だけでもログが多いな。時刻まで絞れ。"], next: { at: "jyoshi", cmd: "search 02:47" } },
             ],
             empty: "該当するログはありません。",
           },

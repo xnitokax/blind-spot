@@ -51,6 +51,18 @@ function check(cid, ch) {
   }
   if (!goals) ng("任務完了（goal）がひとつもありません");
 
+  // 「次の一手」（next）：行き先のノードがあるか
+  const checkNext = (where, n) => { if (n && !ch.nodes[n.at]) ng(`${where} の next.at「${n.at}」というノードがありません`); };
+  checkNext("任務", ch.next);
+  for (const [id, node] of Object.entries(ch.nodes)) {
+    checkNext(id, node.next);
+    for (const e of node.search?.entries || []) checkNext(`${id} の検索結果`, e.next);
+    for (const n of node.search?.notes || []) checkNext(`${id} の検索の師匠のひとこと`, n.next);
+    for (const d of node.dir || []) checkNext(`${id} のフォルダ ${d.name}`, d.next);
+  }
+  for (const o of ch.objectives || []) checkNext(`目標「${o.text}」`, o.next);
+  for (const id of ch.nav || []) if (!ch.nodes[id]) ng(`nav の「${id}」というノードがありません`);
+
   // 目標（objectives）：手がかりの名前と until の書き間違い
   const clues = new Set();
   for (const node of Object.values(ch.nodes)) {
