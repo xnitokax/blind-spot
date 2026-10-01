@@ -43,6 +43,7 @@
 //    zone:   "files" / "hr" / "seek" / "keiri" / "jyoshi" … 入ると画面の色合いが変わる（docs/index.html の body[data-zone]）
 //    next:   { at: ノードid, cmd: "search 鷲尾" } … 師匠が言った「次の一手」。NEXT 欄の先頭に光るボタンで出て、押すだけで実行される
 //            ノードの say のほか、search の entries[] / notes[]、dir[]、目標（objectives の intro と一緒に）、任務（導入のあと）に書ける
+//            why を書くと、光るボタンのすぐ上に出る「なぜそこなのか」の師匠のひとこと（書かなければ、そのとき師匠が最後に言ったセリフ）
 //    lock:   { pass: "パスワード" or [...], hint, prompt, penalty, say, showLength, user }
 //            pass は全角・半角、大文字・小文字、空白を区別しない
 //            パスワードを間違えても入力画面のまま続けて打てる。何も入力せずに Enter / back / Esc で戻る
@@ -83,7 +84,7 @@
 //            { news: ["見出し", { meta, text }] } … ニュースが1件ずつ流れる
 //            { corrupt: ミリ秒 } … 画面の文字がどんどん崩れていく
 //            { sound: "boom" など } … 効果音（docs/index.html の SFX を参照）
-//            { music: true / false } … 師匠の BGM を流す・止める
+//            { music: true / "run" / false } … 師匠の BGM を流す（true は落ち着いた曲、"run" はボーナスタイムの曲）・止める
 //            ※ mode: "red" で BGM はテープのように止まり、mode: "blue" で戻ってくる
 //    tag:    完了画面の見出し
 //    report: 完了画面の文章（uzu に持ち帰って師匠に報告する内容）
@@ -791,12 +792,12 @@ const SCENARIO = {
       tempo: 0.65,
       nav: ["portal", "files", "nippo", "hr", "seek", "keiri", "jyoshi"],
       intro: [
-        "[師匠] いつものやつ、流しとくぞ。",
-        { music: true },
-        { wait: 1500 },
         "[師匠] まずはお疲れさん。最初の仕事にしちゃ、やるじゃないか。",
         "[師匠] 今夜は「特別プロジェクト室」を洗う。何をしている部屋なのか、正体を暴け。",
-        "[師匠] ここからはボーナスタイムだ。今夜は面倒な鍵もない。好きに暴れてこい。",
+        "[師匠] ここからはボーナスタイムだ。面倒な鍵はもうない。好きに暴れてこい。",
+        // ボーナスタイムの曲（run）に切りかえる
+        { music: "run" },
+        { wait: 1500 },
         "[師匠] プロジェクトの資料なら、ファイルサーバーにあるはずだ。まずはそこからだな。",
       ],
       next: { at: "files", cmd: "cd ??????" },

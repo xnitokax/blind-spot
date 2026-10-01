@@ -130,6 +130,10 @@
     100% { outline-color: transparent; background: transparent; }
   }
   .dock.busy #next { opacity: .3; pointer-events: none; }
+  /* 「次の一手」が光っているときだけ、そのすぐ上に師匠の理由を1行出す */
+  #why { color: var(--voice); font-size: 13px; margin: 0 0 6px; display: flex; gap: 8px; line-height: 1.5; }
+  #why:empty { display: none; }
+  #why .who { color: var(--dim); flex: none; }
   #next { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; font-size: 13px; }
   #next:empty { display: none; }
   #next .next-label { color: var(--dim); font-size: 11px; letter-spacing: .25em; margin-right: 2px; }
@@ -609,6 +613,7 @@
     <div id="out"></div>
     <div class="dock" id="dock">
       <button id="toBottom" type="button" aria-label="いちばん下へ">↓ 最新へ</button>
+      <div id="why" aria-live="polite"></div>
       <div id="next" aria-label="次にできること"></div>
       <form class="row" id="form" autocomplete="off">
         <span class="ps" id="prompt"></span>
@@ -833,7 +838,12 @@ const SFX = (() => {
       siren = { stop() { osc.stop(); lfo.stop(); } };
     },
     // BGM：師匠が流している音楽。on / off は「流したい」という希望で、音を消している間は鳴らさない
-    music(on, opt = {}) { bgmWant = on; applyBgm(opt); },
+    // track を指定すると曲を切りかえる（今の曲はフェードアウトし、新しい曲がこもった音から開いて始まる）
+    music(on, opt = {}) {
+      if (opt.track && opt.track !== track) { track = opt.track; if (bgm) stopBgm({}); }
+      bgmWant = on;
+      applyBgm(opt);
+    },
     get bgmOn() { return bgmOn; },
     get bgmPlaying() { return !!bgm; },
     toggleBgm() {
@@ -866,8 +876,11 @@ const SFX = (() => {
   }
 
   // BGM_VOL は全体の音量に対する BGM の割合（効果音より控えめに、後ろで小さく流れる程度）
-  const BPM = 88, STEP = 60 / BPM / 4, BGM_VOL = 0.021;
-  const SWING = STEP * 0.18; // 裏の16分を少し遅らせて、機械っぽさを消す
+  // BGM_VOL は全体の音量に対する BGM の割合（効果音より控えめに、後ろで小さく流れる程度）
+  const BGM_VOL = 0.021;
+  // 曲（track）：calm … 作業用の落ち着いた曲（任務1・3）／run … ボーナスタイムの、前へ進む曲（任務2）
+  const TRACKS = { calm: { bpm: 88, play: (n, t) => playCalm(n, t) }, run: { bpm: 118, play: (n, t) => playRun(n, t) } };
+  let track = "calm";
   const CHORDS = [
     { root: 55.00, pad: [261.63, 329.63, 392.00, 493.88], mel: [440.00, 493.88, 523.25, 659.25, 783.99] }, // Am9
     { root: 43.65, pad: [220.00, 261.63, 329.63, 392.00], mel: [440.00, 523.25, 659.25, 783.99] },         // Fmaj7
@@ -878,6 +891,7 @@ const SFX = (() => {
   function startBgm() {
     const c = ac(); if (!c) return;
     const t = c.currentTime;
+    const T = TRACKS[track], STEP = 60 / T.bpm / 4;   // 16分音符1つの長さ（曲ごとのテンポ）
     // ラジオのつまみを回したように、こもった音から開いていく
     const bus = c.createGain(), lp = c.createBiquadFilter();
     bus.gain.setValueAtTime(0.0001, t);
@@ -888,7 +902,7 @@ const SFX = (() => {
     const bgmEcho = c.createGain(), delay = c.createDelay(1), fb = c.createGain(), elp = c.createBiquadFilter();
     delay.delayTime.value = STEP * 3; fb.gain.value = 0.38; elp.type = "lowpass"; elp.frequency.value = 1600;
     bgmEcho.connect(delay); delay.connect(elp); elp.connect(fb); fb.connect(delay); elp.connect(bus);
-    bgm = { bus, lp, echo: bgmEcho, step: 0, next: t + 0.1, timer: null, mel: 2, rest: 0 };
+    bgm = { bus, lp, echo: bgmEcho, step: 0, next: t + 0.1, timer: null, mel: 2, rest: 0, T, stepLen: STEP };
     bgm.timer = setInterval(scheduleBgm, 25);
     scheduleBgm();
   }
@@ -918,12 +932,13 @@ const SFX = (() => {
     if (!canPlay(ctx)) { bgm.next = ctx.currentTime + 0.1; return; }
     const ahead = document.hidden ? 1.5 : 0.15;
     while (bgm.next < ctx.currentTime + ahead) {
-      playStep(bgm.step, bgm.next);
-      bgm.next += STEP;
+      bgm.T.play(bgm.step, bgm.next);
+      bgm.next += bgm.stepLen;
       bgm.step++;
     }
   }
-  function playStep(n, t) {
+  function playCalm(n, t) {
+    const STEP = bgm.stepLen, SWING = STEP * 0.18; // 裏の16分を少し遅らせて、機械っぽさを消す
     const s = n % 16, bar = Math.floor(n / 16), ch = CHORDS[Math.floor(bar / 2) % 4], bus = bgm.bus;
     const tt = s % 2 ? t + SWING : t;       // 裏拍だけ少し遅らせる
     const calm = bar < 4 || bar % 32 >= 28; // 最初の4小節と、32小節ごとの静かな区間
@@ -944,6 +959,61 @@ const SFX = (() => {
       if (Math.random() < 0.3) bgm.rest = 2; // フレーズの切れ目で少し休む
     }
   }
+  // ---------------- ボーナスタイムの曲（run） ----------------
+  // 任務2用。前へ前へ進む、ドライブ感のある曲。それでも耳に痛くないように：
+  //   ・テンポ 118。キックは4つ打ちだが柔らかく、ハイハットはごく小さく
+  //   ・和音は Dm → B♭ → F → C を1小節ずつ（暗めで、かっこよく進む）
+  //   ・ベースは8分で刻み、キックの頭で少し沈む（ポンプ感）。アルペジオが16分で走って「スピード感」を出す
+  //   ・高い音は使わない（アルペジオもいちばん上で 590Hz くらい）
+  //   ・最初の2小節はアルペジオだけ。16小節ごとに2小節、ドラムが抜けて息をつく
+  const RUN_CHORDS = [
+    { root: 73.42, pad: [293.66, 349.23, 440.00], arp: [293.66, 349.23, 440.00, 587.33] }, // Dm
+    { root: 58.27, pad: [233.08, 293.66, 349.23], arp: [233.08, 293.66, 349.23, 466.16] }, // B♭
+    { root: 87.31, pad: [261.63, 349.23, 440.00], arp: [261.63, 349.23, 440.00, 523.25] }, // F
+    { root: 65.41, pad: [261.63, 329.63, 392.00], arp: [261.63, 329.63, 392.00, 523.25] }, // C
+  ];
+  const ARP = [0, 1, 2, 3, 2, 1, 2, 3];
+  function playRun(n, t) {
+    const STEP = bgm.stepLen, s = n % 16, bar = Math.floor(n / 16), ch = RUN_CHORDS[bar % 4], bus = bgm.bus;
+    const intro = bar < 2, rest = bar % 16 >= 14;
+    if (s === 0) pad(bus, t, ch.pad, STEP * 16);
+    if (!intro && s % 2 === 0) pumpBass(bus, t, ch.root, STEP * 1.7, s % 4 === 0 ? 0.55 : 1);
+    if (!intro && !rest) {
+      if (s % 4 === 0) kick(bus, t, 0.8);
+      if (s === 4 || s === 12) rim(bus, t);
+      if (s % 4 === 2) hat(bus, t);
+    }
+    arp(bus, t, ch.arp[ARP[s % 8]], STEP * 0.95, intro || rest ? 0.6 : 1);
+  }
+  // 刻むベース：こもったノコギリ波を短く（頭の拍では少し小さく＝キックに場所をゆずる）
+  function pumpBass(bus, t, freq, dur, v) {
+    voice(bus, t, dur, 0.16 * v, g => {
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 2;
+      f.frequency.setValueAtTime(700, t); f.frequency.exponentialRampToValueAtTime(220, t + dur);
+      f.connect(g);
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq; o.connect(f);
+      const o2 = ctx.createOscillator(); o2.frequency.value = freq / 2; o2.connect(g);
+      o.start(t); o2.start(t); o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+    }, 0.004);
+  }
+  // ハイハット：ごく小さな「チッ」
+  function hat(bus, t) {
+    voice(bus, t, 0.04, 0.012, g => {
+      const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+      const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 7500;
+      src.connect(f).connect(g); src.start(t, Math.random()); src.stop(t + 0.05);
+    }, 0.002);
+  }
+  // アルペジオ：丸い三角波をポロポロと。残響を少し
+  function arp(bus, t, freq, dur, v) {
+    const g = voice(bus, t, dur, 0.03 * v, g => {
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1600;
+      const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = freq;
+      o.connect(f).connect(g); o.start(t); o.stop(t + dur + 0.05);
+    }, 0.004);
+    const s = ctx.createGain(); s.gain.value = 0.3; g.connect(s).connect(bgm.echo);
+  }
+
   function voice(bus, t, dur, vol, build, attack = 0.005) {
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
@@ -1134,11 +1204,13 @@ function chip(fill, label, cls = "") {
 }
 // 師匠が言った「次の一手」 { at: ノードid, cmd: "search 鷲尾" }（シナリオの next で決める）
 //   その場所にいれば cmd を、いなければそこへ行く ssh を、NEXT 欄の先頭に出す
-function setGuide(g) {
+// why … なぜそこが光っているのか。書かなければ、その案内を出したときの師匠の最後のセリフを使う
+function setGuide(g, lines) {
   if (!g) return;
-  state.guide = g;
+  state.guide = { ...g, why: g.why ?? lastSay(lines) };
   updateNext();
 }
+const lastSay = lines => [].concat(lines || []).reverse().find(x => typeof x === "string" && x.startsWith("[師匠]"))?.replace(/^\[師匠\]\s*/, "");
 function guideCmd() {
   const g = state.guide;
   if (!g || state.over) return null;
@@ -1149,6 +1221,7 @@ function guideCmd() {
 
 function updateNext() {
   const box = $("next");
+  $("why").innerHTML = "";
   const mode = state?.mode;
   let chips = [];
   if (mode?.type === "title") {
@@ -1172,7 +1245,11 @@ function updateNext() {
     if (state.saveReady) chips.push(chip("return", "return", "save"));
     // 師匠が言った「次の一手」：押すだけで、すぐ実行される
     const g = guideCmd();
-    if (g) chips.push(`<span class="chip pick guide" data-fill="${esc(g)}" data-run>▶ ${esc(g)}</span>`);
+    if (g) {
+      chips.push(`<span class="chip pick guide" data-fill="${esc(g)}" data-run>▶ ${esc(g)}</span>`);
+      // なぜそこが光っているのか（師匠のひとこと）を、NEXT 欄のすぐ上に
+      if (state.guide.why) $("why").innerHTML = `<span class="who">師匠</span><span>${esc(shishou(fill(state.guide.why)))}</span>`;
+    }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
     for (const l of state.links) chips.push(chip(`ssh ${l.name}`, `ssh ${l.name}${l.oneway ? "（一方通行）" : ""}`, l.oneway ? "ow" : ""));
@@ -1540,7 +1617,7 @@ async function checkObjectives() {
     await wait(BEAT.small);
     // 新しい目標の案内（どこを探すか）
     if (nowObj().intro) await speak(nowObj().intro, BEAT.small);
-    setGuide(nowObj().next);
+    setGuide(nowObj().next, nowObj().intro);
   }
 }
 function showObjective(o, tag = "NEXT OBJECTIVE") {
@@ -1664,7 +1741,7 @@ async function enterNode(id, opt = {}) {
     if (first) {
       if (node.clue) { await wait(600); addClue(node.clue); }
       if (!view.said) await speak(node.say, BEAT.react);
-      setGuide(node.next);
+      setGuide(node.next, node.say);
     }
     await checkObjectives();
     if (node.goal) await runGoal(node.goal);
@@ -1944,17 +2021,17 @@ async function showResults(conf, q, terms, hits, shown, limit) {
 
   // 師匠のひとこと（それぞれ一度だけ）
   const lines = [];
-  let next = null;   // 師匠が言った「次の一手」
+  let next = null, nextLines = null;   // 師匠が言った「次の一手」と、そのときのセリフ
   for (const e of shown) {
     if (e.say && !state.said.has(e)) { state.said.add(e); lines.push(...e.say); }
-    if (e.next) next = e.next;
+    if (e.next) { next = e.next; nextLines = e.say; }
   }
   const goal = state.saveReady ? null : shown.find(e => e.goal)?.goal;
   if (!goal) {
     (conf.notes || []).forEach((n, i) => {
       const key = `${state.current}:note${i}`;
       if (state.said.has(key)) return;
-      if ([].concat(n.when).some(w => terms.some(t => t.includes(fold(w))))) { state.said.add(key); lines.push(...n.say); if (n.next) next = n.next; }
+      if ([].concat(n.when).some(w => terms.some(t => t.includes(fold(w))))) { state.said.add(key); lines.push(...n.say); if (n.next) { next = n.next; nextLines = n.say; } }
     });
   }
   if (nothing && !lines.length) lines.push("[師匠] この中に必要そうなものはなさそうだな。");
@@ -1963,7 +2040,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   for (const e of shown) {
     if (e.after && !state.said.has(e.after)) { state.said.add(e.after); await wait(BEAT.small); await play(e.after); }
   }
-  setGuide(next);
+  setGuide(next, nextLines);
   await checkObjectives();
   if (goal) await runGoal(goal);
 }
@@ -2031,7 +2108,7 @@ async function startChapter(ch) {
   await busy(async () => {
     await play(CH.intro || []);
     // 導入で師匠が言った「次の一手」（最初の場所に着いたら NEXT 欄に出る）
-    if (CH.next) state.guide = CH.next;
+    if (CH.next) state.guide = { ...CH.next, why: CH.next.why ?? lastSay(CH.intro) };
     // 最初の目標
     if (nowObj()) {
       await wait(BEAT.small);
@@ -2067,7 +2144,8 @@ async function play(steps) {
     if (s.flash) { SFX.alert(); pulse($("term"), "flash", 1000); }
     // { auto: "コマンド" } … 今のプロンプトに、コマンドが自動で打たれる（打っているのはプレイヤー、という体）
     if (s.auto) await autoType(fill(s.auto));
-    if ("music" in s) SFX.music(s.music);
+    // { music: true } … 落ち着いた曲（calm）。{ music: "run" } … ボーナスタイムの、前へ進む曲。false で止める
+    if ("music" in s) SFX.music(!!s.music, { track: typeof s.music === "string" ? s.music : "calm" });
     // { slow: "セリフ", ms: 1文字の間隔 } … ゆっくり1文字ずつ出す
     if (s.slow) { await typeLine(s.slow, { charMs: s.ms || 350 }); await wait(700); }
     if ("trace" in s) await raceTrace(s.trace, s.ms || 2000);
@@ -2376,7 +2454,7 @@ const COMMANDS = {
     await reveal(view, `<div class="dir-files${empty ? " dir-empty" : ""}">${files.join("<br>")}</div>`, 400);
     if (d.clue) { await wait(400); addClue(d.clue); }
     if (d.say && !state.said.has(d)) { state.said.add(d); await speak(d.say, BEAT.react); }
-    setGuide(d.next);
+    setGuide(d.next, d.say);
     await checkObjectives();
   },
   search,
