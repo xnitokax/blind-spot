@@ -1094,7 +1094,6 @@ const SCENARIO = {
                         { auto: "kill %1", as: "師匠@safehouse:~$" },
                         { jobKill: true },
                         "[*] [1]+  Killed    escalate --level 5",
-                        "[師匠] いい判断だ、{handle}。行ってこい。",
                       ],
                     },
                   },
