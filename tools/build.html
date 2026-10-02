@@ -46,6 +46,7 @@ function check(cid, ch) {
     for (const d of node.dir || []) {
       if (d.go && !ch.nodes[d.go]) ng(`${id} のフォルダ ${d.name} → ${d.go}: 接続先がありません`);
     }
+    if (node.bgm != null && ![0, 1, 2, 3].includes(node.bgm)) ng(`${id}: bgm（曲の盛り上がり）は 0〜3 の数字です`);
     if (node.goal) goals++;
     goals += (node.search?.entries || []).filter(e => e.goal).length;
   }

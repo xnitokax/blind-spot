@@ -41,6 +41,7 @@
 //            search の entries[] と dir[] にも clue を付けられる。任務完了の画面に「回収 n/N」と出る
 //    breach: ["文字", ...] … 初めて入るときに、守りの壁が崩れ、手順ごとのバーが埋まって ACCESS GRANTED になる演出（任務2）
 //    zone:   "files" / "hr" / "seek" / "keiri" / "bank" / "jyoshi" … 入ると画面の色合いが変わる（docs/index.html の body[data-zone]）
+//    bgm:    0〜3 … 入ると、ボーナスタイムの曲（"run"）の盛り上がりがそこまで上がる（下がらない。ループの終わりで切りかわる。3 はサビ）
 //    need:   "flag" … 任務の nav（どこからでも行ける接続先）に、その flag が立つまでは出さない（台本の { flag } で立てる）
 //    entry:  [台本] … 初めて入るときの、そのシステム専用の見せ場（breach の代わり。例：金庫のダイヤル）
 //    scene:  [台本] … 初めて来て本文を出したあとに流れる見せ場（例：ファイルがあふれ出す）
@@ -954,6 +955,7 @@ const SCENARIO = {
         // ── 日報：1件だけ → 名前で0件 → 権限を上げて世界が作り変わる → それでも0件 → 部署コードで1,826件 → AIで1件 ──
         nippo: {
           ...NIPPO_NODE,
+          bgm: 1,   // 曲：「ポッ」のフレーズとアルペジオが入る
           search: {
             label: "日報",
             records: 1284550,
@@ -1108,6 +1110,7 @@ const SCENARIO = {
         seek: {
           host: "seek.jp",
           zone: "seek",
+          bgm: 2,   // 曲：メロディが入る
           entry: [
             { trail: { head: "EXIT ── 社内ネットワークの外へ", hops: [
               { name: "hr.teiwa.local", sub: "帝和HD 社内ネットワーク", note: "0ms" },
@@ -1258,6 +1261,7 @@ const SCENARIO = {
         bank: {
           host: "caymantrust.ky/vault",
           zone: "bank",
+          bgm: 3,   // 曲：サビ（ループの終わりの「ため」のあと「ドーン」と入る）
           need: "srg",   // 口座「SRG」が分かるまでは、行き先に出ない
           title: "第一信託銀行　ケイマン支店",
           body: `<p class="dim">＞ 海外の銀行。口座の中身と、取引の履歴が見られる。</p>`,
