@@ -2847,9 +2847,12 @@ async function wmTravel(path, dot, ms, back) {
       const pos = path.getPointAtLength(len * at);
       dot.setAttribute("cx", pos.x); dot.setAttribute("cy", pos.y);
       if (!back) path.style.strokeDashoffset = len * (1 - p);
-      if (p < 1) requestAnimationFrame(frame); else res();
+      if (p < 1) tick(); else res();
     };
-    requestAnimationFrame(frame);
+    // requestAnimationFrame はタブが裏にあると止まってしまう（戻るまで進まない）ので、タイマーで回す
+    //（裏ではタイマーもゆっくりになるが、経過時間で位置を決めているので、遅れずに最後まで進む）
+    const tick = () => setTimeout(() => frame(performance.now()), 16);
+    tick();
   });
 }
 
