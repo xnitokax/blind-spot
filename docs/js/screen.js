@@ -55,6 +55,9 @@ function updateNext() {
       chips.push(`<span class="chip pick" data-reuser>ユーザーIDを変える</span>`);
   } else if (mode?.type === "confirm") {
     chips = [chip("y", "y 進む", "ow"), chip("n", "n やめる")];
+  } else if (mode?.type === "choose") {
+    // 台本の { choose }：選べるコマンドを並べる（押すと入力欄に入る）
+    chips = mode.options.map(o => chip(o.cmd, o.label ? `${o.cmd}　${o.label}` : o.cmd, "go"));
   } else if (state.current) {
     const node = here();
     // 調べ終わったら、どこにいても一番左に return を出しておく
@@ -73,6 +76,11 @@ function updateNext() {
     }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const d of node.dir || []) chips.push(chip(`cd ${d.name}`));
+    // ゲームの世界：落ちているものと、その場所でできること（まだやっていないもの）
+    for (const name of itemsHere()) chips.push(chip(`pick ${name}`, `pick ${name}`, "go"));
+    if (document.body.dataset.zone === "rpg")
+      for (const k of Object.keys(node.actions || {}))
+        if (!state.said.has(`act:${state.current}:${k}`)) chips.push(chip(k, k, "go"));
     for (const l of state.links)
       chips.push(
         chip(
@@ -182,13 +190,17 @@ function lineParts(s) {
   s = fill(s);
   if (s.startsWith("[師匠]"))
     return { cls: "say", text: shishou(s.replace(/^\[師匠\]\s*/, "")), say: true };
+  // 任務の cast に書いた登場人物のセリフ：[王様] おお！ … のように書く（師匠と同じ形で、名前を出す）
+  const m = s.match(/^\[([^\]!*+]{1,12})\]\s*/);
+  if (m && CH?.cast?.[m[1]]) return { cls: `say cast ${CH.cast[m[1]]}`, text: s.slice(m[0].length), who: m[1] };
   if (s.startsWith("[!")) return { cls: "alert", text: s };
   if (/^\[[*+]\]/.test(s)) return { cls: "sys", text: s };
   return { cls: "", text: s };
 }
 function printLine(s) {
-  const { cls, text, say } = lineParts(s);
-  return print(say ? `<span class="who">師匠</span>${esc(text)}` : esc(text), cls);
+  const { cls, text, say, who: name } = lineParts(s);
+  const label = say ? "師匠" : name;
+  return print(label ? `<span class="who">${esc(label)}</span>${esc(text)}` : esc(text), cls);
 }
 // 師匠がしゃべっている間だけ BGM を少し下げる（しゃべり終わって少ししたら戻す）
 let duckTimer = null;
@@ -200,9 +212,10 @@ function duckBgm(ms = 2600) {
 
 // opt.charMs：1文字ごとの間隔を指定する（「…………」をゆっくり出すときなど）
 async function typeLine(s, opt = {}) {
-  const { cls, text, say } = lineParts(s);
+  const { cls, text, say, who: name } = lineParts(s);
+  const label = say ? "師匠" : name;
   const d = print(
-    say ? `<span class="who">師匠</span><span class="t"></span>` : `<span class="t"></span>`,
+    label ? `<span class="who">${esc(label)}</span><span class="t"></span>` : `<span class="t"></span>`,
     cls,
   );
   const t = d.querySelector(".t");
@@ -216,8 +229,10 @@ async function typeLine(s, opt = {}) {
     if (fast || REDUCED) break;
     t.textContent += chars[i];
     if (i % 6 === 0) scrollDown();
+    // 登場人物のセリフは、昔のゲームのように「ポポポ」と鳴らしながら出す
+    if (name && i % 3 === 0 && chars[i].trim()) SFX.tick();
     // 師匠のセリフは、読み切れるように少しゆっくり（「, 」「. 」でも一拍おく）
-    await sleep(opt.charMs ?? ("。、…！？.,".includes(chars[i]) ? 90 : say ? 33 : 16));
+    await sleep(opt.charMs ?? ("。、…！？.,".includes(chars[i]) ? 90 : say || name ? 33 : 16));
   }
   t.textContent = text;
   scrollDown();

@@ -26,7 +26,14 @@ try {
 // 練習の回線コード（タイトル画面で案内する文字。小文字で見せる）
 const trainCmd = () => (S.training ? `connect ${S.training.toLowerCase()}` : "");
 const who = () => handle || "guest";
-const fill = s => String(s).replaceAll("{handle}", who());
+// {elapsed} … clockStart の場所に来てから何分たったか（1分より短くても 1）／ {turn} … ターン制のいまのターン
+const elapsedMin = () =>
+  state?.clock0 ? Math.max(1, Math.round((Date.now() - state.clock0) / 60000)) : 1;
+const fill = s =>
+  String(s)
+    .replaceAll("{handle}", who())
+    .replaceAll("{elapsed}", elapsedMin())
+    .replaceAll("{turn}", state?.flags?.turn ?? 1);
 const titlePrompt = () => `${who()}@safehouse:~$`;
 let fast = false; // 演出の早送り中
 

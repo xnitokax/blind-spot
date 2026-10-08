@@ -46,6 +46,9 @@ function freshState() {
     retry: false,
     idMiss: 0,
     passMiss: 0,
+    bag: [], // もちもの（pick で拾ったもの）
+    halt: false, // エンドを迎えたら true。流れている台本を、そこで打ち切る
+    warp: null, // エンドのあとに飛ぶ場所
   };
 }
 

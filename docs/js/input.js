@@ -10,7 +10,9 @@ let histPos = 0;
 $("form").onsubmit = async e => {
   e.preventDefault();
   SFX.wake();
-  if (isBusy()) {
+  // 台本の { choose } で選んでいるときだけは、演出中でも打てる
+  const choosing = state?.mode?.type === "choose";
+  if (isBusy() && !choosing) {
     if (skipTap()) fast = true;
     return;
   }
@@ -110,7 +112,7 @@ $("next").addEventListener("mouseleave", () => {
 $("term").addEventListener("click", e => {
   SFX.wake();
   if (e.target.closest("#run")) return;
-  if (isBusy()) {
+  if (isBusy() && state?.mode?.type !== "choose") {
     if (skipTap()) fast = true;
     return;
   }

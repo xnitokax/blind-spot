@@ -68,6 +68,14 @@ function renderObjectives(fresh) {
   if (S.caseGoal && CH?.objective) html += li("o-sec", "CASE") + li("o-case", esc(S.caseGoal));
   if (CH?.objective) html += li("o-sec", "MISSION") + li("o-mission", esc(CH.objective));
   if (!CH?.objectives?.length) {
+    // ゲームの世界（rpg）では、ステータスともちものを出す
+    if (document.body.dataset.zone === "rpg") {
+      html += li("o-sec", "ステータス") + li("o-case", `ゆうしゃ ${esc(who())}　LV ${state.flags.lv || 1}`);
+      html += li("o-sec", "もちもの");
+      html += state.bag.length ? state.bag.map(b => li("o-clue", `◆ ${esc(b.name)}`)).join("") : li("dim", "なし");
+      box.innerHTML = html;
+      return;
+    }
     // 目標のない任務（エピローグなど）は、手がかりを新しい順に並べるだけ
     if (state.clues.length)
       html +=
@@ -457,4 +465,52 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   setGuide(next, nextLines);
   await checkObjectives();
   if (goal) await runGoal(goal);
+}
+
+// ---------------- 条件と、もちもの（チュートリアルのゲームの世界） ----------------
+// 条件の書き方：
+//   "名前"                … その flag が立っている
+//   { 名前: true / false } … 立っている／立っていない
+//   { 名前: 数 }           … その数（{ add } で増やす）以上
+//   { has: "もの" }        … そのものを持っている
+function cond(c) {
+  if (c == null) return true;
+  if (typeof c === "string") return !!state.flags[c];
+  return Object.entries(c).every(([k, v]) => {
+    if (k === "has") return [].concat(v).every(name => state.bag.some(b => b.name === name));
+    if (typeof v === "number") return (state.flags[k] || 0) >= v;
+    return !!state.flags[k] === v;
+  });
+}
+
+// もちものに足す・取り上げる（右の欄にも出る）
+function giveItem(name, flag) {
+  if (state.bag.some(b => b.name === name)) return;
+  state.bag.push({ name, flag });
+  if (flag) state.flags[flag] = true;
+  renderObjectives();
+}
+function takeItem(name) {
+  const b = state.bag.find(x => x.name === name);
+  if (!b) return;
+  state.bag = state.bag.filter(x => x !== b);
+  if (b.flag) state.flags[b.flag] = false;
+  renderObjectives();
+}
+
+// エンドの記録（この端末だけ）。{ id: 見た回数 }
+function endingsSeen() {
+  try {
+    return JSON.parse(localStorage.getItem("uzu-endings") || "{}");
+  } catch {
+    return {};
+  }
+}
+function recordEnding(id) {
+  const seen = endingsSeen();
+  seen[id] = (seen[id] || 0) + 1;
+  try {
+    localStorage.setItem("uzu-endings", JSON.stringify(seen));
+  } catch {}
+  return seen;
 }

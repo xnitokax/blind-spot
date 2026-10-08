@@ -73,6 +73,8 @@ const COMMANDS = {
       ["search <言葉>", "検索できる場所で検索する（スペース区切りで条件を重ねる）"],
       ["cd <フォルダ名>", "ファイルサーバーでフォルダを移動する"],
       ["ls", "今いる場所の接続先をもう一度表示"],
+      // ゲームの世界（rpg）では、ものを拾える
+      ...(document.body.dataset.zone === "rpg" ? [["pick <もの>", "落ちているものを拾う"]] : []),
       ["return", "調べ終わったら、成果を持って帰る（任務を終える）"],
       ["help", "この一覧"],
     ]
@@ -176,6 +178,23 @@ const COMMANDS = {
   ls() {
     if (!printMenu(true)) print("接続先はありません。", "dim");
   },
+  // 落ちているもの（ノードの items）を拾う。拾うと、もちものに入り、そのものの台本が流れる
+  async pick(arg) {
+    const items = here().items || {};
+    if (!arg) return print("使い方：pick &lt;もの&gt;", "dim");
+    const name = itemsHere().find(
+      n => fold(n) === fold(arg) || (items[n].alias || []).some(a => fold(a) === fold(arg)),
+    );
+    if (!name) return print(`${esc(arg)} は ここには ない。`, "dim");
+    const item = items[name];
+    state.said.add(`pick:${state.current}:${name}`);
+    SFX.evidence();
+    giveItem(name, item.flag);
+    print(`${esc(who())}は ${esc(name)}を てにいれた！`, "sys");
+    await busy(() => play(item.script || []));
+    if (await busy(() => followWarp())) return;
+    updateNext();
+  },
   // 隠しコマンド（help には出さない）
   reboot: () => boot(),
 };
@@ -200,6 +219,8 @@ async function run(raw) {
   const mode = state.mode;
   if (mode?.type === "title") return titleCommand(raw);
   if (mode?.type === "handleConfirm") return confirmHandle(raw);
+  // 台本の { choose } で、選ぶのを待っているとき
+  if (mode?.type === "choose") return chooseInput(raw);
   // 何も入力しない／back と打つと、認証をやめて戻る（トレースは上がらない）
   const quit = !raw.trim() || /^(back|exit|cancel)$/i.test(raw.trim());
   if (mode?.type === "user") {
@@ -343,6 +364,7 @@ async function reactTo(at, key) {
     await wait(BEAT.small);
     await play(r.script || []);
   });
+  if (await busy(() => followWarp())) return;
   setGuide(r.next);
 }
 
@@ -352,6 +374,7 @@ async function runAction(key, a) {
   if (state.said.has(done)) return print(`${esc(key)}: もう済んでいる。`, "dim");
   state.said.add(done);
   await busy(() => play(a.script || []));
+  if (await busy(() => followWarp())) return;
   setGuide(a.next);
   await checkObjectives();
 }

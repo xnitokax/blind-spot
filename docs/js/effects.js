@@ -892,12 +892,11 @@ async function playFx(s) {
   // { flag: "名前" } … 状況の印をつける（notes の need / not で、師匠の反応を変える）
   if (s.flag) {
     state.flags[s.flag] = true;
-    // その flag で行けるようになった場所を、今いる場所の行き先に足す
-    if (state.bodyLinks) {
-      state.links = [...state.bodyLinks, ...navLinks(state.bodyLinks)];
-      updateNext();
-    }
+    // その flag で行けるようになった場所（nav の need・本文の data-need）を、今いる場所の行き先に足す
+    if (state.bodyLinks) refreshLinks();
   }
+  // { crack: true } … 画面がガラスのように割られる（衝撃・ひび・裂け目）。ひびはしばらく残ってから消える
+  if (s.crack) await crackScreen();
   // { doc: "HTML", hidden, clue, ms } … 文書を1件、解読しながら出す（hidden は赤い文字）。clue があれば手がかりにする
   if (s.doc) {
     await decode(
@@ -1527,4 +1526,42 @@ function spot(names) {
     delete side.dataset.spotOpen;
   }
   if (names) SFX.select();
+}
+
+// 画面がガラスのように割られる（{ crack: true }）
+//   当たったところから、ひびが放射状に走り、まわりを輪のひびが囲む。しばらく残ってから消える
+async function crackScreen() {
+  const W = innerWidth,
+    H = innerHeight;
+  const cx = W * (0.4 + Math.random() * 0.2),
+    cy = H * (0.35 + Math.random() * 0.2);
+  const pt = (a, r) => `${(cx + Math.cos(a) * r).toFixed(1)} ${(cy + Math.sin(a) * r).toFixed(1)}`;
+  let paths = "";
+  // 放射状のひび：少しずつ曲がりながら、画面の端へ伸びる
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2 + Math.random() * 0.4;
+    const len = Math.max(W, H) * (0.45 + Math.random() * 0.6);
+    let d = `M${cx.toFixed(1)} ${cy.toFixed(1)}`;
+    for (let k = 1; k <= 6; k++) d += ` L${pt(a + (Math.random() - 0.5) * 0.3, (len * k) / 6)}`;
+    paths += `<path d="${d}"/>`;
+  }
+  // 輪のひび：中心のまわりを、ぎざぎざに囲む
+  for (const r of [36, 90, 170]) {
+    let d = "";
+    for (let k = 0; k <= 16; k++) d += `${k ? " L" : "M"}${pt((k / 16) * Math.PI * 2, r * (0.85 + Math.random() * 0.3))}`;
+    paths += `<path class="ring" d="${d}"/>`;
+  }
+  const box = document.createElement("div");
+  box.id = "crack";
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${paths}</svg>`;
+  document.body.appendChild(box);
+  SFX.boom();
+  SFX.crack();
+  impact(2);
+  tear(700, 2.2);
+  pulse($("term"), "flash", 500);
+  await pause(2200);
+  box.classList.add("fade");
+  await pause(900);
+  box.remove();
 }

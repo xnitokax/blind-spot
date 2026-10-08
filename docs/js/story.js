@@ -89,10 +89,51 @@ async function startChapter(ch) {
 // 演出の台本を再生する（書き方は src/scenario.js の先頭を参照）
 async function play(steps) {
   for (const s of steps) {
+    // エンドを迎えたら（{ ending }）、流れている台本はそこで打ち切る
+    if (state.halt) return;
     if (typeof s === "string") {
       await typeLine(s);
-      await (s.startsWith("[師匠]") ? pause(560) : wait(420));
+      // セリフ（[師匠] や登場人物）は読めるように、テンポに関係なく間をおく
+      const p = lineParts(s);
+      await (p.say || p.who ? pause(560) : wait(420));
       continue;
+    }
+    // ── チュートリアルのゲームの世界（王城・ダンジョン・魔王城）──
+    // { if: 条件, then: [台本], else: [台本] } … 条件の書き方は logic.js の cond
+    if ("if" in s) {
+      await play((cond(s.if) ? s.then : s.else) || []);
+      continue;
+    }
+    // { run: "名前" } … 任務の scripts に書いた台本を流す（何度も使う場面）
+    if (s.run) {
+      await play(CH.scripts?.[s.run] || []);
+      continue;
+    }
+    // { choose: { prompt, options: [{ cmd, label, alias, if, script }] } } … コマンドを選ぶ窓を出して、選ぶまで待つ
+    if (s.choose) {
+      await chooseStep(s.choose);
+      continue;
+    }
+    // { turns: { count, prompt, menu: [...], each: [台本], timeout: [台本] } } … ターン制。count 回まで menu から選ぶ
+    if (s.turns) {
+      await turnsStep(s.turns);
+      continue;
+    }
+    // { give: "もの" } / { take: "もの" } … もちものに足す／取り上げる
+    if (s.give) giveItem(s.give, s.flagAs);
+    if (s.take) takeItem(s.take);
+    // { set: { 名前: 値 } } / { add: { 名前: 数 } } / { unflag: "名前" }
+    if (s.set) Object.assign(state.flags, s.set);
+    if (s.add) for (const [k, n] of Object.entries(s.add)) state.flags[k] = (state.flags[k] || 0) + n;
+    if (s.unflag) state.flags[s.unflag] = false;
+    if (s.set || s.add || s.unflag) {
+      refreshLinks();
+      renderObjectives();
+    }
+    // { ending: { id, title } } … エンド。この端末に記録して、エンドのカードを出し、任務の endWarp の場所へ飛ぶ
+    if (s.ending) {
+      await endingStep(s.ending);
+      return;
     }
     // ── チュートリアル用 ──
     // { pc: [台本], phone: [台本] } … パソコンとスマホで、言うことを変える
@@ -259,6 +300,91 @@ async function play(steps) {
   }
 }
 
+// ---------------- 選ぶ・ターン制・エンド（チュートリアルのゲームの世界） ----------------
+// { choose }：昔の RPG のようなコマンドの窓を出して、プレイヤーが選ぶまで待つ
+//   番号（1, 2, …）・コマンド名・label・alias のどれで打っても選べる。NEXT 欄にも並ぶ
+//   台本は演出中（入力できない状態）で流れているので、選ぶ間だけ入力欄を使えるようにする
+async function chooseStep(c) {
+  const options = c.options.filter(o => cond(o.if));
+  if (!options.length) return;
+  fast = false; // 選ぶところは早送りしない
+  const rows = options
+    .map(
+      (o, i) =>
+        `<span class="n pick" data-fill="${esc(o.cmd)}">${i + 1}. ${esc(o.cmd)}</span><span>${esc(fill(o.label || ""))}</span>`,
+    )
+    .join("");
+  print(
+    `<div class="menu rpg-menu reveal">${c.prompt ? `<div class="rm-head">${esc(fill(c.prompt))}</div>` : ""}<div class="ls">${rows}</div></div>`,
+  );
+  const picked = await new Promise(resolve => {
+    state.mode = { type: "choose", options, resolve };
+    setPrompt(fill(c.ask || "コマンド？"));
+    cmd.disabled = false;
+    $("dock").classList.remove("busy");
+    focusCmd();
+  });
+  state.mode = null;
+  cmd.disabled = true;
+  $("dock").classList.add("busy");
+  normalPrompt();
+  disablePicks();
+  await play(picked.script || []);
+}
+// 選んでいる間に打たれた文字（commands.js の run から呼ばれる）
+function chooseInput(raw) {
+  const m = state.mode,
+    v = raw.trim();
+  print(`<span class="ps">${esc($("prompt").textContent)}</span> ${esc(raw)}`, "echo");
+  const n = Number(v);
+  const o =
+    Number.isInteger(n) && n >= 1 && n <= m.options.length
+      ? m.options[n - 1]
+      : m.options.find(
+          o =>
+            fold(o.cmd) === fold(v) ||
+            (o.label && fold(o.label) === fold(v)) ||
+            (o.alias || []).some(a => fold(a) === fold(v)),
+        );
+  if (!o) return print("その コマンドは えらべない。", "dim");
+  SFX.select();
+  m.resolve(o);
+}
+
+// { turns }：count ターンのあいだ、毎ターン menu から選ぶ。エンドを迎えずに終わったら timeout の台本
+//   いまのターン数は flag の turn に入る（台本の {turn} にも入る）
+async function turnsStep(t) {
+  for (let i = 1; i <= t.count; i++) {
+    if (state.halt) return;
+    state.flags.turn = i;
+    await play(t.each || []);
+    if (state.halt) return;
+    await chooseStep({ prompt: t.prompt, options: t.menu, ask: t.ask });
+  }
+  if (!state.halt) await play(t.timeout || []);
+}
+
+// { ending }：エンドのカード（見つけたエンドの数と、一覧。まだのものは ？？？）を出して、endWarp の場所へ飛ぶ
+//   見たエンドは、この端末に記録する（logic.js の recordEnding）。flag の「end:id」も立てる
+async function endingStep(e) {
+  const seen = recordEnding(e.id);
+  const list = CH.endings || [];
+  const found = list.filter(x => seen[x.id]).length;
+  state.flags[`end:${e.id}`] = true;
+  await pause(e.wait ?? 1200);
+  SFX.card();
+  const card = print(
+    `<div class="ending-card"><div class="ec-tag">END</div><div class="ec-title">${esc(fill(e.title))}</div>` +
+      `<div class="ec-n">見つけたエンド　${found} / ${list.length}</div>` +
+      `<ul>${list.map(x => `<li class="${seen[x.id] ? (x.id === e.id ? "now" : "") : "dim"}">${seen[x.id] ? esc(x.title) : "？？？"}</li>`).join("")}</ul>` +
+      `<div class="ec-note">（この端末での記録）</div></div>`,
+  );
+  await decode(card.querySelector(".ec-title"), 700);
+  await pause(e.hold ?? 4000);
+  state.warp = e.warp || CH.endWarp || null;
+  state.halt = true;
+}
+
 // 「任務完了まで」の目標を済ませる（show のときは OBJECTIVE CLEAR のカードも出す）
 async function clearGoalObjective(show) {
   const o = nowObj();
@@ -277,7 +403,6 @@ async function clearGoalObjective(show) {
 async function runGoal(goal) {
   if (state.saveReady) return; // save 待ちのあいだに同じ結果をもう一度見ても、やり直さない
   killJob();
-  if (goal.save) return readyToSave(goal);
   // 練習を終えたら覚えておく（タイトル画面で、もう練習を勧めない）
   if (CH.practice) {
     trained = true;
@@ -285,6 +410,7 @@ async function runGoal(goal) {
       localStorage.setItem("uzu-trained", "1");
     } catch {}
   }
+  if (goal.save) return readyToSave(goal);
   state.over = true;
   updateNext();
   const cut = goal.end === "cut";
@@ -518,7 +644,7 @@ document.addEventListener("keydown", e => {
     if (!e.repeat) overlayInput();
     return;
   }
-  if (isBusy() && (e.key === "Enter" || e.key === " ")) {
+  if (isBusy() && state?.mode?.type !== "choose" && (e.key === "Enter" || e.key === " ")) {
     e.preventDefault();
     if (!e.repeat && skipTap()) fast = true;
   }

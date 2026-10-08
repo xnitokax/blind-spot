@@ -158,6 +158,26 @@
           }
         }
         for (const o of ch.objectives || []) checkNext(`目標「${o.text}」`, o.next);
+
+        // ゲームの世界：エンド（endWarp・endings の id）と、{ run } の台本の名前
+        const objs = [];
+        const collect = x => {
+          if (Array.isArray(x)) x.forEach(collect);
+          else if (x && typeof x === "object") {
+            objs.push(x);
+            Object.values(x).forEach(collect);
+          }
+        };
+        collect([ch.nodes, ch.scripts]);
+        if (ch.endWarp && !ch.nodes[ch.endWarp]) ng(`endWarp「${ch.endWarp}」というノードがありません`);
+        for (const s of objs) {
+          if (s.ending?.id) {
+            if (!ch.endWarp && !s.ending.warp) ng(`エンド「${s.ending.id}」のあとに飛ぶ場所（endWarp）がありません`);
+            if (ch.endings && !ch.endings.some(e => e.id === s.ending.id))
+              ng(`エンド「${s.ending.id}」が endings の一覧にありません`);
+          }
+          if (typeof s.run === "string" && !ch.scripts?.[s.run]) ng(`{ run: "${s.run}" } の台本が scripts にありません`);
+        }
         for (const id of ch.nav || [])
           if (!ch.nodes[id]) ng(`nav の「${id}」というノードがありません`);
 

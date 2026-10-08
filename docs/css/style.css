@@ -3105,6 +3105,177 @@ body.cracking .esc-panel {
   }
 }
 
+/* ---------------- チュートリアルのゲームの世界（zone: rpg）：コテコテのレトロ RPG ----------------
+   黒い背景に白い文字、ドット絵のようなフォント（DotGothic16）、白い二重線の窓 */
+body[data-zone="rpg"] {
+  --bg: #000;
+  --panel: #000;
+  --fg: #fff;
+  --dim: #9a9ab0;
+  --accent: #fff;
+  --line: #fff;
+  --voice: #fff;
+  --warn: #ffe066;
+  --why: #ffe066;
+  --tint: rgba(80, 80, 255, 0.1);
+}
+body[data-zone="rpg"] #wrap {
+  font-family: "DotGothic16", "BIZ UDGothic", monospace;
+}
+body[data-zone="rpg"] .panel {
+  border: 4px double #fff;
+  border-radius: 10px;
+}
+body[data-zone="rpg"] #term {
+  text-shadow: none;
+}
+body[data-zone="rpg"] header h1 {
+  text-shadow: none;
+}
+/* 走査線などのブラウン管っぽさは消して、ゲームの画面にする */
+body[data-zone="rpg"]::before,
+body[data-zone="rpg"]::after {
+  opacity: 0;
+}
+/* 逆探知はゲームの世界にはないので隠し、ステータスともちものを出す */
+body[data-zone="rpg"] .trace-label,
+body[data-zone="rpg"] #side > .bar,
+body[data-zone="rpg"] #eviCount {
+  display: none;
+}
+/* 登場人物のセリフ（[王様] など）：名前の色を人ごとに変える */
+.line.say.cast {
+  padding-left: calc(6em + 10px);
+  text-indent: -6em;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 2px solid #fff;
+  color: #fff;
+  text-shadow: none;
+}
+.say.cast .who {
+  width: 6em;
+  color: var(--cast, #fff);
+}
+.say.cast .who::before {
+  content: "";
+}
+.cast.king {
+  --cast: #ffd36b;
+}
+.cast.queen {
+  --cast: #ff8ad8;
+}
+.cast.slime {
+  --cast: #7ff0ff;
+}
+.cast.maou {
+  --cast: #ff6b8a;
+}
+.cast.aide {
+  --cast: #b9a6ff;
+}
+.cast.hero {
+  --cast: #9dffb0;
+}
+/* コマンドを選ぶ窓（{ choose }） */
+.rpg-menu {
+  display: inline-block;
+  min-width: 14em;
+  border: 4px double #fff;
+  border-radius: 8px;
+  padding: 6px 14px;
+  background: #000;
+}
+.rpg-menu .rm-head {
+  color: #ffe066;
+  margin-bottom: 4px;
+}
+.rpg-menu .n::before {
+  content: "▶ ";
+  color: transparent;
+}
+.rpg-menu .n.pick:hover::before {
+  color: #fff;
+  animation: blink 0.6s steps(1) infinite;
+}
+/* エンドのカード */
+.ending-card {
+  border: 4px double #fff;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 16px 0;
+  text-align: center;
+  white-space: normal;
+}
+.ending-card .ec-tag {
+  letter-spacing: 0.5em;
+  color: #ffe066;
+  font-size: 13px;
+}
+.ending-card .ec-title {
+  font-size: 22px;
+  margin: 6px 0 10px;
+}
+.ending-card .ec-n {
+  font-size: 13px;
+  color: var(--dim);
+}
+.ending-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+  font-size: 13px;
+}
+.ending-card li.now {
+  color: #ffe066;
+}
+.ending-card .ec-note {
+  font-size: 11px;
+  color: var(--dim);
+}
+/* 画面が割られる（{ crack }） */
+#crack {
+  position: fixed;
+  inset: 0;
+  z-index: 36;
+  pointer-events: none;
+  animation: crackFlash 0.5s ease-out;
+  transition: opacity 0.9s;
+}
+#crack.fade {
+  opacity: 0;
+}
+#crack svg {
+  width: 100%;
+  height: 100%;
+}
+#crack path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: crackDraw 0.35s ease-out forwards;
+}
+#crack path.ring {
+  stroke-width: 1.4;
+  animation-delay: 0.12s;
+}
+@keyframes crackDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes crackFlash {
+  0% {
+    background: rgba(255, 255, 255, 0.85);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 /* スマホ：TRACE は1行、アクセスログは最新1件だけ（タップで開閉）
    ※ 上の通常ルールを上書きするため、必ずスタイルの最後に置く */
 @media (max-width: 800px) {

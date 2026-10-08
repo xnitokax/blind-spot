@@ -18,6 +18,10 @@ function linkName(a) {
 function parseNode(html) {
   const box = document.createElement("div");
   box.innerHTML = html;
+  // data-need="flag" の行き先は、その flag が立つまで出さない（例：剣を持ってくるまで、城門は開かない）
+  box.querySelectorAll("[data-need]").forEach(a => {
+    if (!state.flags[a.dataset.need]) (a.closest("li") || a).remove();
+  });
   const links = [];
   box.querySelectorAll("a[data-go]").forEach(a => {
     const text = a.textContent.trim();
@@ -69,6 +73,11 @@ function printMenu(force = false) {
       `<span class="n pick" data-fill="search ">search 〇〇</span><span>${esc(node.search.label)}から「〇〇」を探す</span>`,
     );
   }
+  for (const name of itemsHere()) {
+    rows.push(
+      `<span class="n pick" data-fill="pick ${esc(name)}">pick ${esc(name)}</span><span>${esc(node.items[name].desc || "落ちている")}</span>`,
+    );
+  }
   for (const l of state.links) {
     rows.push(
       `<span class="n pick${l.oneway ? " ow" : ""}" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span><span${l.oneway ? ' class="ow"' : ""}>${esc(l.desc)}${l.oneway ? "　【一方通行】" : ""}</span>`,
@@ -79,6 +88,22 @@ function printMenu(force = false) {
   return true;
 }
 const printLinks = () => printMenu();
+
+// 今いる場所に、まだ拾っていないもの（items）の名前
+function itemsHere() {
+  const items = here()?.items || {};
+  return Object.keys(items).filter(name => !state.said.has(`pick:${state.current}:${name}`));
+}
+
+// flag が変わったら、今いる場所の行き先を数え直す（data-need の行き先が出たり消えたりする）
+function refreshLinks() {
+  const node = here();
+  if (!node) return;
+  const { links } = parseNode(fill(node.body || ""));
+  state.bodyLinks = links;
+  state.links = [...links, ...navLinks(links)];
+  updateNext();
+}
 
 // 画面をさかのぼった古い一覧は押せないようにする
 function disablePicks() {
@@ -144,6 +169,10 @@ async function enterNode(id, opt = {}) {
   state.visited.add(id);
   // bgm：この場所に来たら、ボーナスタイムの曲の盛り上がりを上げる（0〜3。ループの終わりで切りかわる）
   if (node.bgm != null) SFX.musicLevel(node.bgm);
+  // track：この場所に来たら、曲を切りかえる（チュートリアルのゲームの世界の、王城・ダンジョン・魔王城など）
+  if (node.track) SFX.music(true, { track: node.track });
+  // clockStart：ここから時間を測り始める（台本の {elapsed} に、ここから何分たったかが入る）
+  if (node.clockStart && !state.clock0) state.clock0 = Date.now();
 
   await busy(async () => {
     const view = { say: first ? node.say : null };
@@ -158,9 +187,27 @@ async function enterNode(id, opt = {}) {
       if (node.scene) await play(node.scene);
       setGuide(node.next);
     }
+    // arrive：来るたびに、条件に合う出来事を上から順に流す（それぞれ一度だけ。例：パンツを持って戻ると、平手打ち）
+    for (const [i, ev] of (node.arrive || []).entries()) {
+      const k = `arrive:${id}:${i}`;
+      if (state.halt || state.said.has(k) || !cond(ev.if)) continue;
+      state.said.add(k);
+      await play(ev.script || []);
+    }
+    if (await followWarp()) return;
     await checkObjectives();
     if (node.goal) await runGoal(node.goal);
   });
+}
+
+// エンドを迎えたら（台本の { ending } のあと）、流れていた台本を打ち切って、決められた場所へ飛ぶ
+async function followWarp() {
+  if (!state.warp) return false;
+  const to = state.warp;
+  state.warp = null;
+  state.halt = false;
+  await connect(to, { oneway: true });
+  return true;
 }
 
 // ゾーン（画面の色合い）を切りかえる。入った瞬間に光の帯が走る
@@ -169,6 +216,8 @@ function setZone(zone) {
   if ((zone || "") === now) return;
   if (zone) document.body.dataset.zone = zone;
   else delete document.body.dataset.zone;
+  // 右の欄は、ゾーンによって中身が変わる（ゲームの世界では、ステータスともちもの）
+  renderObjectives();
   if (zone) {
     pulse($("fx"), "zone-in", 650);
     SFX.titleLine();
