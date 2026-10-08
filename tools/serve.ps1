@@ -22,10 +22,12 @@ while ($l.IsListening) {
   try {
     $p = [Uri]::UnescapeDataString($req.Url.AbsolutePath.TrimStart("/"))
 
-    if ($req.HttpMethod -eq "PUT" -and $p -eq "__build") {
+    # PUT /__build -> docs/scenario.data.js,  PUT /__build/more -> docs/scenario.more.js
+    if ($req.HttpMethod -eq "PUT" -and ($p -eq "__build" -or $p -eq "__build/more")) {
+      $name = if ($p -eq "__build") { "scenario.data.js" } else { "scenario.more.js" }
       $body = (New-Object IO.StreamReader($req.InputStream, [Text.Encoding]::UTF8)).ReadToEnd()
-      [IO.File]::WriteAllText((Join-Path $root "docs\scenario.data.js"), $body, (New-Object Text.UTF8Encoding($false)))
-      Write-Host "built docs/scenario.data.js ($($body.Length) chars)"
+      [IO.File]::WriteAllText((Join-Path $root "docs\$name"), $body, (New-Object Text.UTF8Encoding($false)))
+      Write-Host "built docs/$name ($($body.Length) chars)"
       $res.StatusCode = 204
       continue
     }

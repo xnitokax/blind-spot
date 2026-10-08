@@ -1,0 +1,3226 @@
+:root {
+  --bg: #05090a;
+  --panel: #0b1214;
+  --line: #1c3a34;
+  --fg: #b8f5d8;
+  --dim: #5d8f7c;
+  --accent: #3dffa8;
+  --alert: #ff4d6a;
+  --warn: #ffc14d;
+  --voice: #8fc8ff;
+  --why: #ff5a8a; /* 「次の一手」の理由の色：基調の色（--accent）の補色。ゾーンごとに変える（緑の補色は赤みのあるローズ） */
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "BIZ UDGothic", "Consolas", "MS Gothic", monospace;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow: hidden;
+}
+/* ブラウン管：走査線と周辺の暗がり */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+body::before {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03) 0 1px,
+    transparent 1px 3px
+  );
+}
+body::after {
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6));
+}
+
+.wrap {
+  max-width: 1100px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+}
+header {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+header h1 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 10px rgba(61, 255, 168, 0.5);
+  flex: 1;
+}
+#mute,
+#bgm {
+  font: inherit;
+  font-size: 12px;
+  background: transparent;
+  color: var(--dim);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+#mute:hover,
+#bgm:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+#bgm.off {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+/* 師匠が流している曲 */
+#np {
+  font-size: 12px;
+  color: var(--voice);
+  opacity: 0;
+  transition: opacity 1s;
+  white-space: nowrap;
+}
+#np.on {
+  opacity: 1;
+  animation: npPulse 2.2s ease-in-out infinite;
+}
+@keyframes npPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px;
+  min-height: 0;
+}
+h2 {
+  font-size: 13px;
+  color: var(--dim);
+  margin: 0 0 6px;
+  letter-spacing: 0.1em;
+  font-weight: normal;
+}
+
+/* ターミナル */
+#term {
+  overflow-y: auto;
+  cursor: text;
+  text-shadow: 0 0 6px rgba(61, 255, 168, 0.22);
+}
+.line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.line.node {
+  white-space: normal;
+}
+.echo {
+  color: var(--fg);
+}
+/* 自分が打ったコマンドの行：上に余白を入れて、あとから「ここで何をしたか」を見つけやすくする */
+.line.echo {
+  margin-top: 29px;
+}
+.line.echo.auto {
+  margin-top: 4px;
+} /* 自動で流れる git のコマンドは、詰めて速く見せる */
+.echo .ps,
+.ps {
+  color: var(--accent);
+}
+.dim {
+  color: var(--dim);
+}
+.sys {
+  color: var(--accent);
+}
+.alert {
+  color: var(--alert);
+  text-shadow: 0 0 8px rgba(255, 77, 106, 0.5);
+}
+.warn {
+  color: var(--warn);
+}
+.meta {
+  color: var(--dim);
+  font-size: 13px;
+  margin: 0;
+}
+.node-head {
+  margin-top: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+.node-head b {
+  font-size: 17px;
+  font-weight: normal;
+}
+/* 移動先のアドレス：はっきりした緑で光らせて、「ここに移動した」感じを出す */
+.node-head .host {
+  color: var(--accent);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 10px rgba(61, 255, 168, 0.6);
+}
+/* 今いる場所でできること：本文と間を空け、中はきゅっと詰める */
+.menu {
+  margin-top: 26px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: normal;
+}
+.menu .ls {
+  margin: 0;
+  row-gap: 0;
+}
+.doc {
+  border-left: 2px solid var(--line);
+  padding: 2px 12px;
+  margin: 10px 0;
+  white-space: normal;
+}
+.doc p {
+  margin: 4px 0;
+}
+.node p {
+  margin: 6px 0;
+  white-space: normal;
+}
+.log {
+  background: #000;
+  border: 1px solid var(--line);
+  padding: 10px;
+  overflow-x: auto;
+  font-size: 13px;
+  margin: 8px 0;
+  white-space: pre;
+}
+/* 人事DB で、ほかの記録にはない異質な項目（真壁の「対外表記」）：赤黒く浮かせる */
+.log .odd {
+  color: #c0344a;
+  text-shadow: 0 0 8px rgba(160, 20, 40, 0.7);
+}
+.doc .log {
+  margin: 4px 0;
+}
+.tlink {
+  color: var(--accent);
+  border-bottom: 1px dashed var(--accent);
+}
+.tag {
+  color: var(--accent);
+}
+.ls {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 20px;
+  row-gap: 2px;
+  margin: 8px 0 4px;
+}
+.ls .n {
+  color: var(--accent);
+}
+.ls .ow {
+  color: var(--warn);
+}
+/* 師匠のセリフ */
+.say {
+  color: var(--voice);
+  padding-left: 3.6em;
+  text-indent: -3.6em;
+  text-shadow: 0 0 8px rgba(143, 200, 255, 0.35);
+}
+/* 師匠のセリフは帯で囲み、前後に隙間を空ける（続けてしゃべるときは隙間なしで1つのかたまりに） */
+.line.say {
+  background: rgba(143, 200, 255, 0.07);
+  border-left: 2px solid rgba(143, 200, 255, 0.55);
+  padding: 3px 10px 3px calc(3.6em + 10px);
+  margin-top: 12px;
+}
+.line.say + .line.say {
+  margin-top: 0;
+}
+.line.say + .line:not(.say) {
+  margin-top: 12px;
+}
+.line.say + .line.echo {
+  margin-top: 29px;
+} /* 師匠のセリフの後でも、自分が打った行の上は同じ余白に */
+.say .who {
+  display: inline-block;
+  width: 3.6em;
+  text-indent: 0;
+  color: var(--dim);
+}
+.say .who::before {
+  content: "▸ ";
+  color: var(--voice);
+}
+.noise {
+  font-size: 12px;
+  opacity: 0.85;
+}
+/* タップ／クリックで入力欄にコマンドが入る */
+.pick {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin: -1px -5px;
+}
+.pick:hover,
+.pick:active {
+  background: var(--accent);
+  color: var(--bg);
+  text-shadow: none;
+}
+.ow.pick:hover,
+.ow.pick:active {
+  background: var(--warn);
+}
+#run {
+  font: inherit;
+  font-size: 14px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+#run:hover {
+  border-color: var(--accent);
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+#cmd {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  background: transparent;
+  color: var(--fg);
+  border: none;
+  outline: none;
+  padding: 0;
+  caret-color: var(--accent);
+  text-shadow: inherit;
+}
+#cmd.ghost {
+  color: var(--alert);
+}
+
+/* 入力欄と「NEXT」欄：画面の下に固定して、次にできることを常に見せる */
+#term {
+  padding-bottom: 0;
+}
+.dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--panel);
+  margin-top: 10px;
+  padding: 8px 0 14px;
+  border-top: 1px dashed var(--line);
+  transition: opacity 0.3s;
+}
+/* 上へさかのぼって読んでいるときだけ出る「いちばん下へ」のボタン（入力欄のすぐ上の右端） */
+#toBottom {
+  position: absolute;
+  right: 4px;
+  top: -36px;
+  display: none;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--bg);
+  background: var(--accent);
+  border: 0;
+  border-radius: 12px;
+  padding: 3px 12px;
+  box-shadow: 0 0 12px rgba(61, 255, 168, 0.45);
+}
+#toBottom.show {
+  display: block;
+  animation: revealIn 0.25s ease-out;
+}
+/* 右の欄の手がかり：押すと、その EVIDENCE が出たところへ飛ぶ */
+#evi .o-clue.jump {
+  cursor: pointer;
+}
+#evi .o-clue.jump:hover {
+  text-decoration: underline;
+}
+/* 飛んできたカード：枠が一瞬光って、すぐ消える（枠は残さない） */
+.evi-card.focus {
+  animation: eviFocus 1.2s ease-out;
+  outline: 1px solid transparent;
+  outline-offset: 2px;
+}
+@keyframes eviFocus {
+  0%,
+  25% {
+    outline-color: var(--warn);
+    background: rgba(255, 193, 77, 0.3);
+  }
+  100% {
+    outline-color: transparent;
+    background: transparent;
+  }
+}
+.dock.busy #next {
+  opacity: 0.3;
+  pointer-events: none;
+}
+/* チュートリアル：師匠が説明している画面の部分を、黄色の枠で光らせる（{ spot }） */
+.spot {
+  outline: 2px solid var(--warn) !important;
+  outline-offset: 2px;
+  border-radius: 4px;
+  animation: spotPulse 1.3s ease-in-out infinite;
+}
+@keyframes spotPulse {
+  50% {
+    outline-color: color-mix(in srgb, var(--warn) 35%, transparent);
+  }
+}
+.dock.busy #next.spot {
+  opacity: 1;
+}
+#term.spot {
+  outline-offset: -2px;
+}
+/* チュートリアル：文字で描いた図（{ art }）。スマホでも折り返さない（折り返すと図が崩れる） */
+.log.art {
+  background: transparent;
+  border-style: dashed;
+  color: var(--fg);
+  line-height: 1.45;
+  white-space: pre !important;
+  word-break: normal !important;
+}
+/* 「次の一手」が光っているときだけ、そのすぐ上に「なぜそれをやるのか」を出す（その場の基調の色の補色。少し大きめ） */
+#why {
+  color: var(--why);
+  font-size: 15px;
+  margin: 0 0 8px;
+  display: flex;
+  gap: 8px;
+  line-height: 1.6;
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--why) 40%, transparent);
+}
+#why:empty {
+  display: none;
+}
+#why .why-mark {
+  flex: none;
+}
+#next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+#next:empty {
+  display: none;
+}
+#next .next-label {
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  margin-right: 2px;
+}
+#next .chip {
+  margin: 0;
+  padding: 1px 9px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+  text-shadow: none;
+}
+#next .chip.ow,
+#next .chip.warn {
+  color: var(--warn);
+  border-color: rgba(255, 193, 77, 0.4);
+}
+#next .chip.go {
+  border-color: rgba(61, 255, 168, 0.45);
+}
+#next .chip.save {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+/* 師匠が言った「次の一手」：押すだけで実行。ふわっと光って目立たせる */
+#next .chip.guide {
+  color: var(--bg);
+  background: var(--warn);
+  border-color: var(--warn);
+  animation: guidePulse 1.6s ease-in-out infinite;
+}
+@keyframes guidePulse {
+  50% {
+    box-shadow: 0 0 12px rgba(255, 193, 77, 0.6);
+  }
+}
+
+/* タイトル */
+.title-logo {
+  font-size: clamp(30px, 8vw, 60px);
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin: 18px 0 6px;
+  line-height: 1.2;
+  text-shadow: 0 0 22px rgba(61, 255, 168, 0.45);
+}
+/* 待機中、ときどきロゴにノイズが走る（JS が .noise を一瞬だけ付ける）
+   赤と青に切れたロゴの破片が横にずれ、細かい走査線の帯が上から下へ通り抜ける */
+.title-logo::before,
+.title-logo::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: none;
+  opacity: 0;
+}
+.title-logo::before {
+  color: #ff2d6f;
+}
+.title-logo::after {
+  color: #2de2ff;
+}
+.title-logo.noise::before {
+  animation: tnA 0.32s steps(1);
+}
+.title-logo.noise::after {
+  animation: tnB 0.32s steps(1);
+}
+.title-logo.noise {
+  animation: tnShake 0.32s steps(1);
+}
+@keyframes tnA {
+  0% {
+    opacity: 0.85;
+    clip-path: inset(18% 0 62% 0);
+    transform: translateX(-9px);
+  }
+  25% {
+    clip-path: inset(62% 0 14% 0);
+    transform: translateX(7px);
+  }
+  50% {
+    clip-path: inset(38% 0 42% 0);
+    transform: translateX(-5px);
+  }
+  75% {
+    clip-path: inset(4% 0 82% 0);
+    transform: translateX(3px);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes tnB {
+  0% {
+    opacity: 0.85;
+    clip-path: inset(55% 0 25% 0);
+    transform: translateX(8px);
+  }
+  25% {
+    clip-path: inset(10% 0 72% 0);
+    transform: translateX(-6px);
+  }
+  50% {
+    clip-path: inset(72% 0 6% 0);
+    transform: translateX(4px);
+  }
+  75% {
+    clip-path: inset(30% 0 50% 0);
+    transform: translateX(-3px);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes tnShake {
+  0% {
+    transform: translateX(2px) skewX(-6deg);
+  }
+  40% {
+    transform: translateX(-2px);
+  }
+  70% {
+    transform: none;
+  }
+}
+.title-logo .tl-noise {
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  top: -20%;
+  height: 22%;
+  pointer-events: none;
+  opacity: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(184, 245, 216, 0.35) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: screen;
+}
+.title-logo.noise .tl-noise {
+  animation: tnBand 0.32s linear;
+}
+@keyframes tnBand {
+  0% {
+    top: -20%;
+    opacity: 0.9;
+  }
+  100% {
+    top: 100%;
+    opacity: 0.2;
+  }
+}
+.subtitle {
+  color: var(--dim);
+  letter-spacing: 0.3em;
+  font-size: 12px;
+  margin-bottom: 14px;
+  animation: tlSub 1s 1.6s ease-out both;
+}
+
+/* タイトルの登場（約2.3秒・スタイリッシュに）：
+   細い光の線が真ん中から伸びる → 線から上下に開くように文字が現れ、文字間がきゅっと詰まる
+   → 線は下に降りて下線になる → 光が文字の上を横切る → 副題 */
+.title-logo {
+  position: relative;
+  display: inline-block;
+}
+.title-logo .tl-text {
+  display: inline-block;
+  opacity: 0;
+  letter-spacing: 0.5em;
+  clip-path: inset(50% 0 50% 0);
+  animation: tlOpen 1s 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+@keyframes tlOpen {
+  0% {
+    opacity: 0.7;
+    clip-path: inset(50% 0 50% 0);
+    letter-spacing: 0.5em;
+    filter: blur(3px);
+  }
+  55% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    letter-spacing: 0.12em;
+    filter: none;
+  }
+}
+/* 「//」だけ白っぽく控えめに */
+.title-logo .tl-sep {
+  color: var(--fg);
+  opacity: 0.55;
+  text-shadow: none;
+}
+/* 光の線：真ん中から左右へ伸び、そのまま下に降りて下線になる */
+.title-logo .tl-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 10px var(--accent);
+  animation:
+    tlLineIn 0.5s cubic-bezier(0.3, 0.7, 0.2, 1) forwards,
+    tlLineDrop 0.6s 0.9s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+}
+@keyframes tlLineIn {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes tlLineDrop {
+  to {
+    top: calc(100% + 4px);
+    opacity: 0.6;
+  }
+}
+/* 光の帯：文字の上だけを、左から右へサッと横切る */
+.title-logo .tl-shine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: transparent;
+  text-shadow: none;
+  pointer-events: none;
+  white-space: nowrap;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.8) 50%,
+    transparent 62%
+  );
+  background-size: 300% 100%;
+  background-position: 150% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: tlShine 0.9s 1.5s ease-in-out both;
+}
+@keyframes tlShine {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+@keyframes tlSub {
+  from {
+    opacity: 0;
+    letter-spacing: 0.7em;
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.3em;
+  }
+}
+
+/* 任務開始のカード */
+.mission {
+  border: 1px solid var(--warn);
+  border-radius: 4px;
+  padding: 10px 16px;
+  margin: 12px 0;
+  position: relative;
+  background: linear-gradient(90deg, rgba(255, 193, 77, 0.08), transparent 70%);
+  animation: cardIn 0.6s ease-out;
+  white-space: normal;
+}
+.mission .m-label {
+  color: var(--warn);
+  font-size: 12px;
+  letter-spacing: 0.5em;
+}
+.mission .m-title {
+  font-size: 22px;
+  color: var(--warn);
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 14px rgba(255, 193, 77, 0.5);
+}
+.mission .m-obj {
+  margin-top: 4px;
+}
+.mission .m-meta {
+  color: var(--dim);
+  font-size: 12px;
+}
+.mission .m-case {
+  color: var(--fg);
+  opacity: 0.8;
+  font-size: 13px;
+  margin-top: 2px;
+}
+@keyframes cardIn {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ロック画面：真ん中に LOCKED のパネル（広がって点き、南京錠が閉まり、赤く脈打つ） */
+.auth {
+  white-space: normal;
+  margin: 14px 0 6px;
+}
+/* 状態パネル：lock / deny は赤、unlock / found は緑、warn は黄 */
+.spanel {
+  --c: var(--alert);
+  --bg: rgba(255, 77, 106, 0.08);
+  --scan: rgba(255, 77, 106, 0.22);
+  white-space: normal;
+  margin: 14px 0 6px;
+}
+.spanel.unlock,
+.spanel.found {
+  --c: var(--accent);
+  --bg: rgba(61, 255, 168, 0.07);
+  --scan: rgba(61, 255, 168, 0.2);
+}
+.spanel.warn {
+  --c: var(--warn);
+  --bg: rgba(255, 193, 77, 0.08);
+  --scan: rgba(255, 193, 77, 0.2);
+}
+.auth .spanel {
+  margin: 6px 0 0;
+}
+.lockpanel {
+  position: relative;
+  overflow: hidden;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 30px;
+  color: var(--c);
+  border: 1px solid var(--c);
+  border-radius: 4px;
+  background: var(--bg);
+  box-shadow:
+    0 0 22px -6px var(--c),
+    0 0 16px -8px var(--c) inset;
+  animation:
+    lockIn 0.5s ease-out both,
+    lockPulse 2.2s 0.9s ease-in-out infinite;
+}
+/* 走査線が上から下へ流れ続ける */
+.lockpanel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -40%;
+  height: 40%;
+  background: linear-gradient(to bottom, transparent, var(--scan), transparent);
+  animation: lockScan 2.6s linear infinite;
+}
+.lock-title {
+  font-size: 26px;
+  letter-spacing: 0.5em;
+  margin-right: -0.5em;
+  text-shadow: 0 0 14px currentColor;
+}
+/* overflow: visible … 持ち上がった掛け金（上の輪）が、アイコンの枠で切れないように */
+.spanel .icon {
+  width: 24px;
+  height: 26px;
+  flex: none;
+  overflow: visible;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+.spanel.unlock .icon {
+  margin-right: 6px;
+}
+.spanel.lock .shackle {
+  animation: shackleClose 0.35s 0.35s cubic-bezier(0.5, 0, 0.7, 1.6) both;
+}
+.spanel.unlock .shackle {
+  animation: shackleOpen 0.6s 0.35s cubic-bezier(0.3, 1.6, 0.6, 1) both;
+}
+.spanel.deny .lockpanel {
+  animation:
+    lockIn 0.5s ease-out both,
+    denyShake 0.4s 0.45s both,
+    lockPulse 2.2s 1s ease-in-out infinite;
+}
+.lock-sub {
+  text-align: center;
+  color: var(--c);
+  opacity: 0.75;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  margin-top: 6px;
+}
+@keyframes lockIn {
+  0% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  40% {
+    transform: scaleX(1.04);
+    opacity: 1;
+    filter: brightness(2.5);
+  }
+  55% {
+    opacity: 0.4;
+  }
+  70% {
+    opacity: 1;
+    filter: none;
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes lockPulse {
+  50% {
+    box-shadow:
+      0 0 30px -4px var(--c),
+      0 0 20px -6px var(--c) inset;
+  }
+}
+@keyframes lockScan {
+  to {
+    top: 100%;
+  }
+}
+@keyframes shackleClose {
+  from {
+    transform: translateY(-5px);
+  }
+  to {
+    transform: none;
+  }
+}
+/* 開くとき：掛け金が上に抜けてから、右へずれる（開いた南京錠の形） */
+@keyframes shackleOpen {
+  0% {
+    transform: none;
+  }
+  45% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translate(6px, -4px);
+  }
+}
+@keyframes denyShake {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+.auth-need {
+  font-size: 17px;
+  color: var(--warn);
+  margin: 18px 0 10px;
+  letter-spacing: 0.05em;
+}
+.auth-hint {
+  line-height: 1.7;
+}
+.auth-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 16px;
+  row-gap: 2px;
+  margin: 12px 0 0;
+  padding: 6px 12px;
+  border-left: 2px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+.auth-fields .slots {
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+}
+.auth-notes {
+  color: var(--dim);
+  font-size: 12px;
+  margin-top: 12px;
+  line-height: 1.7;
+}
+.auth-choice {
+  display: flex;
+  gap: 22px;
+}
+
+/* 小ネタ：師匠（＝製作者）のプロフィール */
+.profile {
+  white-space: normal;
+  margin: 14px 0;
+  padding: 12px 16px;
+  max-width: 520px;
+  border: 1px solid rgba(143, 200, 255, 0.45);
+  border-radius: 4px;
+  background: rgba(143, 200, 255, 0.05);
+  box-shadow: 0 0 20px -8px var(--voice);
+  animation: cardIn 0.6s ease-out;
+}
+.pf-head {
+  color: var(--voice);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+}
+.pf-role {
+  color: var(--fg);
+  font-size: 16px;
+  margin: 4px 0 10px;
+}
+.pf-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 16px;
+  row-gap: 3px;
+  font-size: 14px;
+}
+.pf-link {
+  color: var(--voice);
+}
+.pf-msg {
+  color: var(--voice);
+  line-height: 1.9;
+  margin: 10px 0 4px;
+  white-space: pre-wrap;
+}
+.profile .pf-fields {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(143, 200, 255, 0.25);
+  font-size: 12px;
+}
+/* サイン：オレンジの筆記体。ペンで書いていくように左から右へ現れ、書き終わりに一瞬強く光る */
+.pf-sign {
+  display: flex;
+  justify-content: flex-end;
+  height: 64px;
+}
+.pf-sign svg {
+  height: 64px;
+  width: auto;
+  overflow: visible;
+  clip-path: inset(-20% 100% -20% -5%);
+  animation:
+    signReveal 1.3s cubic-bezier(0.3, 0.15, 0.6, 1) forwards,
+    signGlow 0.9s 1.25s ease-out both;
+}
+.pf-sign text {
+  font-size: 50px;
+  fill: #ff9a3c;
+}
+@keyframes signReveal {
+  to {
+    clip-path: inset(-20% -5% -20% -5%);
+  }
+}
+@keyframes signGlow {
+  0% {
+    filter: drop-shadow(0 0 6px rgba(255, 122, 26, 0.75));
+  }
+  30% {
+    filter: drop-shadow(0 0 14px rgba(255, 150, 60, 1)) brightness(1.3);
+  }
+  100% {
+    filter: drop-shadow(0 0 6px rgba(255, 122, 26, 0.75));
+  }
+}
+
+/* 検索：scanning は小さく、見出しは「何を探したか」を大きく、件数は小さく */
+.scan {
+  font-size: 12px;
+  margin-top: 4px;
+}
+.scan.flow {
+  font-size: 11px;
+  opacity: 0.55;
+  white-space: pre;
+  overflow: hidden;
+} /* 高速で流れるログ（任務2の変更ログ） */
+.res-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 14px;
+  margin: 10px 0 2px;
+}
+.res-title {
+  color: var(--accent);
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(61, 255, 168, 0.35);
+}
+.res-count {
+  color: var(--dim);
+  font-size: 12px;
+}
+.res-head.none .res-title {
+  color: var(--dim);
+  text-shadow: none;
+}
+.line.result .doc {
+  margin: 8px 0;
+}
+
+/* 移動したときの見出し：前の操作と間を空け、場所の名前を大きく */
+.node-head {
+  margin-top: 34px;
+  padding-top: 14px;
+}
+.node-head b {
+  font-size: 19px;
+  letter-spacing: 0.04em;
+}
+.line.node:not(.result) {
+  margin-top: 6px;
+}
+
+/* cd で開いたフォルダの中身 */
+.dirview {
+  white-space: normal;
+  margin: 10px 0 4px;
+}
+.dir-path {
+  color: var(--accent);
+  font-size: 14px;
+}
+.dir-files {
+  margin-top: 4px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.dir-empty {
+  color: var(--warn);
+}
+
+/* 予測ファイル・予測済のコマンド：列をそろえた表 */
+.sec-head {
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  margin: 14px 0 4px;
+}
+.pred {
+  display: grid;
+  grid-template-columns: 5.2em 1fr 4em;
+  column-gap: 12px;
+  white-space: normal;
+}
+.pred .p {
+  color: var(--dim);
+  text-align: right;
+}
+.rep {
+  display: grid;
+  grid-template-columns: 3.4em 3.6em 1fr;
+  column-gap: 12px;
+  white-space: normal;
+}
+
+/* 手がかり */
+/* 1つずつ出すときの、ふわっと浮かび上がる動き */
+.reveal {
+  animation: revealIn 0.35s ease-out both;
+}
+@keyframes revealIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.evidence {
+  color: var(--warn);
+  white-space: normal;
+}
+.evi-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 12px 0;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid rgba(255, 193, 77, 0.35);
+  border-radius: 3px;
+  background: rgba(255, 193, 77, 0.05);
+  animation: evidenceLand 1.1s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+/* 現れるとき：左から光の帯で開き、強く光ってから、ゆっくり落ち着く */
+@keyframes evidenceLand {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    background: rgba(255, 193, 77, 0.55);
+    box-shadow: 0 0 30px rgba(255, 193, 77, 0.8);
+  }
+  35% {
+    clip-path: inset(0 0 0 0);
+    background: rgba(255, 193, 77, 0.35);
+  }
+  100% {
+    background: rgba(255, 193, 77, 0.05);
+    box-shadow: 0 0 0 transparent;
+  }
+}
+/* 解読し終わったら、もう一度だけふわっと光る */
+.evi-card.landed {
+  animation: evidenceGlow 1.6s ease-out;
+}
+@keyframes evidenceGlow {
+  0% {
+    box-shadow: 0 0 22px rgba(255, 193, 77, 0.65);
+    border-color: var(--warn);
+  }
+  100% {
+    box-shadow: 0 0 0 transparent;
+  }
+}
+.evi-tag {
+  background: var(--warn);
+  color: var(--bg);
+  padding: 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-shadow: none;
+}
+.evi-n {
+  color: var(--dim);
+  font-size: 12px;
+}
+@keyframes evidenceIn {
+  0% {
+    background: rgba(255, 193, 77, 0.35);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* ニュース */
+.news {
+  border-left: 3px solid var(--voice);
+  padding: 2px 12px;
+  margin: 6px 0;
+  background: rgba(143, 200, 255, 0.05);
+  animation: slideIn 0.4s ease-out;
+}
+.news .meta {
+  font-size: 11px;
+}
+@keyframes slideIn {
+  from {
+    transform: translateX(-24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* 見ている目（マウスを追いかける） */
+.eye-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+  gap: 8px;
+}
+.eye {
+  width: 180px;
+  height: 90px;
+  position: relative;
+  border-radius: 50%;
+  border: 2px solid var(--alert);
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #1a0006, #000 70%);
+  box-shadow:
+    0 0 34px rgba(255, 77, 106, 0.55),
+    inset 0 0 22px rgba(255, 77, 106, 0.45);
+  animation:
+    eyeOpen 1.4s ease-out,
+    eyeBlink 5s 1.4s infinite;
+}
+.eye i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #000 28%, var(--alert) 31%, #6a0014 62%, #2a0008 72%);
+  transition: transform 0.12s;
+}
+.eye-cap {
+  color: var(--alert);
+  letter-spacing: 0.6em;
+  font-size: 13px;
+}
+@keyframes eyeOpen {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes eyeBlink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.04);
+  }
+}
+
+/* トレースメーター */
+.trace-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.bar {
+  height: 10px;
+  background: #000;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 4px 0 16px;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition:
+    width 0.6s,
+    background 0.6s;
+  box-shadow: 0 0 10px currentColor;
+}
+.bar.racing i {
+  transition:
+    width 0.1s linear,
+    background 0.3s;
+}
+aside.danger .bar {
+  animation: dangerBar 0.8s infinite;
+}
+aside.danger #traceNum {
+  color: var(--alert);
+  animation: blink 0.8s steps(1) infinite;
+}
+@keyframes dangerBar {
+  50% {
+    box-shadow: 0 0 14px var(--alert);
+    border-color: var(--alert);
+  }
+}
+/* アクセスログと手がかり */
+#log {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+  font-size: 12px;
+  max-height: 32vh;
+  overflow-y: auto;
+}
+#log li,
+#evi li {
+  color: var(--dim);
+  border-bottom: 1px dotted var(--line);
+  padding: 2px 0;
+}
+#log li.bad {
+  color: var(--alert);
+}
+#log li.ow {
+  color: var(--warn);
+}
+#evi {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+  max-height: 42vh;
+  overflow-y: auto;
+}
+#evi li {
+  color: var(--warn);
+}
+#evi li.new {
+  animation: evidenceIn 1.6s ease-out;
+}
+.evi-head {
+  display: flex;
+  justify-content: space-between;
+}
+/* 右の欄の目標：全体の目標 → 任務の目的 → 済んだ目標 → 今の目標（＋手がかり） → 気になること */
+#evi .o-sec {
+  color: var(--dim);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  margin-top: 8px;
+  border: 0;
+  padding: 0;
+}
+#evi .o-sec:first-child {
+  margin-top: 0;
+}
+#evi .o-case {
+  color: var(--fg);
+  border: 0;
+  padding: 0 0 2px;
+}
+#evi .o-mission {
+  color: var(--fg);
+  opacity: 0.75;
+  border: 0;
+  padding: 0 0 2px;
+}
+#evi .o-done {
+  color: var(--dim);
+}
+#evi .o-done::before {
+  content: "✔ ";
+  color: var(--accent);
+}
+#evi .o-now {
+  color: var(--warn);
+  border: 1px solid rgba(255, 193, 77, 0.4);
+  border-radius: 3px;
+  padding: 3px 6px;
+  margin-top: 4px;
+  background: rgba(255, 193, 77, 0.06);
+}
+#evi .o-n {
+  float: right;
+  color: var(--dim);
+  margin-left: 8px;
+}
+#evi .o-done,
+#evi .o-now,
+#evi .o-side {
+  display: flow-root;
+}
+#evi .o-clue {
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+  border-bottom: 0;
+}
+#evi .o-clue.miss {
+  color: var(--dim);
+  opacity: 0.6;
+}
+#evi .o-side {
+  color: var(--voice);
+  margin-top: 4px;
+}
+#evi .o-side ~ .o-clue:not(.miss) {
+  color: var(--voice);
+}
+/* PC：右の欄の空いている高さを、手がかりの一覧（CASE FILE）に回す（一覧の下の方が隠れて見えなくならないように）。足りないときは、アクセスログのほうを先に縮める */
+@media (min-width: 801px) {
+  aside#side {
+    display: flex;
+    flex-direction: column;
+  }
+  aside#side > * {
+    flex: none;
+  }
+  aside#side #log {
+    flex: 0 3 auto;
+    min-height: 48px;
+  }
+  aside#side #evi {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
+}
+
+/* 目標の達成・次の目標（ターミナルに出るカード） */
+.obj-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px 0;
+  padding: 5px 14px 5px 5px;
+  border: 1px solid rgba(61, 255, 168, 0.45);
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(61, 255, 168, 0.1), transparent 80%);
+  animation: cardIn 0.5s ease-out;
+  white-space: normal;
+}
+.obj-card .o-tag {
+  background: var(--accent);
+  color: var(--bg);
+  padding: 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-shadow: none;
+}
+.obj-card.next {
+  border-color: rgba(255, 193, 77, 0.5);
+  background: linear-gradient(90deg, rgba(255, 193, 77, 0.08), transparent 80%);
+}
+.obj-card.next .o-tag {
+  background: var(--warn);
+}
+.obj-card .o-text {
+  color: var(--fg);
+  letter-spacing: 0.06em;
+}
+.obj-card.landed {
+  animation: objGlow 1.4s ease-out;
+}
+@keyframes objGlow {
+  0% {
+    box-shadow: 0 0 24px rgba(61, 255, 168, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 transparent;
+  }
+}
+.obj-card.clear .o-text {
+  color: var(--accent);
+}
+
+.flash {
+  animation: flash 0.5s 2;
+}
+@keyframes flash {
+  50% {
+    background: #3a0a12;
+  }
+}
+.flash-ok {
+  animation: flashOk 0.6s;
+}
+@keyframes flashOk {
+  30% {
+    background: #0a3a24;
+  }
+}
+.shake {
+  animation: impact 0.55s cubic-bezier(0.15, 0.9, 0.25, 1);
+}
+@keyframes impact {
+  0% {
+    transform: scale(1.008) rotate(0.15deg);
+    filter: brightness(1.4);
+  }
+  12% {
+    transform: translate(-4px, 1px) rotate(-0.2deg) skewX(1.5deg);
+  }
+  26% {
+    transform: translate(3px, -1px) rotate(0.12deg);
+    filter: hue-rotate(15deg) saturate(1.3);
+  }
+  42% {
+    transform: translate(-2px, 0);
+    filter: none;
+  }
+  62% {
+    transform: translate(1px, 0);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+.jolt {
+  animation: jolt 0.18s steps(3);
+}
+@keyframes jolt {
+  33% {
+    filter: hue-rotate(120deg) saturate(3) brightness(1.4);
+  }
+  66% {
+    filter: invert(0.15) hue-rotate(-60deg);
+  }
+}
+
+/* 回線をつなぐ演出 */
+.warp {
+  animation: warp 0.8s ease-out;
+}
+@keyframes warp {
+  0% {
+    filter: blur(8px) brightness(2.6);
+    transform: scale(1.05);
+  }
+  40% {
+    filter: blur(1px) hue-rotate(40deg);
+    transform: scale(0.99);
+  }
+  100% {
+    filter: none;
+    transform: none;
+  }
+}
+/* 画面が消える：一瞬で横一本の光に潰れ、点になって「ぴちゅん」と消える */
+.crt-off {
+  animation: crtOff 0.26s forwards cubic-bezier(0.7, 0, 0.9, 0.5);
+}
+@keyframes crtOff {
+  0% {
+    transform: none;
+    filter: none;
+  }
+  45% {
+    transform: scale(1, 0.006);
+    filter: brightness(6);
+  }
+  80% {
+    transform: scale(0.03, 0.006);
+    filter: brightness(10);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0, 0);
+    filter: brightness(10);
+    opacity: 0;
+  }
+}
+
+/* 逆ハッキング・接続遮断 */
+.glitch {
+  animation: glitch 0.14s steps(2) infinite;
+}
+@keyframes glitch {
+  0% {
+    transform: translate(0, 0);
+    filter: none;
+  }
+  25% {
+    transform: translate(-4px, 2px);
+    filter: hue-rotate(90deg) saturate(3);
+  }
+  50% {
+    transform: translate(3px, -2px);
+    filter: invert(1);
+  }
+  75% {
+    transform: translate(-2px, -1px);
+    filter: hue-rotate(-60deg);
+  }
+  100% {
+    transform: translate(2px, 1px);
+    filter: none;
+  }
+}
+/* 不安定な画面：色だけがときどき狂う（画面が裂ける動きは JS の setStorm がまとめて出す） */
+.unstable {
+  animation: unstable 1.8s steps(1) infinite;
+}
+@keyframes unstable {
+  0%,
+  100% {
+    filter: none;
+  }
+  82% {
+    filter: hue-rotate(80deg) saturate(2.5);
+  }
+  86% {
+    filter: invert(0.9);
+  }
+  90% {
+    filter: none;
+  }
+}
+/* 画面全体の色（赤＝警報、青＝師匠が回線を奪い返した） */
+#fx {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 35;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+/* ゾーン：システムに入ると、画面の色合いが少し変わる（任務2。node.zone）
+   文字・線・強調の色を入れ替え、画面のふちに薄く色をのせる */
+body[data-zone] #fx {
+  opacity: 1;
+  background: radial-gradient(ellipse at center, transparent 55%, var(--tint));
+}
+body[data-zone="files"] {
+  --why: #ffa65a;
+  --accent: #4fd8ff;
+  --fg: #c3f0ff;
+  --line: #173a4a;
+  --dim: #5b8796;
+  --tint: rgba(79, 216, 255, 0.13);
+}
+body[data-zone="hr"] {
+  --why: #63ffb4;
+  --accent: #ff7ad9;
+  --fg: #ffe0f4;
+  --line: #4a2440;
+  --dim: #a87f98;
+  --tint: rgba(255, 110, 200, 0.14);
+}
+body[data-zone="seek"] {
+  --why: #ffc27a;
+  --accent: #9fd0ff;
+  --fg: #edf6ff;
+  --line: #27394c;
+  --dim: #7f95ab;
+  --tint: rgba(200, 225, 255, 0.12);
+}
+body[data-zone="keiri"] {
+  --why: #7f9cff;
+  --accent: #ffcc5c;
+  --fg: #fbe9c0;
+  --line: #3f3519;
+  --dim: #a08a5a;
+  --tint: rgba(255, 190, 70, 0.14);
+}
+body[data-zone="bank"] {
+  --why: #b8ff6a;
+  --accent: #c9a7ff;
+  --fg: #f0e8ff;
+  --line: #3a2c52;
+  --dim: #9284ad;
+  --tint: rgba(190, 150, 255, 0.15);
+}
+body[data-zone="jyoshi"] {
+  --why: #ff8a7a;
+  --accent: #4ff0e0;
+  --fg: #c8fbf4;
+  --line: #12403b;
+  --dim: #5a9890;
+  --tint: rgba(60, 240, 220, 0.13);
+}
+/* ゾーンに入った瞬間：光の帯が上から下へ走る */
+#fx.zone-in::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 30%;
+  top: -30%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 35%, transparent),
+    transparent
+  );
+  animation: zoneSweep 0.6s ease-out forwards;
+}
+@keyframes zoneSweep {
+  to {
+    top: 100%;
+  }
+}
+
+/* 任務2の見せ場の演出 */
+.menu.compact {
+  font-size: 13px;
+}
+.flood {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--dim);
+  max-height: 11em;
+  overflow: hidden;
+  white-space: pre;
+  margin: 6px 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%);
+  mask-image: linear-gradient(to bottom, transparent, #000 35%);
+}
+.markline .mark {
+  color: var(--warn);
+  border: 1px solid var(--warn);
+  padding: 1px 8px;
+  animation: markBlink 0.5s steps(1) 3;
+}
+@keyframes markBlink {
+  50% {
+    opacity: 0.2;
+  }
+}
+.fx-panel {
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  white-space: normal;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  box-shadow: 0 0 18px -8px var(--accent);
+}
+.fx-head {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sc-bar,
+.bt-bar,
+.esc-bar,
+.rc-bar {
+  color: var(--accent);
+  font-size: 12px;
+  white-space: pre;
+  overflow: hidden;
+  margin: 4px 0;
+}
+.sc-cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 2px 14px;
+  font-size: 12px;
+}
+.sc-cats div {
+  display: flex;
+  justify-content: space-between;
+}
+.sc-c {
+  color: var(--accent);
+}
+.sc-found {
+  margin-top: 6px;
+  color: var(--warn);
+  animation: markBlink 0.5s steps(1) 4;
+}
+.battle .bt-log {
+  font-size: 11px;
+}
+.battle.lost {
+  border-color: var(--alert);
+  box-shadow: 0 0 18px -6px var(--alert);
+}
+.battle.lost .bt-bar {
+  color: var(--alert);
+}
+.file-card .fc-body {
+  font-size: 13px;
+  line-height: 1.8;
+  margin-top: 6px;
+  color: var(--fg);
+}
+.esc-panel .esc-log {
+  font-size: 12px;
+}
+.esc-bar.stall {
+  animation: markBlink 1s steps(1) infinite;
+}
+.race .rc-bar {
+  color: var(--alert);
+}
+.race.saved {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px -6px var(--accent);
+}
+.race .rc-ours-head {
+  margin-top: 6px;
+}
+.race .rc-ours,
+.race .rc-p {
+  color: var(--accent);
+}
+
+/* ---------------- 世界地図（回線が世界を回る／逆にたどられる） ---------------- */
+.worldmap {
+  padding: 8px 10px;
+}
+.worldmap.trace {
+  border-color: var(--alert);
+  box-shadow: 0 0 24px -6px var(--alert);
+}
+.worldmap.trace .fx-head {
+  color: var(--alert);
+}
+.wm-svg {
+  width: 100%;
+  display: block;
+  border-radius: 3px;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    color-mix(in srgb, var(--accent) 7%, #020506),
+    #010304 80%
+  );
+}
+.wm-grat {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 18%, transparent);
+  stroke-width: 0.6;
+}
+.wm-land {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 40%, transparent);
+  stroke-width: 3.6;
+  stroke-linecap: round;
+}
+.worldmap.trace .wm-land {
+  stroke: color-mix(in srgb, var(--alert) 28%, transparent);
+}
+.wm-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  opacity: 0.45;
+  filter: drop-shadow(0 0 3px var(--accent));
+}
+.wm-arc.red {
+  stroke: var(--alert);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 5px var(--alert));
+}
+.wm-pin {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 5px var(--accent));
+  opacity: 0.35;
+  transition: opacity 0.3s;
+}
+.wm-pin.on {
+  opacity: 1;
+}
+.wm-pin.hit {
+  fill: var(--alert);
+  filter: drop-shadow(0 0 8px var(--alert));
+}
+.wm-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  opacity: 0;
+}
+.wm-ring.on {
+  animation: wmRing 1.1s ease-out;
+}
+.wm-ring.red {
+  stroke: var(--alert);
+}
+@keyframes wmRing {
+  0% {
+    opacity: 0.9;
+    r: 3;
+  }
+  100% {
+    opacity: 0;
+    r: 26;
+  }
+}
+.wm-dot {
+  fill: #fff;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+.wm-dot.red {
+  filter: drop-shadow(0 0 8px var(--alert));
+}
+.wm-info {
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+.wm-info.on {
+  opacity: 1;
+}
+.wm-label {
+  fill: var(--fg);
+  font-size: 17px;
+  font-family: inherit;
+  paint-order: stroke;
+  stroke: #010304;
+  stroke-width: 3px;
+}
+.wm-info.hit .wm-label {
+  fill: var(--alert);
+}
+.wm-info.hit .wm-tagbg {
+  fill: var(--alert);
+}
+.wm-tag {
+  fill: var(--bg);
+  font-size: 12px;
+  font-family: inherit;
+  letter-spacing: 0.1em;
+}
+.wm-tagbg {
+  fill: var(--accent);
+}
+.wm-tagbg.you {
+  fill: var(--warn);
+}
+.worldmap .wm-note {
+  margin-top: 6px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--alert);
+  letter-spacing: 0.08em;
+}
+.worldmap .wm-note.blink {
+  animation: markBlink 0.5s steps(1) infinite;
+}
+
+/* ---------------- 画面を2つに割る（自分の端末／師匠の端末） ---------------- */
+.split-term {
+  padding: 0;
+  overflow: hidden;
+}
+.split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.st-pane {
+  padding: 8px 10px;
+  min-width: 0;
+  min-height: 10.5em;
+}
+.st-pane.theirs {
+  border-left: 1px solid var(--line);
+  background: color-mix(in srgb, var(--voice) 7%, transparent);
+}
+.st-head {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--line);
+  margin-bottom: 4px;
+}
+.st-pane.theirs .st-head {
+  color: var(--voice);
+}
+.st-head .dot {
+  color: var(--accent);
+}
+.st-pane.theirs .st-head .dot {
+  color: var(--voice);
+  animation: blink 0.7s steps(1) infinite;
+}
+.st-body {
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.st-pane.theirs .st-body {
+  color: var(--voice);
+  text-shadow: 0 0 6px rgba(143, 200, 255, 0.3);
+}
+.st-body .ps2 {
+  color: var(--voice);
+}
+.st-body .ok2 {
+  color: var(--accent);
+}
+.st-body .warn2 {
+  color: var(--warn);
+}
+.st-cur::after {
+  content: "▌";
+  animation: blink 1s steps(1) infinite;
+}
+@media (max-width: 800px) {
+  .split-grid {
+    grid-template-columns: 1fr;
+  }
+  .st-pane.theirs {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .st-pane {
+    min-height: 7em;
+  }
+  .wm-label {
+    font-size: 30px;
+  }
+  .wm-tag {
+    font-size: 20px;
+  }
+  .worldmap .fx-head {
+    letter-spacing: 0.08em;
+    font-size: 10px;
+  }
+}
+
+/* 復元した差分：キーワード（千里眼・特命事業）を強く光らせる／兄の手書きのメッセージ */
+.doc .kw {
+  color: #fff;
+  background: rgba(255, 60, 90, 0.22);
+  border: 1px solid #ff5a6e;
+  border-radius: 2px;
+  padding: 0 5px;
+  text-shadow:
+    0 0 10px #ff5a6e,
+    0 0 22px rgba(255, 60, 90, 0.7);
+  font-weight: bold;
+  animation: kwGlow 1.8s ease-in-out infinite;
+}
+@keyframes kwGlow {
+  50% {
+    box-shadow: 0 0 16px rgba(255, 60, 90, 0.65);
+  }
+}
+.doc .hand {
+  display: inline-block;
+  color: #ffd0d8;
+  text-shadow: 0 0 10px rgba(255, 80, 110, 0.8);
+  letter-spacing: 0.04em;
+}
+.reveal-diff {
+  border-color: #ff5a6e !important;
+  box-shadow: 0 0 26px -6px rgba(255, 60, 90, 0.7) !important;
+  font-size: 14px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+.reveal-diff .kw {
+  font-size: 16px;
+}
+.reveal-diff .hand {
+  font-size: 15px;
+  margin-top: 4px;
+}
+/* 物語の要になる言葉を、画面の真ん中に大きく出す（{ bigtitle }） */
+.big-title {
+  text-align: center;
+  margin: 22px 0 18px;
+  white-space: normal;
+}
+.big-title .bt-main {
+  font-size: clamp(44px, 13vw, 78px);
+  line-height: 1.2;
+  color: #fff;
+  letter-spacing: 0.3em;
+  margin-right: -0.3em;
+  text-shadow:
+    0 0 18px #ff5a6e,
+    0 0 48px rgba(255, 60, 90, 0.65);
+  animation: bigTitleIn 1.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.big-title .bt-sub {
+  color: #ff9aaa;
+  letter-spacing: 0.3em;
+  font-size: 13px;
+  margin-top: 6px;
+  animation: tlSub 1s 0.8s ease-out both;
+}
+@keyframes bigTitleIn {
+  0% {
+    opacity: 0;
+    letter-spacing: 1.2em;
+    filter: blur(10px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0) brightness(1.8);
+  }
+  100% {
+    letter-spacing: 0.3em;
+    filter: none;
+  }
+}
+/* 意図的に隠されていたデータ：赤い文字 */
+.doc.hidden-data,
+.doc.hidden-data p,
+.doc.hidden-data .meta {
+  color: #ff5a6e !important;
+  text-shadow: 0 0 8px rgba(255, 60, 90, 0.4);
+}
+/* 消された日報：中身は塗りつぶされ、消した記録だけが残る */
+.doc .erased {
+  color: var(--dim);
+  opacity: 0.55;
+  letter-spacing: -1px;
+  line-height: 1.3;
+}
+.doc .erased-note {
+  color: var(--alert);
+  font-size: 12px;
+}
+/* 画面が裂けて、一本の光に潰れる → 光の線から、弾むように組み直されて戻ってくる */
+/* 画面全体（ターミナルも TRACE の欄も）が潰れる。潰れきったら光の線も消えて、いったん真っ暗に */
+#wrap.shatter {
+  animation: shatter 1s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+@keyframes shatter {
+  0% {
+    transform: none;
+    filter: none;
+  }
+  35% {
+    transform: scale(1.012) skewX(-2deg);
+    filter: brightness(1.5) saturate(2);
+  }
+  75% {
+    transform: scale(1.03, 0.82) skewX(3deg);
+    filter: brightness(2.6) hue-rotate(40deg);
+  }
+  100% {
+    transform: scale(1.06, 0.004);
+    filter: brightness(7);
+  }
+}
+#wrap.collapsed {
+  transform: scale(1.06, 0.004);
+  filter: brightness(7);
+  transition: opacity 0.35s ease-in;
+}
+#wrap.collapsed.dark {
+  opacity: 0;
+}
+body.blackout #fx {
+  opacity: 0 !important;
+}
+/* モザイク処理された写真 */
+.photo-card .ph-wrap {
+  position: relative;
+  width: min(240px, 100%);
+  margin: 8px auto 4px;
+}
+.photo-card .ph-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  aspect-ratio: 12 / 7;
+  filter: blur(8px) saturate(0.6);
+  opacity: 0;
+  transition:
+    opacity 1s,
+    filter 1.4s;
+}
+.photo-card.shown .ph-grid {
+  opacity: 1;
+  filter: blur(2px) saturate(0.9);
+}
+.photo-card .ph-grid i {
+  display: block;
+}
+.photo-card .ph-stamp {
+  position: absolute;
+  inset: auto 0 8px 0;
+  text-align: center;
+  color: var(--bg);
+  background: var(--warn);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 0 8px;
+}
+.photo-card .ph-cap {
+  font-size: 12px;
+  color: var(--dim);
+  text-align: center;
+}
+/* 金庫のダイヤル */
+.vault .vt-dial {
+  font-size: 30px;
+  letter-spacing: 0.15em;
+  text-align: center;
+  color: var(--dim);
+  margin: 6px 0;
+}
+.vault .vt-d.set {
+  color: var(--accent);
+  text-shadow: 0 0 12px var(--accent);
+}
+.vault .vt-sep {
+  color: var(--dim);
+}
+/* メーターのように回る大きな数字 */
+.count .ct-num {
+  font-size: clamp(22px, 7.5vw, 32px);
+  text-align: center;
+  color: var(--fg);
+  letter-spacing: 0.05em;
+  margin: 4px 0;
+}
+.count .ct-num.hit {
+  color: var(--alert);
+  text-shadow: 0 0 16px var(--alert);
+}
+/* 崩れて消えていくログ */
+.shred {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--alert);
+  white-space: pre;
+  overflow: hidden;
+  margin: 6px 0;
+  opacity: 0.85;
+}
+#wrap.reform {
+  animation: reform 1.15s both;
+}
+@keyframes reform {
+  0% {
+    transform: scale(0.01, 0.004);
+    filter: brightness(9);
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  28% {
+    transform: scale(1.04, 0.004);
+    filter: brightness(6);
+    animation-timing-function: cubic-bezier(0.2, 1.5, 0.35, 1);
+  }
+  62% {
+    transform: scale(0.99, 1.025);
+    filter: brightness(1.8) hue-rotate(-30deg);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+/* 侵入の演出（breach）：壁が崩れ、手順ごとのバーが埋まり、最後に ACCESS のはんこ */
+.breach-panel {
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  white-space: normal;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  box-shadow: 0 0 18px -8px var(--accent);
+  position: relative;
+  overflow: hidden;
+}
+.bp-head {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  display: flex;
+  justify-content: space-between;
+}
+.bp-wall {
+  font-size: 9px;
+  line-height: 1.05;
+  letter-spacing: 1px;
+  color: var(--accent);
+  opacity: 0.75;
+  margin: 6px 0;
+  white-space: pre;
+  overflow: hidden;
+}
+/* ※ ゲージのクラスは .bp-bar（.bar は TRACE のメーター用。高さ 10px・はみ出しを隠す指定があり、名前がかぶると中身が消える） */
+.bp-step {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: 10px;
+  font-size: 12px;
+  align-items: center;
+  line-height: 1.7;
+}
+.bp-step .lab {
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-step .lab::before {
+  content: "› ";
+  color: var(--dim);
+}
+.bp-step .bp-bar {
+  color: var(--accent);
+  font-size: 11px;
+  white-space: pre;
+}
+.bp-step .bp-bar .hex {
+  color: var(--dim);
+}
+.bp-step .bp-bar .ok {
+  color: var(--bg);
+  background: var(--accent);
+  padding: 0 5px;
+  margin-left: 6px;
+  letter-spacing: 0.1em;
+  box-shadow: 0 0 10px var(--accent);
+}
+.bp-step.done .lab {
+  color: var(--accent);
+}
+.bp-step.done .lab::before {
+  content: "✔ ";
+  color: var(--accent);
+}
+.bp-step.done .bp-bar {
+  text-shadow: 0 0 8px var(--accent);
+}
+.bp-step.done {
+  animation: stepDone 0.45s ease-out;
+}
+@keyframes stepDone {
+  0% {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+/* 走査線が、パネルの上を流れ続ける */
+.breach-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -30%;
+  height: 30%;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    transparent
+  );
+  animation: lockScan 1.6s linear infinite;
+}
+.bp-head .bp-live {
+  animation: blink 0.5s steps(1) infinite;
+  color: var(--alert);
+}
+/* はんこ：大きく叩きつけられ、一瞬だけ裂けてから落ち着く */
+.bp-stamp {
+  margin-top: 8px;
+  text-align: center;
+  color: var(--bg);
+  background: var(--accent);
+  font-size: 15px;
+  letter-spacing: 0.5em;
+  padding: 4px 0;
+  box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 70%, transparent);
+  animation: stampSlam 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.bp-stamp.bad {
+  background: var(--alert);
+  box-shadow: 0 0 26px rgba(255, 77, 106, 0.7);
+}
+@keyframes stampSlam {
+  0% {
+    transform: scale(2.6);
+    opacity: 0;
+    filter: blur(8px) brightness(3);
+    letter-spacing: 1.4em;
+  }
+  40% {
+    transform: scale(0.95);
+    opacity: 1;
+    filter: blur(0) brightness(2.2);
+    letter-spacing: 0.5em;
+  }
+  52% {
+    clip-path: inset(28% 0 42% 0);
+    transform: translateX(-10px) scale(1.03);
+  }
+  58% {
+    clip-path: inset(62% 0 8% 0);
+    transform: translateX(8px);
+  }
+  64% {
+    clip-path: inset(0 0 0 0);
+    transform: none;
+    filter: brightness(1.6);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes stampIn {
+  from {
+    transform: scale(1.6);
+    opacity: 0;
+    filter: blur(3px);
+  }
+  to {
+    transform: none;
+    opacity: 1;
+    filter: none;
+  }
+}
+body.red #fx {
+  opacity: 1;
+  background: radial-gradient(ellipse at center, rgba(255, 0, 40, 0.06), rgba(255, 0, 40, 0.38));
+  animation: redPulse 1s infinite;
+}
+body.blue #fx {
+  opacity: 1;
+  background: radial-gradient(ellipse at center, rgba(80, 160, 255, 0.04), rgba(80, 160, 255, 0.3));
+}
+@keyframes redPulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* 最初の「CLICK TO CONNECT」画面（ここを押した瞬間から音が出せるので、入場の演出と音がぴったり合う） */
+#gate {
+  position: fixed;
+  inset: 0;
+  z-index: 38;
+  background: #000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#gate.on {
+  display: flex;
+}
+#gate.leaving {
+  animation: gateOut 0.45s ease-out forwards;
+}
+@keyframes gateOut {
+  0% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 1;
+    background: #0d2a20;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+#gate .gate-inner {
+  text-align: center;
+  padding: 24px;
+}
+#gate .gate-title {
+  color: var(--accent);
+  letter-spacing: 0.3em;
+  font-size: clamp(22px, 6vw, 40px);
+  opacity: 0.35;
+  text-shadow: 0 0 18px rgba(61, 255, 168, 0.4);
+  margin-bottom: 28px;
+}
+#gate .gate-cta {
+  color: var(--accent);
+  letter-spacing: 0.35em;
+  font-size: 16px;
+  animation: blink 1.4s steps(1) infinite;
+}
+#gate .gate-note {
+  color: var(--dim);
+  font-size: 12px;
+  margin-top: 18px;
+  letter-spacing: 0.1em;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: #000;
+  display: none;
+  overflow-y: auto;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 1s;
+}
+#overlay.on {
+  display: flex;
+}
+#overlay.visible {
+  opacity: 1;
+}
+#overlay.cut {
+  transition: none;
+}
+#overlay .inner {
+  margin: auto;
+  max-width: 640px;
+  padding: 48px 24px 80px;
+}
+#overlay .text {
+  white-space: pre-wrap;
+  line-height: 2.1;
+  font-size: 16px;
+  min-height: 1em;
+}
+#overlay .text::after {
+  content: "▌";
+  color: var(--accent);
+  animation: blink 1s steps(1) infinite;
+}
+#overlay.typed .text::after {
+  content: "";
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+#overlay .clues {
+  margin-top: 32px;
+  font-size: 13px;
+}
+#overlay .clues ul {
+  margin: 6px 0 0;
+  padding-left: 1.4em;
+}
+#overlay .clues li {
+  color: var(--warn);
+  list-style: "◆ ";
+  animation: slideIn 0.4s ease-out;
+  line-height: 1.8;
+}
+#overlay .clue-head {
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+}
+#overlay .clue-head span {
+  letter-spacing: 0.05em;
+  margin-left: 12px;
+  font-size: 12px;
+}
+/* 次にやること：別枠で目立たせる */
+#overlay .todo {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 10px 14px;
+  border: 1px solid rgba(61, 255, 168, 0.45);
+  border-radius: 4px;
+  background: rgba(61, 255, 168, 0.06);
+  color: var(--accent);
+  font-size: 15px;
+  animation: slideIn 0.5s ease-out;
+}
+#overlay .todo.show {
+  display: flex;
+}
+#overlay .todo-tag {
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  padding: 1px 7px;
+  flex: none;
+}
+#overlay .endtag {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 28px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  opacity: 0;
+  transform: scale(1.3);
+  transition:
+    opacity 2s,
+    transform 2s;
+  text-shadow: 0 0 18px currentColor;
+}
+#overlay .endtag.show {
+  opacity: 1;
+  transform: none;
+}
+#overlay .endtag.bad {
+  color: var(--alert);
+}
+#overlay .hint {
+  margin-top: 48px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 1s;
+}
+#overlay .hint.show {
+  opacity: 1;
+}
+
+/* ---------------- 画面が裂ける（グリッチ） ----------------
+   #stage に SVG のフィルター（#tear）をかけ、横の帯ごとに画面をずらし、赤と青の色をずらす。動かすのは JS の tear() / setStorm() */
+#stage {
+  height: 100%;
+}
+#stage.tearing {
+  filter: url(#tear);
+}
+#fxdefs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* 画面が死んでいく（重い処理で、画面のあちこちが真っ暗になり、その範囲がじわじわ広がる）
+   画面を細かいマスに分け、死んだマスを黒く塗る。マスの境目はぼかして、黒い染みが広がっていくように見せる。どのマスが死ぬかは JS */
+#dead {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 34;
+  display: grid;
+}
+#dead i {
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.25s;
+  box-shadow: 0 0 14px 8px #000;
+}
+#dead i.dying {
+  animation: dying 0.5s steps(1) both;
+}
+#dead i.dead {
+  opacity: 1;
+}
+@keyframes dying {
+  0% {
+    opacity: 0.9;
+  }
+  20% {
+    opacity: 0.1;
+  }
+  40% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.3;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+#dead.heal i {
+  transition: opacity 0.7s ease-in;
+  opacity: 0 !important;
+  animation: none;
+}
+/* 壊れかけの画面：文字の色がずれ、画面のふちが赤く染まっていく（--crack に比例） */
+body.cracking {
+  --crack: 0;
+}
+body.cracking #term {
+  text-shadow:
+    calc(var(--crack) * 2.6px) 0 rgba(255, 40, 90, 0.55),
+    calc(var(--crack) * -2.6px) 0 rgba(40, 220, 255, 0.5);
+}
+body.cracking #fx {
+  opacity: 1;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 35%,
+    rgba(255, 20, 60, calc(var(--crack) * 0.42))
+  );
+}
+body.cracking .esc-panel {
+  border-color: var(--alert);
+  box-shadow: 0 0 calc(var(--crack) * 30px) -6px var(--alert);
+}
+.glitchline {
+  animation: markBlink 0.12s steps(1) 3;
+}
+
+/* 裏で動いている処理（師匠が回している権限昇格など）：入力欄のすぐ上に、ジョブの進み具合を出し続ける */
+#job {
+  display: none;
+  font-size: 12px;
+  color: var(--warn);
+  margin: 0 0 8px;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  gap: 10px;
+  align-items: baseline;
+}
+#job.on {
+  display: flex;
+}
+#job .jb-tag {
+  color: var(--bg);
+  background: var(--warn);
+  padding: 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  flex: none;
+  animation: npPulse 1s ease-in-out infinite;
+}
+#job .jb-bar {
+  color: var(--warn);
+}
+#job.hot .jb-tag {
+  background: var(--alert);
+}
+#job.hot .jb-bar,
+#job.hot .jb-p {
+  color: var(--alert);
+}
+#job .jb-p {
+  min-width: 3.2em;
+}
+
+/* 追跡（お金・回線の行き先を、ひとつずつたどっていく） */
+.trail .tr-hop {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr) max-content;
+  column-gap: 8px;
+  font-size: 12px;
+  align-items: baseline;
+}
+.trail .tr-pin {
+  color: var(--accent);
+  text-align: center;
+  text-shadow: 0 0 8px var(--accent);
+}
+.trail .tr-name {
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trail .tr-sub {
+  color: var(--dim);
+  font-size: 11px;
+  display: block;
+  white-space: normal;
+}
+.trail .tr-note {
+  color: var(--accent);
+  font-size: 11px;
+  text-align: right;
+}
+.trail .tr-tag {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--bg);
+  background: var(--warn);
+  padding: 0 5px;
+  margin-left: 6px;
+}
+.trail .tr-link {
+  color: var(--dim);
+  font-size: 11px;
+  padding-left: 0.45em;
+  white-space: pre;
+  line-height: 1.15;
+}
+.trail .tr-link .flow {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent);
+}
+.trail .tr-hop.alert .tr-pin,
+.trail .tr-hop.alert .tr-name,
+.trail .tr-hop.alert .tr-note {
+  color: var(--alert);
+  text-shadow: 0 0 8px rgba(255, 77, 106, 0.6);
+}
+.trail .tr-hop.alert .tr-tag {
+  background: var(--alert);
+}
+.trail .tr-end {
+  margin-top: 6px;
+  color: var(--alert);
+  font-size: 12px;
+  animation: markBlink 0.5s steps(1) 4;
+}
+
+/* 監視カメラ（社内のカメラをまとめて乗っ取る） */
+.cctv .cc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+.cctv .cc-feed {
+  position: relative;
+  background: #020504;
+  border: 1px solid var(--line);
+  padding: 4px 6px 3px;
+  overflow: hidden;
+  transition:
+    opacity 0.6s,
+    transform 0.6s,
+    border-color 0.6s;
+}
+.cctv .cc-feed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.05) 0 1px,
+    transparent 1px 2px
+  );
+}
+.cctv .cc-top,
+.cctv .cc-bot {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--dim);
+  gap: 6px;
+  white-space: nowrap;
+}
+.cctv .cc-rec {
+  color: var(--alert);
+}
+.cctv .cc-rec::before {
+  content: "● ";
+  animation: blink 1s steps(1) infinite;
+}
+.cctv .cc-art {
+  font-size: 9.5px;
+  line-height: 1.12;
+  white-space: pre;
+  color: var(--fg);
+  opacity: 0.82;
+  margin: 3px 0;
+  overflow: hidden;
+  min-height: 9em;
+}
+.cctv.focus .cc-feed {
+  opacity: 0.25;
+}
+.cctv.focus .cc-feed.zoom {
+  opacity: 1;
+  border-color: var(--alert);
+  transform: scale(1.04);
+  box-shadow: 0 0 22px -6px var(--alert);
+  z-index: 1;
+}
+.cctv .cc-feed.zoom .cc-art {
+  color: #fff;
+}
+.cctv .cc-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--alert);
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+
+/* 小さな文字に寄って、拡大して読む（inspect） */
+.pin {
+  outline: 1px solid var(--alert);
+  outline-offset: 3px;
+  background: rgba(255, 77, 106, 0.16);
+  border-radius: 2px;
+  animation: pinBlink 0.3s steps(1) 6;
+}
+@keyframes pinBlink {
+  50% {
+    outline-color: transparent;
+    background: transparent;
+  }
+}
+.inspect {
+  border-color: var(--alert);
+  box-shadow: 0 0 22px -8px var(--alert);
+}
+.inspect .fx-head {
+  color: var(--alert);
+}
+.inspect .in-row {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr);
+  column-gap: 10px;
+  font-size: 12px;
+}
+.inspect .in-row .k {
+  color: var(--dim);
+}
+.inspect .in-row.hot {
+  color: var(--alert);
+  text-shadow: 0 0 8px rgba(255, 77, 106, 0.5);
+}
+.inspect .in-row.hot .k {
+  color: var(--alert);
+}
+.inspect .in-big {
+  font-size: clamp(26px, 7.5vw, 42px);
+  text-align: center;
+  color: var(--alert);
+  letter-spacing: 0.06em;
+  margin: 12px 0 0;
+  min-height: 1.3em;
+  text-shadow: 0 0 18px rgba(255, 77, 106, 0.8);
+  white-space: pre;
+}
+.inspect .in-big.hit {
+  animation: stampIn 0.3s ease-out both;
+}
+.inspect .in-sub {
+  text-align: center;
+  font-size: 12px;
+  color: var(--alert);
+  opacity: 0.75;
+  letter-spacing: 0.2em;
+  margin-bottom: 4px;
+}
+
+/* カメラを1台ずつチェックしていく枠（左上から右下へ） */
+.cctv .cc-feed.check {
+  outline: 2px solid var(--warn);
+  outline-offset: -2px;
+  box-shadow: 0 0 18px -6px var(--warn) inset;
+}
+.cctv .cc-chk {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  padding: 1px 8px;
+  white-space: nowrap;
+  color: var(--bg);
+  background: var(--warn);
+  display: none;
+}
+.cctv .cc-feed.check .cc-chk,
+.cctv .cc-feed.ok .cc-chk,
+.cctv .cc-feed.ng .cc-chk {
+  display: block;
+}
+.cctv .cc-feed.check .cc-chk {
+  animation: markBlink 0.4s steps(1) infinite;
+}
+.cctv .cc-feed.ok .cc-chk {
+  background: var(--accent);
+}
+.cctv .cc-feed.ng .cc-chk {
+  background: var(--alert);
+  animation: none;
+}
+.cctv .cc-feed.ng {
+  outline: 2px solid var(--alert);
+  outline-offset: -2px;
+}
+
+/* ビルの明かり（窓が1つずつ消えていく） */
+.building .bd-body {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 2px;
+}
+.building .bd-grid {
+  font-size: 11px;
+  line-height: 1.15;
+  white-space: pre;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-bottom: 3px double var(--line);
+  background: #020403;
+}
+.building .w {
+  color: #ffd36b;
+  text-shadow: 0 0 6px rgba(255, 200, 90, 0.8);
+}
+.building .w.off {
+  color: #1c2a2a;
+  text-shadow: none;
+}
+.building .w.keep {
+  color: #fff2c4;
+  text-shadow:
+    0 0 10px #ffd36b,
+    0 0 20px #ffb84d;
+}
+.building .fl {
+  color: var(--dim);
+}
+.building .bd-cap {
+  text-align: center;
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 0.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap,
+  .title-logo,
+  .unstable,
+  .glitch,
+  body.red #fx {
+    animation: none !important;
+  }
+  .title-logo .tl-shine {
+    display: none;
+  }
+  .title-logo .tl-text {
+    animation: none !important;
+    opacity: 1;
+    clip-path: none;
+    letter-spacing: 0.12em;
+  }
+  .subtitle {
+    animation: none !important;
+    opacity: 1;
+  }
+  .title-logo .tl-line {
+    animation: none !important;
+    transform: none;
+    top: calc(100% + 4px);
+  }
+}
+
+/* スマホ：TRACE は1行、アクセスログは最新1件だけ（タップで開閉）
+   ※ 上の通常ルールを上書きするため、必ずスタイルの最後に置く */
+@media (max-width: 800px) {
+  .wrap {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+    height: 100dvh;
+    padding: 12px;
+    gap: 8px;
+  }
+  header {
+    order: -2;
+    padding-bottom: 6px;
+  }
+  header h1 {
+    font-size: 15px;
+    letter-spacing: 0.1em;
+  }
+  header {
+    gap: 6px;
+  }
+  #np {
+    width: 1em;
+    overflow: hidden;
+  }
+  #mute,
+  #bgm {
+    font-size: 11px;
+    padding: 1px 5px;
+  }
+  #clock {
+    font-size: 11px;
+  }
+  #term {
+    padding: 12px 12px 0;
+  }
+  aside {
+    order: -1;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: max-content 1fr max-content max-content;
+    column-gap: 10px;
+    align-items: center;
+  }
+  aside::after {
+    content: "▾";
+    color: var(--dim);
+    font-size: 12px;
+    grid-row: 1;
+    grid-column: 4;
+  }
+  /* 手がかりの数は TRACE と同じ1行目に「◆ 2/3」とだけ出す */
+  aside h2.evi-head {
+    display: block;
+    grid-row: 1;
+    grid-column: 3;
+    margin: 0;
+    font-size: 12px;
+  }
+  aside h2.evi-head span:first-child {
+    display: none;
+  }
+  #eviCount {
+    color: var(--warn);
+  }
+  #eviCount:not(:empty)::before {
+    content: "◆ ";
+  }
+  aside.open::after {
+    content: "▴";
+  }
+  .trace-label {
+    gap: 8px;
+  }
+  .bar {
+    margin: 0;
+  }
+  aside h2 {
+    display: none;
+  }
+  /* スマホ：NEXT 欄は1行で、横にスクロール */
+  #next {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #next::-webkit-scrollbar {
+    display: none;
+  }
+  #log {
+    grid-column: 1 / -1;
+    max-height: 1.8em;
+    overflow: hidden;
+    margin: 4px 0 0;
+  }
+  #log li {
+    border-bottom: none;
+    padding: 0;
+  }
+  aside.open #log {
+    max-height: 25vh;
+    overflow-y: auto;
+  }
+  aside.open #log li {
+    border-bottom: 1px dotted var(--line);
+    padding: 2px 0;
+  }
+  #evi {
+    display: none;
+    grid-column: 1 / -1;
+  }
+  aside.open #evi {
+    display: block;
+    max-height: 20vh;
+    margin-top: 6px;
+  }
+  .mission .m-title {
+    font-size: 18px;
+  }
+  #job .jb-name {
+    display: none;
+  } /* スマホ：ジョブの名前は省いて、ゲージと % を見せる */
+  .lockpanel {
+    padding: 8px 18px;
+    gap: 10px;
+  }
+  .lock-title {
+    font-size: 20px;
+    letter-spacing: 0.35em;
+    margin-right: -0.35em;
+  }
+  /* 長いログ（伝票・変更ログ・人事DB）は、スマホでは折り返して全部見せる（横にはみ出して大事な数字が隠れないように） */
+  .log {
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: 12px;
+  }
+}

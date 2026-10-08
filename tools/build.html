@@ -1,165 +1,321 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-<head>
-<meta charset="UTF-8">
-<title>BLIND//SPOT build</title>
-<style>
-  body { background: #05090a; color: #b8f5d8; font-family: Consolas, "MS Gothic", monospace; padding: 24px; line-height: 1.7; }
-  button { font: inherit; background: transparent; color: #3dffa8; border: 1px solid #3dffa8; padding: 6px 16px; border-radius: 4px; cursor: pointer; }
-  button:hover { background: #3dffa8; color: #05090a; }
-  #out { white-space: pre-wrap; color: #5d8f7c; }
-  .ok { color: #3dffa8; } .ng { color: #ff4d6a; }
-</style>
-</head>
-<body>
-<h1>BLIND//SPOT build</h1>
-<p>src/scenario.js → docs/scenario.data.js（任務ごとに回線コードで、鍵付きの場所はそのパスワードで暗号化）</p>
-<p>※ tools/serve.ps1 で起動したサーバー経由で開いてください</p>
-<button id="build">ビルド</button>
-<div id="out"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>BLIND//SPOT build</title>
+    <style>
+      body {
+        background: #05090a;
+        color: #b8f5d8;
+        font-family: Consolas, "MS Gothic", monospace;
+        padding: 24px;
+        line-height: 1.7;
+      }
+      button {
+        font: inherit;
+        background: transparent;
+        color: #3dffa8;
+        border: 1px solid #3dffa8;
+        padding: 6px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #3dffa8;
+        color: #05090a;
+      }
+      #out {
+        white-space: pre-wrap;
+        color: #5d8f7c;
+      }
+      .ok {
+        color: #3dffa8;
+      }
+      .ng {
+        color: #ff4d6a;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>BLIND//SPOT build</h1>
+    <p>
+      src/scenario.js →
+      docs/scenario.data.js（任務ごとに回線コードで、鍵付きの場所はそのパスワードで暗号化）
+    </p>
+    <p>※ tools/serve.ps1 で起動したサーバー経由で開いてください</p>
+    <p>
+      <label>
+        <input type="checkbox" id="demo" checked />
+        体験版（公開データには demo: true の章だけを入れる。ほかの章は scenario.more.js
+        に分け、タイトル画面で connect nitoka と打つと開く）
+      </label>
+    </p>
+    <button id="build">ビルド</button>
+    <div id="out"></div>
 
-<script src="../src/scenario.js"></script>
-<script src="../docs/nz-crypto.js"></script>
-<script>
-const out = document.getElementById("out");
-const log = (msg, cls = "") => { const d = document.createElement("div"); d.textContent = msg; d.className = cls; out.appendChild(d); };
+    <script src="../src/scenario.js"></script>
+    <script src="../docs/nz-crypto.js"></script>
+    <script>
+      const out = document.getElementById("out");
+      const log = (msg, cls = "") => {
+        const d = document.createElement("div");
+        d.textContent = msg;
+        d.className = cls;
+        out.appendChild(d);
+      };
 
-// 接続先の名前（docs/index.html の linkName と同じ決め方）
-const linkName = a => a.dataset.name || a.textContent.trim().split(/[\s　]/)[0].split(".")[0];
+      // 接続先の名前（docs/js/world.js の linkName と同じ決め方）
+      const linkName = a =>
+        a.dataset.name ||
+        a.textContent
+          .trim()
+          .split(/[\s　]/)[0]
+          .split(".")[0];
 
-// 書き間違いのチェック
-function check(cid, ch) {
-  const ng = msg => log(`⚠ ${cid}: ${msg}`, "ng");
-  if (!ch.code) ng("code（回線コード）がありません");
-  if (!ch.nodes[ch.start]) ng(`start のノード ${ch.start} がありません`);
-  let goals = 0;
-  for (const [id, node] of Object.entries(ch.nodes)) {
-    const box = document.createElement("div");
-    box.innerHTML = node.body || "";
-    const names = new Set();
-    box.querySelectorAll("a[data-go]").forEach(a => {
-      if (!ch.nodes[a.dataset.go]) ng(`${id} → ${a.dataset.go}: 接続先がありません`);
-      const name = linkName(a);
-      if (names.has(name)) ng(`${id}: 接続先の名前「${name}」が重複しています（data-name で変えてください）`);
-      names.add(name);
-    });
-    for (const d of node.dir || []) {
-      if (d.go && !ch.nodes[d.go]) ng(`${id} のフォルダ ${d.name} → ${d.go}: 接続先がありません`);
-    }
-    if (node.bgm != null && ![0, 1, 2, 3].includes(node.bgm)) ng(`${id}: bgm（曲の盛り上がり）は 0〜3 の数字です`);
-    if (node.goal) goals++;
-    goals += (node.search?.entries || []).filter(e => e.goal).length;
-  }
-  if (!goals) ng("任務完了（goal）がひとつもありません");
+      // 書き間違いのチェック
+      function check(cid, ch) {
+        const ng = msg => log(`⚠ ${cid}: ${msg}`, "ng");
+        if (!ch.code) ng("code（回線コード）がありません");
+        if (!ch.nodes[ch.start]) ng(`start のノード ${ch.start} がありません`);
+        let goals = 0;
+        for (const [id, node] of Object.entries(ch.nodes)) {
+          const box = document.createElement("div");
+          box.innerHTML = node.body || "";
+          const names = new Set();
+          box.querySelectorAll("a[data-go]").forEach(a => {
+            if (!ch.nodes[a.dataset.go]) ng(`${id} → ${a.dataset.go}: 接続先がありません`);
+            const name = linkName(a);
+            if (names.has(name))
+              ng(`${id}: 接続先の名前「${name}」が重複しています（data-name で変えてください）`);
+            names.add(name);
+          });
+          for (const d of node.dir || []) {
+            if (d.go && !ch.nodes[d.go])
+              ng(`${id} のフォルダ ${d.name} → ${d.go}: 接続先がありません`);
+          }
+          if (node.bgm != null && ![0, 1, 2, 3].includes(node.bgm))
+            ng(`${id}: bgm（曲の盛り上がり）は 0〜3 の数字です`);
+          if (node.goal) goals++;
+          goals += (node.search?.entries || []).filter(e => e.goal).length;
+        }
+        if (!goals) ng("任務完了（goal）がひとつもありません");
 
-  // 「次の一手」（next）：行き先のノードがあるか
-  const checkNext = (where, n) => {
-    if (n && !ch.nodes[n.at]) ng(`${where} の next.at「${n.at}」というノードがありません`);
-    if (n && !n.why) ng(`${where} の next に why（行動の理由）がありません`);
-  };
-  checkNext("任務", ch.next);
-  for (const [id, node] of Object.entries(ch.nodes)) {
-    checkNext(id, node.next);
-    for (const e of node.search?.entries || []) checkNext(`${id} の検索結果`, e.next);
-    for (const n of node.search?.notes || []) checkNext(`${id} の検索の師匠のひとこと`, n.next);
-    // 裏で動く処理（job）：「次の一手」と、止まる場所（stopAt）があるか
-    const scripts = [...(node.search?.notes || []).map(n => n.script), ...(node.search?.entries || []).flatMap(e => [e.before, e.after]),
-      ...Object.values(node.actions || {}).map(a => a.script), node.scene, node.entry];
-    for (const x of scripts.flat().filter(Boolean)) {
-      if (!x.job) continue;
-      checkNext(`${id} の job`, x.job.next);
-      if (x.job.stopAt && !ch.nodes[x.job.stopAt]) ng(`${id} の job の stopAt「${x.job.stopAt}」というノードがありません`);
-    }
-    for (const d of node.dir || []) checkNext(`${id} のフォルダ ${d.name}`, d.next);
-    for (const [k, a] of Object.entries(node.actions || {})) checkNext(`${id} のコマンド ${k}`, a.next);
-  }
-  for (const o of ch.objectives || []) checkNext(`目標「${o.text}」`, o.next);
-  for (const id of ch.nav || []) if (!ch.nodes[id]) ng(`nav の「${id}」というノードがありません`);
+        // 「次の一手」（next）：行き先のノードがあるか
+        const checkNext = (where, n) => {
+          if (n && !ch.nodes[n.at]) ng(`${where} の next.at「${n.at}」というノードがありません`);
+          if (n && !n.why) ng(`${where} の next に why（行動の理由）がありません`);
+        };
+        checkNext("任務", ch.next);
+        for (const [id, node] of Object.entries(ch.nodes)) {
+          checkNext(id, node.next);
+          for (const e of node.search?.entries || []) checkNext(`${id} の検索結果`, e.next);
+          for (const n of node.search?.notes || [])
+            checkNext(`${id} の検索の師匠のひとこと`, n.next);
+          // 裏で動く処理（job）：「次の一手」と、止まる場所（stopAt）があるか
+          const scripts = [
+            ...(node.search?.notes || []).map(n => n.script),
+            ...(node.search?.entries || []).flatMap(e => [e.before, e.after]),
+            ...Object.values(node.actions || {}).map(a => a.script),
+            node.scene,
+            node.entry,
+          ];
+          for (const x of scripts.flat().filter(Boolean)) {
+            if (!x.job) continue;
+            checkNext(`${id} の job`, x.job.next);
+            if (x.job.stopAt && !ch.nodes[x.job.stopAt])
+              ng(`${id} の job の stopAt「${x.job.stopAt}」というノードがありません`);
+          }
+          for (const d of node.dir || []) checkNext(`${id} のフォルダ ${d.name}`, d.next);
+          for (const [k, a] of Object.entries(node.actions || {}))
+            checkNext(`${id} のコマンド ${k}`, a.next);
+          for (const [k, r] of Object.entries(node.react || {}))
+            checkNext(`${id} の react ${k}`, r.next);
+          // 台本の途中の「次の一手」（{ guide }）と、光らせる場所（{ spot }）の書き間違い
+          const SPOT_NAMES = [
+            "screen",
+            "host",
+            "input",
+            "sound",
+            "next",
+            "why",
+            "trace",
+            "log",
+            "case",
+          ];
+          const steps = x =>
+            (x || []).flatMap(s =>
+              s && (s.pc || s.phone) ? [...steps(s.pc), ...steps(s.phone)] : [s],
+            );
+          for (const s of steps([
+            ...(node.scene || []),
+            ...Object.values(node.react || {}).flatMap(r => r.script || []),
+          ])) {
+            if (s?.guide) checkNext(`${id} の台本の guide`, s.guide);
+            for (const n of [].concat(s?.spot || []))
+              if (!SPOT_NAMES.includes(n))
+                ng(`${id}: spot「${n}」という場所はありません（${SPOT_NAMES.join(" / ")}）`);
+          }
+        }
+        for (const o of ch.objectives || []) checkNext(`目標「${o.text}」`, o.next);
+        for (const id of ch.nav || [])
+          if (!ch.nodes[id]) ng(`nav の「${id}」というノードがありません`);
 
-  // 目標（objectives）：手がかりの名前と until の書き間違い
-  const clues = new Set();
-  for (const node of Object.values(ch.nodes)) {
-    if (node.clue) clues.add(node.clue);
-    for (const e of node.search?.entries || []) if (e.clue) clues.add(e.clue);
-    for (const d of node.dir || []) if (d.clue) clues.add(d.clue);
-    for (const a of Object.values(node.actions || {})) for (const x of a.script || []) if (x?.clue) clues.add(x.clue);
-  }
-  for (const o of ch.objectives || []) {
-    for (const c of o.clues || []) if (!clues.has(c)) ng(`目標「${o.text}」の手がかり「${c}」が、どこにもありません`);
-    const u = o.until || {};
-    if (u.opened && !ch.nodes[u.opened]?.lock) ng(`目標「${o.text}」: until.opened ${u.opened} は鍵付きのノードではありません`);
-    if (u.visited && !ch.nodes[u.visited]) ng(`目標「${o.text}」: until.visited ${u.visited} がありません`);
-    if (u.clue && !clues.has(u.clue)) ng(`目標「${o.text}」: until.clue「${u.clue}」がありません`);
-    if (!o.side && !u.opened && !u.visited && !u.clue && !u.goal) ng(`目標「${o.text}」: until がありません`);
-  }
-}
+        // 目標（objectives）：手がかりの名前と until の書き間違い
+        const clues = new Set();
+        for (const node of Object.values(ch.nodes)) {
+          if (node.clue) clues.add(node.clue);
+          for (const e of node.search?.entries || []) if (e.clue) clues.add(e.clue);
+          for (const d of node.dir || []) if (d.clue) clues.add(d.clue);
+          for (const a of Object.values(node.actions || {}))
+            for (const x of a.script || []) if (x?.clue) clues.add(x.clue);
+        }
+        for (const o of ch.objectives || []) {
+          for (const c of o.clues || [])
+            if (!clues.has(c)) ng(`目標「${o.text}」の手がかり「${c}」が、どこにもありません`);
+          const u = o.until || {};
+          if (u.opened && !ch.nodes[u.opened]?.lock)
+            ng(`目標「${o.text}」: until.opened ${u.opened} は鍵付きのノードではありません`);
+          if (u.visited && !ch.nodes[u.visited])
+            ng(`目標「${o.text}」: until.visited ${u.visited} がありません`);
+          if (u.clue && !clues.has(u.clue))
+            ng(`目標「${o.text}」: until.clue「${u.clue}」がありません`);
+          if (!o.side && !u.opened && !u.visited && !u.clue && !u.goal)
+            ng(`目標「${o.text}」: until がありません`);
+        }
+      }
 
-// 鍵付きノード：host・title・lock 以外を、パスワードごとに暗号化する
-async function lockNode(cid, id, node) {
-  // zone（画面の色合い）は鍵の画面でも使うので、暗号化せずに残す
-  const { host, title, lock, zone, ...secret } = node;
-  const { pass, ...rest } = lock;
-  // 文字数を見せる鍵は、文字数だけ残す（パスワードそのものは公開データから消える）
-  if (lock.showLength) rest.len = [...[].concat(pass)[0]].length;
-  if (lock.user && !Object.values(lock.user.ids).includes(lock.user.owner)) throw new Error(`${cid}/${id}: user.owner が user.ids のどれにも当てはまりません`);
-  const text = JSON.stringify(secret);
-  const seal = async p => {
-    const box = await NZ.lock(text, NZ.norm(p));
-    if (await NZ.unlock(box, NZ.norm(p)) !== text) throw new Error(`${cid}/${id}: 復号テストに失敗`);
-    return box;
-  };
-  const boxes = [];
-  for (const p of [].concat(pass)) boxes.push(await seal(p));
-  // owner 以外のアカウントのパスワード（user.pass）も、アカウントごとに暗号化して文字数だけ残す
-  if (lock.user?.pass) {
-    const { pass: userPass, ...user } = lock.user;
-    user.boxes = {};
-    user.lens = {};
-    for (const [account, p] of Object.entries(userPass)) {
-      if (!Object.values(lock.user.ids).includes(account)) throw new Error(`${cid}/${id}: user.pass の ${account} が user.ids にありません`);
-      user.boxes[account] = await seal(p);
-      if (lock.showLength) user.lens[account] = [...p].length;
-    }
-    rest.user = user;
-  }
-  log(`  🔒 ${id}: 暗号化しました（パスワード ${boxes.length + Object.keys(lock.user?.pass || {}).length} 通り）`);
-  return { host, title, zone, lock: { ...rest, boxes } };
-}
+      // 鍵付きノード：host・title・lock 以外を、パスワードごとに暗号化する
+      async function lockNode(cid, id, node) {
+        // zone（画面の色合い）は鍵の画面でも使うので、暗号化せずに残す
+        const { host, title, lock, zone, ...secret } = node;
+        const { pass, ...rest } = lock;
+        // 文字数を見せる鍵は、文字数だけ残す（パスワードそのものは公開データから消える）
+        if (lock.showLength) rest.len = [...[].concat(pass)[0]].length;
+        if (lock.user && !Object.values(lock.user.ids).includes(lock.user.owner))
+          throw new Error(`${cid}/${id}: user.owner が user.ids のどれにも当てはまりません`);
+        const text = JSON.stringify(secret);
+        const seal = async p => {
+          const box = await NZ.lock(text, NZ.norm(p));
+          if ((await NZ.unlock(box, NZ.norm(p))) !== text)
+            throw new Error(`${cid}/${id}: 復号テストに失敗`);
+          return box;
+        };
+        const boxes = [];
+        for (const p of [].concat(pass)) boxes.push(await seal(p));
+        // owner 以外のアカウントのパスワード（user.pass）も、アカウントごとに暗号化して文字数だけ残す
+        if (lock.user?.pass) {
+          const { pass: userPass, ...user } = lock.user;
+          user.boxes = {};
+          user.lens = {};
+          for (const [account, p] of Object.entries(userPass)) {
+            if (!Object.values(lock.user.ids).includes(account))
+              throw new Error(`${cid}/${id}: user.pass の ${account} が user.ids にありません`);
+            user.boxes[account] = await seal(p);
+            if (lock.showLength) user.lens[account] = [...p].length;
+          }
+          rest.user = user;
+        }
+        // 打ち間違いの助け舟（oops.near）：惜しいパスワードは、ハッシュにしてから残す（公開データから答えが読めないように）
+        if (lock.oops?.near) {
+          rest.oops = { ...lock.oops, near: [] };
+          for (const n of lock.oops.near)
+            rest.oops.near.push({
+              hashes: await Promise.all(n.pass.map(p => NZ.hash(id, p))),
+              say: n.say,
+            });
+        }
+        log(
+          `  🔒 ${id}: 暗号化しました（パスワード ${boxes.length + Object.keys(lock.user?.pass || {}).length} 通り）`,
+        );
+        return { host, title, zone, lock: { ...rest, boxes } };
+      }
 
-async function build() {
-  out.textContent = "";
-  const codes = new Set();
-  const chapters = [];
-  for (const [cid, src] of Object.entries(SCENARIO.chapters)) {
-    check(cid, src);
-    const code = NZ.norm(src.code);
-    if (codes.has(code)) log(`⚠ ${cid}: 回線コード ${src.code} がほかの任務と重複しています`, "ng");
-    codes.add(code);
+      async function build() {
+        out.textContent = "";
+        const demo = document.getElementById("demo").checked;
+        const codes = new Set();
+        const chapters = [],
+          more = [];
+        for (const [cid, src] of Object.entries(SCENARIO.chapters)) {
+          check(cid, src);
+          const code = NZ.norm(src.code);
+          if (codes.has(code))
+            log(`⚠ ${cid}: 回線コード ${src.code} がほかの任務と重複しています`, "ng");
+          codes.add(code);
 
-    const { code: _, ...ch } = JSON.parse(JSON.stringify(src));
-    ch.id = cid;
-    // 手がかりの総数（鍵付きノードの中身は暗号化すると数えられないので、先に数えておく）
-    ch.clueTotal = Object.values(ch.nodes).reduce((n, node) => n + (node.clue ? 1 : 0)
-      + (node.search?.entries || []).filter(e => e.clue).length + (node.dir || []).filter(d => d.clue).length
-      + Object.values(node.actions || {}).flatMap(a => a.script || []).filter(x => x?.clue).length, 0);
-    log(`■ ${cid}（${ch.label}）　手がかり ${ch.clueTotal} 個`);
-    for (const [id, node] of Object.entries(ch.nodes)) {
-      if (node.lock) ch.nodes[id] = await lockNode(cid, id, node);
-    }
-    const text = JSON.stringify(ch);
-    const box = await NZ.lock(text, code);
-    if (await NZ.unlock(box, code) !== text) throw new Error(`${cid}: 復号テストに失敗`);
-    chapters.push(box);
-    log(`  🔒 任務全体を回線コードで暗号化しました`);
-  }
-  const data = { title: SCENARIO.title, gameOver: SCENARIO.gameOver, caseGoal: SCENARIO.caseGoal, case: SCENARIO.case, author: SCENARIO.author, chapters };
-  const js = `// 自動生成ファイル（tools/build.html）。直接編集しないでください。\nwindow.SCENARIO_DATA = ${JSON.stringify(data, null, 2)};\n`;
-  const res = await fetch("/__build", { method: "PUT", body: js });
-  if (!res.ok) throw new Error(`書き込み失敗 (${res.status})`);
-  log(`✔ docs/scenario.data.js を書き出しました（${js.length} 文字）`, "ok");
-}
+          const { code: _, ...ch } = JSON.parse(JSON.stringify(src));
+          ch.id = cid;
+          // 手がかりの総数（鍵付きノードの中身は暗号化すると数えられないので、先に数えておく）
+          ch.clueTotal = Object.values(ch.nodes).reduce(
+            (n, node) =>
+              n +
+              (node.clue ? 1 : 0) +
+              (node.search?.entries || []).filter(e => e.clue).length +
+              (node.dir || []).filter(d => d.clue).length +
+              Object.values(node.actions || {})
+                .flatMap(a => a.script || [])
+                .filter(x => x?.clue).length,
+            0,
+          );
+          log(`■ ${cid}（${ch.label}）　手がかり ${ch.clueTotal} 個`);
+          for (const [id, node] of Object.entries(ch.nodes)) {
+            if (node.lock) ch.nodes[id] = await lockNode(cid, id, node);
+          }
+          const text = JSON.stringify(ch);
+          const box = await NZ.lock(text, code);
+          if ((await NZ.unlock(box, code)) !== text) throw new Error(`${cid}: 復号テストに失敗`);
+          // 体験版：demo の章だけを公開データに。ほかは scenario.more.js へ
+          (demo && !src.demo ? more : chapters).push(box);
+          log(
+            `  🔒 任務全体を回線コードで暗号化しました${demo && !src.demo ? "（体験版の外：scenario.more.js へ）" : ""}`,
+          );
+        }
+        if (
+          SCENARIO.training &&
+          !Object.values(SCENARIO.chapters).some(
+            ch => NZ.norm(ch.code) === NZ.norm(SCENARIO.training),
+          )
+        ) {
+          log(`⚠ training の回線コード ${SCENARIO.training} の任務がありません`, "ng");
+        }
+        const data = {
+          title: SCENARIO.title,
+          gameOver: SCENARIO.gameOver,
+          caseGoal: SCENARIO.caseGoal,
+          case: SCENARIO.case,
+          author: SCENARIO.author,
+          training: SCENARIO.training,
+          demo,
+          chapters,
+        };
+        const head = "// 自動生成ファイル（tools/build.html）。直接編集しないでください。\n";
+        await write(
+          "/__build",
+          "docs/scenario.data.js",
+          `${head}window.SCENARIO_DATA = ${JSON.stringify(data, null, 2)};\n`,
+        );
+        // 体験版でないときは、空にしておく（古い続きのデータが残らないように）
+        await write(
+          "/__build/more",
+          "docs/scenario.more.js",
+          `${head}window.SCENARIO_MORE = ${JSON.stringify(more, null, 2)};\n`,
+        );
+        log(
+          demo
+            ? `体験版：公開データに ${chapters.length} 章、続き（connect nitoka で開く）に ${more.length} 章`
+            : "製品版：すべての章を公開データに入れました",
+          "ok",
+        );
+      }
 
-document.getElementById("build").onclick = () => build().catch(e => log("✖ " + e.message, "ng"));
-</script>
-</body>
+      async function write(url, name, js) {
+        const res = await fetch(url, { method: "PUT", body: js });
+        if (!res.ok) throw new Error(`${name} の書き込み失敗 (${res.status})`);
+        log(`✔ ${name} を書き出しました（${js.length} 文字）`, "ok");
+      }
+
+      document.getElementById("build").onclick = () =>
+        build().catch(e => log("✖ " + e.message, "ng"));
+    </script>
+  </body>
 </html>
