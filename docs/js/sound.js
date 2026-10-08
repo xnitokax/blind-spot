@@ -348,7 +348,7 @@ const SFX = (() => {
       if (!bgm) return;
       const t = ctx.currentTime;
       bgm.bus.gain.cancelScheduledValues(t);
-      bgm.bus.gain.setTargetAtTime(on ? BGM_VOL * 0.45 : BGM_VOL, t, 0.15);
+      bgm.bus.gain.setTargetAtTime(on ? bgm.vol * 0.45 : bgm.vol, t, 0.15);
     },
     onBgmChange: null,
   };
@@ -373,7 +373,8 @@ const SFX = (() => {
   const TRACKS = {
     calm: { bpm: 88, play: (n, t) => playCalm(n, t) },
     run: { bpm: 128, play: (n, t) => playRun(n, t) },
-    daily: { bpm: 90, play: (n, t) => playDaily(n, t) },
+    // gain … 曲ごとの音量の倍率。daily はパッドがなく音が薄いので、ほかの曲と同じくらいに聞こえるよう上げる
+    daily: { bpm: 90, gain: 2, play: (n, t) => playDaily(n, t) },
   };
   let track = "calm",
     runLevel = 0;
@@ -398,7 +399,8 @@ const SFX = (() => {
     const bus = c.createGain(),
       lp = c.createBiquadFilter();
     bus.gain.setValueAtTime(0.0001, t);
-    bus.gain.exponentialRampToValueAtTime(BGM_VOL, t + 3);
+    const vol = BGM_VOL * (T.gain ?? 1);
+    bus.gain.exponentialRampToValueAtTime(vol, t + 3);
     lp.type = "lowpass";
     lp.frequency.setValueAtTime(300, t);
     lp.frequency.exponentialRampToValueAtTime(14000, t + 5);
@@ -420,6 +422,7 @@ const SFX = (() => {
     bgm = {
       bus,
       lp,
+      vol,
       echo: bgmEcho,
       step: 0,
       next: t + 0.1,
@@ -447,11 +450,11 @@ const SFX = (() => {
       b.lp.frequency.setValueAtTime(b.lp.frequency.value, t);
       b.lp.frequency.exponentialRampToValueAtTime(80, t + 0.5);
       b.bus.gain.cancelScheduledValues(t);
-      b.bus.gain.setValueAtTime(b.bus.gain.value || BGM_VOL, t);
+      b.bus.gain.setValueAtTime(b.bus.gain.value || b.vol, t);
       b.bus.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
     } else {
       b.bus.gain.cancelScheduledValues(t);
-      b.bus.gain.setValueAtTime(b.bus.gain.value || BGM_VOL, t);
+      b.bus.gain.setValueAtTime(b.bus.gain.value || b.vol, t);
       b.bus.gain.exponentialRampToValueAtTime(0.0001, t + (opt.fast ? 0.05 : 1.5));
     }
     setTimeout(() => {

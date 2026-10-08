@@ -30,6 +30,19 @@ const fill = s => String(s).replaceAll("{handle}", who());
 const titlePrompt = () => `${who()}@safehouse:~$`;
 let fast = false; // 演出の早送り中
 
+// 早送りは、短い間に3回クリック（または Enter）したときだけ。1回押しただけでは、うっかり飛ばないように
+const SKIP_TAPS = 3;
+const SKIP_MS = 900;
+let skipTaps = [];
+function skipTap() {
+  const now = Date.now();
+  skipTaps = skipTaps.filter(t => now - t < SKIP_MS);
+  skipTaps.push(now);
+  if (skipTaps.length < SKIP_TAPS) return false;
+  skipTaps = [];
+  return true;
+}
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // 早送りできる待ち時間。任務ごとのテンポ（tempo）を掛ける
 const wait = ms => sleep(fast ? Math.min(ms, 30) : ms * curTempo());

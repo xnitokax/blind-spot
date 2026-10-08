@@ -1495,6 +1495,7 @@ const SPOTS = {
   screen: "#term",
   host: null,
   input: "#form",
+  run: "#run",
   sound: "#bgm, #mute",
   next: "#next",
   why: "#why",
@@ -1505,6 +1506,7 @@ const SPOTS = {
 const isPhone = () => matchMedia("(max-width: 800px)").matches;
 function spot(names) {
   document.querySelectorAll(".spot").forEach(el => el.classList.remove("spot"));
+  void document.body.offsetWidth; // 同じ場所をもう一度光らせるときも、点滅を最初からやり直す
   const side = $("side");
   let inSide = false;
   for (const n of [].concat(names || [])) {

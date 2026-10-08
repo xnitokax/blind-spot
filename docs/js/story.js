@@ -101,7 +101,12 @@ async function play(steps) {
       continue;
     }
     // { spot: "next" など } … 画面のその部分を光らせて、どこの話かを見せる（null で消す）
-    if ("spot" in s) spot(s.spot);
+    //   前の説明を読み終わる間をおいてから切りかえ、3回点滅しきってから師匠が話す
+    if ("spot" in s) {
+      if (document.querySelector(".spot")) await pause(1000);
+      spot(s.spot);
+      if (s.spot) await pause(1500);
+    }
     // { guide: { at, cmd, why } } … 説明の途中で「次の一手」を出す
     if (s.guide) setGuide(s.guide);
     // { art: "文字の図" } … 文字で描いた図を、1行ずつ出す
@@ -496,8 +501,9 @@ async function showEnding(text, opt = {}) {
 }
 
 function overlayInput() {
+  // 文章が出ている途中は、素早く3回押したときだけ最後まで飛ばす
   if (!state.endReady) {
-    state.skip = true;
+    if (skipTap()) state.skip = true;
     return;
   }
   $("overlay").className = "";
@@ -506,13 +512,14 @@ function overlayInput() {
 }
 $("overlay").addEventListener("click", overlayInput);
 document.addEventListener("keydown", e => {
+  // 押しっぱなしの連打（キーリピート）は数えない
   if ($("overlay").classList.contains("on") && (e.key === "Enter" || e.key === " ")) {
     e.preventDefault();
-    overlayInput();
+    if (!e.repeat) overlayInput();
     return;
   }
   if (isBusy() && (e.key === "Enter" || e.key === " ")) {
     e.preventDefault();
-    fast = true;
+    if (!e.repeat && skipTap()) fast = true;
   }
 });

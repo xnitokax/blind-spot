@@ -11,12 +11,13 @@ $("form").onsubmit = async e => {
   e.preventDefault();
   SFX.wake();
   if (isBusy()) {
-    fast = true;
+    if (skipTap()) fast = true;
     return;
   }
   if (state.over) return;
   const raw = cmd.value;
   cmd.value = "";
+  $("run").classList.remove("ready");
   SFX.enter();
   const plain = !state.mode;
   // ボーナスタイムの曲が流れているときは、打った瞬間にリズムに合わせて「ビシュッ」
@@ -31,6 +32,7 @@ $("form").onsubmit = async e => {
 // パスワード入力中は、打った文字数を [5/17] のように出す
 cmd.addEventListener("input", e => {
   if (state?.mode?.type === "password") passPrompt();
+  if (!cmd.value) $("run").classList.remove("ready");
   // 日本語入力（変換中）は keydown では文字キーとして来ないので、入力のたびにここで鳴らす
   if (
     e.isComposing ||
@@ -104,12 +106,12 @@ $("next").addEventListener("mouseleave", () => {
 
 // 名前をタップ → 入力欄にコマンドを入れる（実行は Enter か ⏎ ボタン）
 // 「search 」のように続きを打つものは、スマホでもキーボードを出す
-// 演出中にクリック → 早送り
+// 演出中に素早く3回クリック → 早送り
 $("term").addEventListener("click", e => {
   SFX.wake();
   if (e.target.closest("#run")) return;
   if (isBusy()) {
-    fast = true;
+    if (skipTap()) fast = true;
     return;
   }
   const pick = e.target.closest(".pick");
@@ -122,13 +124,10 @@ $("term").addEventListener("click", e => {
       return askUser(state.mode.id, state.mode.opt);
     }
     if (["user", "password"].includes(state.mode?.type)) return;
+    // ボタン（光る「次の一手」も）は、入力欄に入れるところまで。実行は自分で Enter か ⏎ ボタン
+    // 続きを打たなくていいコマンドなら、⏎ ボタンを光らせて「あとは押すだけ」と見せる
     cmd.value = pick.dataset.fill;
-    // 「次の一手」のボタンは、押したらそのまま実行する
-    if ("run" in pick.dataset) {
-      SFX.select();
-      $("form").requestSubmit();
-      return;
-    }
+    $("run").classList.toggle("ready", !cmd.value.endsWith(" "));
     SFX.select();
     if (finePointer || cmd.value.endsWith(" ")) cmd.focus();
     else cmd.blur();

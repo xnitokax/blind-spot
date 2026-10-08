@@ -300,11 +300,10 @@ async function confirmHandle(raw) {
       if (m.autoCode) await autoConnect(m.autoCode);
       return;
     }
+    // 練習の案内は uzu 側で師匠がするので、ここでは肩慣らしを軽く勧めるだけ
     await speak([
       `[師匠] よし、${handle}。覚えた。`,
-      "[師匠] いきなり本番はやらせない。まずは練習だ。",
-      `[師匠] ${trainCmd()} と打て。俺の練習用サーバーにつなぐ。`,
-      "[師匠] 練習は何回でもやり直せる。慣れてるなら飛ばして、俺が渡した回線コードを打ってもいい。",
+      `[師匠] 肩慣らしに、${trainCmd()} で練習していった方がいいぞ。`,
     ]);
     return;
   }

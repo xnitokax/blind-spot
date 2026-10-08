@@ -35,7 +35,7 @@ function updateNext() {
       trainCmd() &&
       (trained
         ? chip(trainCmd(), `${trainCmd()}（練習）`)
-        : `<span class="chip pick guide" data-fill="${esc(trainCmd())}" data-run>▶ ${esc(trainCmd())}（練習）</span>`);
+        : `<span class="chip pick guide" data-fill="${esc(trainCmd())}">▶ ${esc(trainCmd())}（練習）</span>`);
     chips = handle
       ? [
           ...(train && !trained ? [train] : []),
@@ -59,11 +59,11 @@ function updateNext() {
     const node = here();
     // 調べ終わったら、どこにいても一番左に return を出しておく
     if (state.saveReady) chips.push(chip("return", "return", "save"));
-    // 師匠が言った「次の一手」：押すだけで、すぐ実行される
+    // 師匠が言った「次の一手」：押すと入力欄に入る（実行は Enter か ⏎ ボタン）
     const g = guideCmd();
     if (g) {
       chips.push(
-        `<span class="chip pick guide" data-fill="${esc(g)}" data-run>▶ ${esc(g)}</span>`,
+        `<span class="chip pick guide" data-fill="${esc(g)}">▶ ${esc(g)}</span>`,
       );
       // なぜそこが光っているのか（師匠のひとこと）を、NEXT 欄のすぐ上に
       // 行き先へ向かう途中は go（移動の理由）、着いたら why（そこでやることの理由）

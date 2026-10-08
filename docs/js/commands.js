@@ -79,7 +79,7 @@ const COMMANDS = {
       .map(([c, d]) => `<span class="n">${esc(c)}</span><span>${esc(d)}</span>`)
       .join("");
     print(
-      `<div class="ls">${rows}</div><span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中はクリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ ここでは cd が使えます" : ""}</span>`,
+      `<div class="ls">${rows}</div><span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中は素早く3回クリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ ここでは cd が使えます" : ""}</span>`,
     );
   },
   async ssh(arg) {
