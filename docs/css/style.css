@@ -3451,3 +3451,17 @@ body[data-zone="rpg"] #eviCount {
     font-size: 12px;
   }
 }
+
+/* 練習：師匠のセリフや図のあと、タップするまで待っているしるし（▼ が点滅する） */
+.tap-hint {
+  display: inline-block;
+  margin-left: 10px;
+  color: var(--warn);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  animation: blink 1s steps(1) infinite;
+}
+.line.say .tap-hint {
+  margin-left: 8px;
+}

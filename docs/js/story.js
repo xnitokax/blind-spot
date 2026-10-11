@@ -92,10 +92,9 @@ async function play(steps) {
     // エンドを迎えたら（{ ending }）、流れている台本はそこで打ち切る
     if (state.halt) return;
     if (typeof s === "string") {
-      await typeLine(s);
-      // セリフ（[師匠] や登場人物）は読めるように、テンポに関係なく間をおく
-      const p = lineParts(s);
-      await (p.say || p.who ? pause(560) : wait(420));
+      const d = await typeLine(s);
+      // セリフ（[師匠] や登場人物）は読めるように、テンポに関係なく間をおく（練習の師匠は、タップするまで待つ）
+      await afterLine(s, d);
       continue;
     }
     // ── チュートリアルのゲームの世界（王城・ダンジョン・魔王城）──
@@ -151,7 +150,11 @@ async function play(steps) {
     // { guide: { at, cmd, why } } … 説明の途中で「次の一手」を出す
     if (s.guide) setGuide(s.guide);
     // { art: "文字の図" } … 文字で描いた図を、1行ずつ出す
-    if (s.art) await drawArt(s.art);
+    // 練習では、図を出したあと、タップするまで次へ進まない（図をじっくり見られるように）
+    if (s.art) {
+      await drawArt(s.art);
+      await tapWait();
+    }
     // { menu: true } … 今いる場所の行き先の一覧を、もう一度出す（ls と同じ）
     if (s.menu) {
       printMenu(true);
@@ -646,6 +649,9 @@ document.addEventListener("keydown", e => {
   }
   if (isBusy() && state?.mode?.type !== "choose" && (e.key === "Enter" || e.key === " ")) {
     e.preventDefault();
-    if (!e.repeat && skipTap()) fast = true;
+    if (e.repeat) return;
+    // 練習でタップを待っていたら、次へ進むだけ（早送りには数えない）
+    if (tapGo()) return;
+    if (skipTap()) fast = true;
   }
 });

@@ -145,8 +145,10 @@ $("next").addEventListener("mouseleave", () => {
 // 演出中に素早く3回クリック → 早送り
 $("term").addEventListener("click", e => {
   SFX.wake();
-  if (e.target.closest("#run")) return;
+  if (e.target.closest("#run") && !tapResolve) return;
   if (isBusy() && state?.mode?.type !== "choose") {
+    // 練習でタップを待っていたら、次へ進むだけ（早送りには数えない）
+    if (tapGo()) return;
     if (skipTap()) fast = true;
     return;
   }
