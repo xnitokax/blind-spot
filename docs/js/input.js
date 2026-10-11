@@ -70,6 +70,14 @@ cmd.addEventListener("keydown", e => {
 // 最初のクリック・タップ・キー入力で音を有効にする（その操作自体の音より先に呼ぶため、capture で受け取る）
 document.addEventListener("pointerdown", () => SFX.wake(), { capture: true });
 document.addEventListener("keydown", () => SFX.wake(), { capture: true });
+// iPhone の Safari は、指を離したとき（touchend）やタップ（click）のほうを「操作」と認めて音を出させる
+document.addEventListener("touchend", () => SFX.wake(), { capture: true });
+document.addEventListener("click", () => SFX.wake(), { capture: true });
+// 別のタブやアプリから戻ってきたら、止まった音を動かし直す（だめなら、次に触ったときに）
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") SFX.revive();
+});
+addEventListener("pageshow", () => SFX.revive());
 
 // 音のオン・オフ（SOUND は全部、BGM は音楽だけ）と「♪ 師匠のプレイリスト」の表示
 function updateSoundUi() {

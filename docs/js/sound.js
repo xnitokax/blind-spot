@@ -18,7 +18,12 @@ const SFX = (() => {
     bgm = null;
   // ブラウザは、ページを一度も触っていない間は音を出させない（その間の音は一時停止して溜まる）。
   // 溜まった音が最初のクリックでまとめて鳴らないよう、触るまでの効果音は鳴らさずに捨てる
-  let touched = false;
+  let touched = false,
+    stale = false; // 別のタブから戻ってきて、まだ一度も触っていない
+  // iPhone・iPad（iPad は Mac のふりをするので、タッチの数で見分ける）
+  const IOS =
+    /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const canPlay = c => touched || c.state === "running";
   try {
     muted = localStorage.getItem("uzu-muted") === "1";
@@ -58,7 +63,9 @@ const SFX = (() => {
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (ctx.state === "suspended") ctx.resume();
+    // 止まっていたら再開する。iPhone の Safari は、別のタブに移ると "suspended" ではなく
+    // "interrupted"（Safari だけの状態）にするので、「動いていなければ」で見る
+    if (ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
     return ctx;
   }
   function env(g, t, vol, dur, attack = 0.004) {
@@ -136,7 +143,20 @@ const SFX = (() => {
     // 最初にクリック・タップ・キー入力をしたときに呼ぶ。ここから先の音は鳴らす
     wake() {
       touched = true;
-      if (!muted) ac();
+      if (muted) return;
+      const c = ac();
+      // 別のタブから戻った直後：iPhone では "running" のまま音が出なくなっていることがあるので、一度止めて動かし直す
+      if (c && stale) {
+        stale = false;
+        if (IOS && c.state === "running") c.suspend().then(() => c.resume()).catch(() => {});
+      }
+    },
+    // ページが裏に回って、また表に戻ってきたとき（input.js の visibilitychange）
+    //   ここで再開を試み、だめなら次に触ったとき（wake）に動かし直す
+    revive() {
+      if (!ctx || muted) return;
+      stale = true;
+      if (ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
     },
     // キー入力：乾いたクリックに、少しだけ芯のある音を重ねる
     key: () => {
