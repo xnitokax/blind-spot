@@ -98,6 +98,8 @@
           if (node.goal) goals++;
           goals += (node.search?.entries || []).filter(e => e.goal).length;
         }
+        // 目標の goal（その目標の手がかりが全部そろったら任務完了）
+        goals += (ch.objectives || []).filter(o => o.goal).length;
         if (!goals) ng("任務完了（goal）がひとつもありません");
 
         // 「次の一手」（next）：行き先のノードがあるか
@@ -200,7 +202,7 @@
             ng(`目標「${o.text}」: until.visited ${u.visited} がありません`);
           if (u.clue && !clues.has(u.clue))
             ng(`目標「${o.text}」: until.clue「${u.clue}」がありません`);
-          if (!o.side && !u.opened && !u.visited && !u.clue && !u.goal)
+          if (!o.side && !u.opened && !u.visited && !u.clue && !u.goal && !u.all)
             ng(`目標「${o.text}」: until がありません`);
         }
       }

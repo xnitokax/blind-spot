@@ -17,10 +17,12 @@ async function oops(kind, lines) {
 // 日本語（全角の英数字・記号は半角にそろえてから見る）が入っているか
 const hasJa = s => /[^\x00-\x7f]/.test(String(s).normalize("NFKC"));
 
-// 鍵の打ち間違い：ユーザーID（lock.oops の idJa / idSpace / idMiss）
+// 鍵の打ち間違い：ユーザーID（lock.oops の idJa / idSpace / idMiss / idDenied）
 async function userOops(lock, raw, r) {
   const o = lock.oops || {};
   if (hasJa(raw)) return oops("idJa", o.idJa);
+  // 登録はあるが、ここには入れない人の ID（人事DB なら、人事部ではない社員）
+  if (o.idDenied?.ids.includes(r.account)) return oops("idDenied", o.idDenied.say);
   if (/\s/.test(raw.trim())) return oops("idSpace", o.idSpace);
   if (r.unknown && ++state.idMiss >= 2) return oops("idMiss", o.idMiss);
 }
@@ -80,8 +82,14 @@ const COMMANDS = {
     ]
       .map(([c, d]) => `<span class="n">${esc(c)}</span><span>${esc(d)}</span>`)
       .join("");
+    // tools：その場所でだけ使える道具（任務2の stat / trace など）
+    const tools = (node.tools || [])
+      .map(t => `<span class="n">${esc(t.usage || t.cmd)}</span><span>${esc(t.desc || "")}</span>`)
+      .join("");
     print(
-      `<div class="ls">${rows}</div><span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中は素早く3回クリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ ここでは cd が使えます" : ""}</span>`,
+      `<div class="ls">${rows}</div>` +
+        (tools ? `<div class="dim">── ここで使えるコマンド ──</div><div class="ls">${tools}</div>` : "") +
+        `<span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中は素早く3回クリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ ここでは cd が使えます" : ""}</span>`,
     );
   },
   async ssh(arg) {
@@ -334,15 +342,20 @@ async function run(raw) {
   // 使い終わったボタンは、すぐに NEXT 欄から消す（結果に「次の一手」がないと、古いボタンが残ってしまうので）
   if (state.guide !== g) updateNext();
   // actions：その場所でだけ使える特別なコマンド（任務2の見せ場。押すと、たっぷり時間をかけた演出が流れる）
+  //   alias … 同じ演出になる、別の打ち方（「cd ??????」でも「open ??????」でも開く）
+  //   別の打ち方で、もう済んだ演出に当たったときは、ふつうのコマンドとして動かす（cd ならフォルダに入る）
   const acts = here()?.actions;
+  const same = (a, b) => cmdKey(a) === cmdKey(b);
   const act =
     acts &&
-    Object.entries(acts).find(
-      ([k]) => fold(k).replace(/\s+/g, "") === fold(raw).replace(/\s+/g, ""),
-    );
-  if (act) return runAction(act[0], act[1]);
+    Object.entries(acts).find(([k, a]) => [k, ...(a.alias || [])].some(x => same(x, raw)));
+  const actDone = act && state.said.has(`act:${state.current}:${act[0]}`);
+  if (act && !(actDone && !same(act[0], raw))) return runAction(act[0], act[1]);
   // コマンド名は、全角で打っても大文字でも通す
   const cname = name.normalize("NFKC").toLowerCase();
+  // tools：その場所の道具を、演出のない引数で使ったとき（違う伝票番号で stat を打った、など）
+  const tool = (here()?.tools || []).find(t => cmdKey(raw).startsWith(cmdKey(t.cmd)));
+  if (tool && !COMMANDS[cname]) return useTool(tool, raw);
   const fn = COMMANDS[cname];
   if (!fn) {
     print(`${esc(name)}: コマンドが見つかりません（help で一覧）`, "alert");
@@ -366,6 +379,23 @@ async function reactTo(at, key) {
   });
   if (await busy(() => followWarp())) return;
   setGuide(r.next);
+}
+
+// コマンドを比べるための形（全角・大文字・空白を無視。「??????」のような ? の数のちがいも無視する）
+const cmdKey = s => fold(s).replace(/\s+/g, "").replace(/[?？]+/g, "?");
+
+// tools の実行：{ cmd, usage, desc, miss, say }
+//   miss … 引数がちがったときの返事（{arg} に打った引数が入る）。打ちかたが足りないときは usage を出す
+//   say  … そのときの師匠のひとこと（一度だけ。間違えたときの誘導）
+async function useTool(tool, raw) {
+  const arg = raw.trim().split(/\s+/).slice(tool.cmd.split(/\s+/).length).join(" ");
+  if (!arg) return print(`使い方：${esc(tool.usage || tool.cmd)}`, "dim");
+  await busy(async () => {
+    SFX.tick();
+    await wait(BEAT.small);
+    print(esc(fill(String(tool.miss || "{arg}: 何も見つかりません。").replaceAll("{arg}", arg))), "dim");
+  });
+  if (tool.say) await oops(`tool:${state.current}:${tool.cmd}`, tool.say);
 }
 
 // actions の実行：{ script: [台本], next: 次の一手 }。一度やったら、もう一度は流さない

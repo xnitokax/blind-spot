@@ -23,6 +23,7 @@ const mainObjs = () => (CH?.objectives || []).filter(o => !o.side);
 const sideObjs = () => (CH?.objectives || []).filter(o => o.side);
 const nowObj = () => mainObjs()[state.objIdx] || null;
 const objCount = o => (o.clues || []).filter(c => state.clues.includes(c)).length;
+const allClues = o => !!o.clues?.length && o.clues.every(c => state.clues.includes(c));
 // その手がかりが、どの目標のものか（今の目標・済んだ目標・気になること のうち、見えているものだけ）
 function objOf(label) {
   return (
@@ -36,6 +37,7 @@ function objDone(o) {
   if (u.opened) return state.opened.has(u.opened);
   if (u.visited) return state.visited.has(u.visited);
   if (u.clue) return state.clues.includes(u.clue);
+  if (u.all) return allClues(o); // その目標の手がかりが、全部そろったら
   return false; // goal は任務完了のときに済ませる
 }
 
@@ -202,6 +204,9 @@ async function checkObjectives() {
     if (nowObj().intro) await speak(nowObj().intro, BEAT.small);
     setGuide(nowObj().next, nowObj().intro);
   }
+  // 目標の goal：その目標の手がかりが全部そろったら、任務完了（どの順番で見つけても、最後の1つで終わる）
+  const last = nowObj();
+  if (last?.goal && !state.saveReady && !state.over && allClues(last)) await runGoal(last.goal);
 }
 function showObjective(o, tag = "NEXT OBJECTIVE") {
   if (!o) return;

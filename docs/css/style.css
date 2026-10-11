@@ -3282,7 +3282,8 @@ body[data-zone="rpg"] #eviCount {
   .wrap {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto 1fr;
-    height: 100dvh;
+    /* キーボードが出ているときは、見えている高さに合わせる（--vvh は input.js が入れる） */
+    height: var(--vvh, 100dvh);
     padding: 12px;
     gap: 8px;
   }
@@ -3376,8 +3377,9 @@ body[data-zone="rpg"] #eviCount {
     border-bottom: none;
     padding: 0;
   }
+  /* 開いても、ログは3行ぶんだけ（それより前はスクロールで見る） */
   aside.open #log {
-    max-height: 25vh;
+    max-height: 6.4em;
     overflow-y: auto;
   }
   aside.open #log li {

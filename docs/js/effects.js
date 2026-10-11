@@ -216,6 +216,8 @@ async function stopJob() {
   setStorm(0.2);
   await play(job.stop || []);
   if (state.job) await killJobFx();
+  // 「次の一手」を出す前に、自分で先回りして来たときも、ここでやることは光らせる
+  if (job.next && !job.done.has("next")) setGuide(job.next);
 }
 // KILLED のはんこ → 真っ暗になったところが明るさを取り戻し、画面が元に戻る
 async function killJobFx() {

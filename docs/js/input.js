@@ -94,6 +94,26 @@ updateSoundUi();
 // スマホ：TRACE 欄をタップでアクセスログと手がかりを開閉
 $("side").addEventListener("click", e => e.currentTarget.classList.toggle("open"));
 
+// スマホ：キーボードを出したら、上の欄（TRACE・ログ・手がかり）は閉じる（打つ場所を広くする）
+cmd.addEventListener("focus", () => {
+  const side = $("side");
+  if (isPhone() && !side.dataset.spotOpen) side.classList.remove("open");
+});
+// スマホ：キーボードが出たり引っこんだりしたら、画面の高さを見えている範囲に合わせ直す
+// （ブラウザがずらしたままにすると、キーボードを閉じたあと上の欄が欠けたり、下に隙間ができたりする）
+function fitViewport() {
+  if (!isPhone()) return;
+  if (window.visualViewport)
+    document.documentElement.style.setProperty("--vvh", `${Math.round(visualViewport.height)}px`);
+  window.scrollTo(0, 0);
+  // いちばん下を見ていたなら、高さが変わっても最新の行が見えるように
+  if (followBottom) scrollDown();
+}
+window.visualViewport?.addEventListener("resize", fitViewport);
+addEventListener("resize", fitViewport);
+cmd.addEventListener("blur", () => setTimeout(fitViewport, 300));
+fitViewport();
+
 // NEXT のボタンにカーソルを合わせたら、ボタンが変わるごとに1回だけ鳴らす（演出中は押せないので鳴らさない）
 let hovered = null;
 $("next").addEventListener("mouseover", e => {

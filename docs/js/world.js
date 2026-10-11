@@ -357,6 +357,6 @@ function checkUser(lock, raw) {
   const key = Object.keys(u.ids).find(k => NZ.norm(k) === v);
   if (!key) return { error: "そのユーザーIDは登録されていません。", unknown: true };
   const account = u.ids[key];
-  if (u.disabled?.[account]) return { error: u.disabled[account] };
+  if (u.disabled?.[account]) return { error: u.disabled[account], account };
   return { account };
 }

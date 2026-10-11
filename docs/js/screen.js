@@ -111,7 +111,8 @@ function print(html, cls = "") {
 //   followBottom を false にするのは「自分で上へ戻したとき」だけ。下まで戻ってきたら、また追いかける
 //   （中身が伸びたせいで下から離れて見えても、追いかけるのはやめない）
 let followBottom = true,
-  lastTop = 0;
+  lastTop = 0,
+  userScrollAt = 0;
 const scrollDown = () => {
   const t = $("term");
   t.scrollTop = t.scrollHeight;
@@ -119,11 +120,21 @@ const scrollDown = () => {
   lastTop = t.scrollTop;
   $("toBottom").classList.remove("show");
 };
+// 自分で動かした（ホイール・指・スクロールバー）ときだけ、さかのぼったとみなす
+// 画面の高さが変わったり（スマホのキーボード・上の欄）、演出で中身が入れかわったりして位置がずれただけなら、下につけ直す
+const userScrolled = () => (userScrollAt = performance.now());
+$("term").addEventListener("wheel", userScrolled, { passive: true });
+$("term").addEventListener("touchmove", userScrolled, { passive: true });
+$("term").addEventListener("pointerdown", e => {
+  if (e.offsetX > e.currentTarget.clientWidth) userScrolled(); // スクロールバーをつかんだ
+});
 $("term").addEventListener("scroll", () => {
   const t = $("term"),
-    dist = t.scrollHeight - t.scrollTop - t.clientHeight;
+    dist = t.scrollHeight - t.scrollTop - t.clientHeight,
+    byUser = performance.now() - userScrollAt < 1000;
   if (dist < 40) followBottom = true;
-  else if (t.scrollTop < lastTop - 4) followBottom = false;
+  else if (byUser && t.scrollTop < lastTop - 4) followBottom = false;
+  else if (followBottom && !byUser) return scrollDown();
   lastTop = t.scrollTop;
   // さかのぼって読んでいるときだけ「↓ 最新へ」を出す
   $("toBottom").classList.toggle("show", !followBottom);
@@ -157,6 +168,9 @@ $("evi").addEventListener("click", e => {
     t.getBoundingClientRect().top +
     t.scrollTop -
     (view - card.offsetHeight) / 2;
+  // 自分で読みに行ったのと同じ扱い（下へ引き戻さない）
+  followBottom = false;
+  $("toBottom").classList.add("show");
   t.scrollTo({ top: Math.max(0, top), behavior: REDUCED ? "auto" : "smooth" });
   card.classList.remove("focus");
   void card.offsetWidth;
