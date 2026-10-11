@@ -3282,7 +3282,12 @@ body[data-zone="rpg"] #eviCount {
   .wrap {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto 1fr;
-    /* キーボードが出ているときは、見えている高さに合わせる（--vvh は input.js が入れる） */
+    /* 画面を、いま見えている範囲にぴったり重ねる（--vvtop / --vvh は input.js の fitViewport が入れる）
+       iPhone でキーボードが出て、Safari が画面をずらしても、入力欄がキーボードのすぐ上に来る */
+    position: fixed;
+    top: var(--vvtop, 0px);
+    left: 0;
+    right: 0;
     height: var(--vvh, 100dvh);
     padding: 12px;
     gap: 8px;
@@ -3312,6 +3317,10 @@ body[data-zone="rpg"] #eviCount {
   }
   #term {
     padding: 12px 12px 0;
+  }
+  /* iPhone の Safari は、16px より小さい入力欄をタップすると、画面を勝手に拡大してずらす。それを防ぐ */
+  #cmd {
+    font-size: 16px;
   }
   aside {
     order: -1;

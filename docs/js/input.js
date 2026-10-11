@@ -99,17 +99,23 @@ cmd.addEventListener("focus", () => {
   const side = $("side");
   if (isPhone() && !side.dataset.spotOpen) side.classList.remove("open");
 });
-// スマホ：キーボードが出たり引っこんだりしたら、画面の高さを見えている範囲に合わせ直す
-// （ブラウザがずらしたままにすると、キーボードを閉じたあと上の欄が欠けたり、下に隙間ができたりする）
+// スマホ：画面を、いま見えている範囲（キーボードの上）にぴったり重ねる
+//   iPhone の Safari は、キーボードが出ると画面全体を上へずらす（visualViewport.offsetTop）。
+//   それと戦わずに、ずれた分だけ画面を下げて、高さをキーボードの上までに縮める（--vvtop / --vvh。CSS のスマホ用 .wrap）
+//   キーボードが引っこんで、見えている範囲が元に戻ったら、ずれも消す
 function fitViewport() {
-  if (!isPhone()) return;
-  if (window.visualViewport)
-    document.documentElement.style.setProperty("--vvh", `${Math.round(visualViewport.height)}px`);
-  window.scrollTo(0, 0);
+  if (!isPhone() || !window.visualViewport) return;
+  const vv = visualViewport,
+    root = document.documentElement.style;
+  const open = vv.height < innerHeight - 80; // キーボードが出ている
+  root.setProperty("--vvh", `${Math.round(vv.height)}px`);
+  root.setProperty("--vvtop", `${open ? Math.round(vv.offsetTop) : 0}px`);
+  if (!open && scrollY) scrollTo(0, 0);
   // いちばん下を見ていたなら、高さが変わっても最新の行が見えるように
   if (followBottom) scrollDown();
 }
 window.visualViewport?.addEventListener("resize", fitViewport);
+window.visualViewport?.addEventListener("scroll", fitViewport);
 addEventListener("resize", fitViewport);
 cmd.addEventListener("blur", () => setTimeout(fitViewport, 300));
 fitViewport();
