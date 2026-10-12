@@ -160,100 +160,141 @@ const PORTRAITS = {
     </g>
   </svg>`,
   },
-  // 魔王（練習のゲームの世界）：大人の小悪魔。ピンク紫の長い髪、小さな角、細い赤フレームのメガネ、コウモリの羽、ハートのしっぽ。
-  //   胸元の開いた黒いビスチェ、ミニスカート、長い手袋、ニーハイブーツ。全身の立ち絵（100×150 ドット）
+  // 魔王（練習のゲームの世界）：アニメ調の、大人の小悪魔。ピンクの長い髪、小さな角、細い赤フレームのメガネ（片手でくいっと上げる）、
+  //   コウモリの羽、ハートのしっぽ、胸元の開いた黒いビスチェ、ミニスカート、長い手袋、ニーハイブーツ。全身の立ち絵（150×225 ドット）
   maou: {
-    px: 100,
+    px: 150,
     tall: 1.5,
     name: "魔王",
-    face: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">
+    face: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450">
     <defs>
       <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0" stop-color="#2a1236"/>
-        <stop offset="1" stop-color="#10071a"/>
+        <stop offset="0" stop-color="#2c1238"/>
+        <stop offset="1" stop-color="#110718"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="0.5" cy="0.4" r="0.55">
+        <stop offset="0" stop-color="#7a1c4a" stop-opacity="0.7"/>
+        <stop offset="1" stop-color="#7a1c4a" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="iris" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#4a0624"/>
+        <stop offset="0.55" stop-color="#c4185a"/>
+        <stop offset="1" stop-color="#ff7aa8"/>
       </linearGradient>
       <linearGradient id="hair" x1="0" x2="1">
-        <stop offset="0" stop-color="#c94a92"/>
-        <stop offset="0.5" stop-color="#93296c"/>
-        <stop offset="1" stop-color="#5c1846"/>
-      </linearGradient>
-      <linearGradient id="skin" x1="0" x2="1">
-        <stop offset="0" stop-color="#fde6da"/>
-        <stop offset="0.6" stop-color="#f2cbbb"/>
-        <stop offset="1" stop-color="#cf9b8b"/>
-      </linearGradient>
-      <linearGradient id="black" x1="0" x2="1">
-        <stop offset="0" stop-color="#2e1834"/>
-        <stop offset="1" stop-color="#0c060f"/>
+        <stop offset="0" stop-color="#f06bb0"/>
+        <stop offset="1" stop-color="#c63f88"/>
       </linearGradient>
     </defs>
-    <!-- 魔王城の玉座の間：むらさきの闇と、うしろの赤い光 -->
-    <rect width="200" height="300" fill="url(#bg)"/>
-    <ellipse cx="100" cy="120" rx="96" ry="110" fill="#5c1838" opacity="0.35"/>
-    <rect x="0" y="292" width="200" height="8" fill="#1d0c22"/>
+    <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- 背景：魔王城の闇と、うしろの赤い光 -->
+    <rect width="300" height="450" fill="url(#bg)" stroke="none"/>
+    <rect width="300" height="450" fill="url(#glow)" stroke="none"/>
+    <rect y="438" width="300" height="12" fill="#1e0b24" stroke="none"/>
+  
     <!-- コウモリの羽 -->
-    <path d="M76 92C52 62 24 58 8 72c12 2 18 10 18 20-8-4-16-2-20 4 10 2 16 8 16 16-8-2-14 2-16 8 22-6 44-6 68 2z" fill="#4e1a58"/>
-    <path d="M124 92c24-30 52-34 68-20-12 2-18 10-18 20 8-4 16-2 20 4-10 2-16 8-16 16 8-2 14 2 16 8-22-6-44-6-68 2z" fill="#4e1a58"/>
-    <!-- うしろ髪（腰まで、波打つ） -->
-    <path d="M100 24C78 24 69 42 69 64c0 34-4 62-10 86h82c-6-24-10-52-10-86 0-22-9-40-31-40z" fill="url(#hair)"/>
+    <path d="M124 150C98 110 62 88 22 94c16 10 22 24 20 38-12-6-24-4-32 4 16 6 24 18 24 32-10-4-20 0-24 8 30-6 66-2 108 12z" fill="#4a1a56" stroke="#1c0a22" stroke-width="2"/>
+    <path d="M176 150c26-40 62-62 102-56-16 10-22 24-20 38 12-6 24-4 32 4-16 6-24 18-24 32 10-4 20 0 24 8-30-6-66-2-108 12z" fill="#4a1a56" stroke="#1c0a22" stroke-width="2"/>
+    <path d="M120 156C96 124 66 108 34 110M180 156c24-32 54-48 86-46" stroke="#6e2a7e" stroke-width="2" fill="none"/>
+  
+    <!-- うしろ髪（腰まで） -->
+    <path d="M150 30c-38 0-56 26-56 62 0 48-8 108-22 168 16 8 34 6 46-4-4-38-4-84 0-126h64c4 42 4 88 0 126 12 10 30 12 46 4-14-60-22-120-22-168 0-36-18-62-56-62z" fill="#c63f88" stroke="#2b1020" stroke-width="2"/>
+    <path d="M100 150c-4 40-12 80-22 108M200 150c4 40 12 80 22 108" stroke="#a02e6c" stroke-width="2" fill="none"/>
+  
     <!-- しっぽ（先がハート） -->
-    <path d="M118 166c22 8 38 24 44 46" stroke="#7a2a6e" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-    <path d="M162 210c-6 2-9 8-6 12l6 6 6-6c3-4 0-10-6-12z" fill="#c21f4e"/>
-    <!-- 首・肩・腕（肩は出ている） -->
-    <rect x="94" y="66" width="12" height="14" fill="#ecc0af"/>
-    <path d="M70 86c10-8 50-8 60 0l-2 56H72z" fill="url(#skin)"/>
-    <path d="M70 86c-8 10-11 30-9 56l2 12h9c-2-24 0-46 6-60z" fill="url(#skin)"/>
-    <path d="M130 86c7 8 8 22 6 34l-12 22-6-6 10-18c0-12-2-20-6-26z" fill="url(#skin)"/>
-    <!-- 長い手袋（黒）：左は下ろし、右は腰に当てる -->
-    <path d="M60 120c-1 12 0 24 2 34h9c-1-12-1-24 0-34z" fill="url(#black)"/>
-    <path d="M136 120l-12 22-6-6 12-20z" fill="url(#black)"/>
-    <!-- チョーカー（赤い石） -->
-    <rect x="93" y="74" width="14" height="4" fill="#16091a"/>
-    <circle cx="100" cy="78" r="2" fill="#d6224a"/>
-    <!-- 胸元（谷間は影でほのめかす程度） -->
-    <path d="M100 100v8" stroke="#c48a7c" stroke-width="1.4" opacity="0.8"/>
-    <path d="M80 98q10-8 19 2M120 98q-10-8-19 2" stroke="#e0ac9c" stroke-width="1.4" fill="none" opacity="0.7"/>
-    <!-- 黒いビスチェ（ハートの形の襟ぐり、赤い縁取りと編み上げ） -->
-    <path d="M74 102c4-8 14-10 20-4 3 3 5 6 6 9 1-3 3-6 6-9 6-6 16-4 20 4l-2 42H76z" fill="url(#black)"/>
-    <path d="M74 102c4-8 14-10 20-4 3 3 5 6 6 9 1-3 3-6 6-9 6-6 16-4 20 4" stroke="#a3204e" stroke-width="1.6" fill="none"/>
-    <path d="M96 118l8 6M104 118l-8 6M96 128l8 6M104 128l-8 6" stroke="#a3204e" stroke-width="1"/>
-    <!-- ミニスカート（黒、赤いすそ） -->
-    <path d="M74 142h52l7 36H67z" fill="url(#black)"/>
-    <path d="M67 178h66" stroke="#a3204e" stroke-width="1.6"/>
-    <path d="M88 144l-4 34M100 144v34M112 144l4 34" stroke="#2a1430" stroke-width="1"/>
-    <!-- 脚（太もも）とニーハイブーツ -->
-    <path d="M80 178l-2 52h14l6-52z" fill="url(#skin)"/>
-    <path d="M102 178l6 52h14l-2-52z" fill="url(#skin)"/>
-    <path d="M77 226l-1 58-6 6h20l2-6 1-58z" fill="url(#black)"/>
-    <path d="M107 226l1 58 2 6h20l-6-6-1-58z" fill="url(#black)"/>
-    <path d="M77 226h16M107 226h16" stroke="#a3204e" stroke-width="1.4"/>
-    <path d="M90 290l2-6M110 290l-2-6" stroke="#5a1430" stroke-width="2"/>
-    <!-- 顔（大人の輪郭） -->
-    <path d="M85 50c0-16 7-24 15-24s15 8 15 24c0 12-4 19-9 23-2 2-4 3-6 3s-4-1-6-3c-5-4-9-11-9-23z" fill="url(#skin)"/>
-    <!-- 角 -->
-    <path d="M88 32c-5-5-6-12-3-17 1 6 4 10 9 12z" fill="#1c0e20"/>
-    <path d="M112 32c5-5 6-12 3-17-1 6-4 10-9 12z" fill="#1c0e20"/>
-    <!-- 前髪と、肩にかかる髪 -->
-    <path d="M84 52c-2-18 6-28 17-28 12 0 19 10 16 26-3-8-8-13-14-15-2 6-8 9-14 10-3 1-4 4-5 7z" fill="url(#hair)"/>
-    <path d="M85 50c-4 14-3 30 2 44-6-6-9-22-6-38z" fill="#7a2258"/>
-    <path d="M115 50c4 14 3 30-2 44 6-6 9-22 6-38z" fill="#5c1846"/>
-    <!-- 目（切れ長、赤むらさき） -->
-    <path d="M89 54q4-3 9 0q-4 2-9 0z" fill="#f8eef0"/>
-    <path d="M102 54q5-3 9 0q-5 2-9 0z" fill="#f8eef0"/>
-    <circle cx="94" cy="54" r="1.9" fill="#b3155a"/>
-    <circle cx="106" cy="54" r="1.9" fill="#b3155a"/>
-    <path d="M88.5 54q5-4.5 10-1M101.5 53q5-3.5 10 1" stroke="#1a0812" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-    <path d="M89 49q4-2 8-1M103 48q4-1 8 1" stroke="#5a1a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+    <path d="M182 236c34 8 56 34 60 70 2 18-4 30-12 38" stroke="#2b1020" stroke-width="7" fill="none"/>
+    <path d="M182 236c34 8 56 34 60 70 2 18-4 30-12 38" stroke="#5a1f66" stroke-width="4" fill="none"/>
+    <path d="M230 340c-10-2-16 6-14 14l12 14 12-14c2-8-4-16-10-14z" fill="#e0285a" stroke="#2b1020" stroke-width="2"/>
+  
+    <!-- 脚（太もも）：左に体重をかけて、右ひざを少し内に -->
+    <path d="M116 250c-2 30 2 56 10 82h22c-2-26 0-50 4-74z" fill="#ffe3d6" stroke="#2b1020" stroke-width="2"/>
+    <path d="M150 258c4 24 8 48 10 72h22c4-28 4-54 2-82z" fill="#ffe3d6" stroke="#2b1020" stroke-width="2"/>
+    <path d="M138 262c0 22 2 44 6 66M166 262c2 22 4 44 4 66" stroke="#f2b9a8" stroke-width="4" fill="none"/>
+    <!-- ニーハイブーツ（赤い縁、細いヒール） -->
+    <path d="M124 318c-2 40-4 78-6 106-4 6-10 10-14 14h34l2-8c2-36 6-74 8-112z" fill="#241626" stroke="#2b1020" stroke-width="2"/>
+    <path d="M160 318c4 38 8 76 10 106l2 14h30c-6-4-10-8-14-14-2-30-4-68-4-106z" fill="#241626" stroke="#2b1020" stroke-width="2"/>
+    <path d="M124 318h24M160 318h24" stroke="#e0285a" stroke-width="3"/>
+    <path d="M130 330c-2 30-4 60-6 92M166 330c2 30 4 60 6 92" stroke="#4a2e52" stroke-width="2" fill="none"/>
+  
+    <!-- ミニスカート（黒、赤いすそ、プリーツ） -->
+    <path d="M120 220h62l18 50H104z" fill="#241626" stroke="#2b1020" stroke-width="2"/>
+    <path d="M104 270h96" stroke="#e0285a" stroke-width="3"/>
+    <path d="M132 224l-8 44M150 224v44M168 224l8 44" stroke="#3e2448" stroke-width="2"/>
+  
+    <!-- 胴（肌） -->
+    <path d="M110 126c14-10 66-10 80 0 6 26 0 54-10 78-4 8-4 14 0 22h-56c4-8 4-14 0-22-12-24-18-52-14-78z" fill="#ffe3d6" stroke="#2b1020" stroke-width="2"/>
+    <!-- 鎖骨・胸の丸み（線で、ほのめかす程度） -->
+    <path d="M130 126q8 4 16 2M154 128q8 2 16-2" stroke="#e6a593" stroke-width="1.6" fill="none"/>
+    <path d="M120 150q14-16 30-2M180 150q-14-16-30-2" stroke="#e6a593" stroke-width="2" fill="none"/>
+    <path d="M150 150v8" stroke="#d98f7c" stroke-width="2"/>
+    <!-- 黒いビスチェ（ハートの形の襟ぐり、赤い縁取り、編み上げ） -->
+    <path d="M116 154c6-12 22-14 32-2l2 4 2-4c10-12 26-10 32 2 2 22-4 46-10 64l-2 10h-44l-2-10c-6-18-12-42-10-64z" fill="#241626" stroke="#2b1020" stroke-width="2"/>
+    <path d="M116 154c6-12 22-14 32-2l2 4 2-4c10-12 26-10 32 2" stroke="#e0285a" stroke-width="2.6" fill="none"/>
+    <path d="M144 172l12 8M156 172l-12 8M144 188l12 8M156 188l-12 8M144 204l12 8M156 204l-12 8" stroke="#e0285a" stroke-width="1.6"/>
+    <path d="M124 170c0 20 4 38 10 52" stroke="#4a2e52" stroke-width="3" fill="none"/>
+  
+    <!-- 右腕（腰に手を当てる。ひじから先は黒い長手袋） -->
+    <path d="M186 124c14 6 22 22 26 40 4 12 2 22-4 28-8 12-16 22-24 34l-8-8c8-10 14-22 18-32-4-16-10-34-16-48z" fill="#ffe3d6" stroke="#2b1020" stroke-width="2"/>
+    <path d="M210 168c2 10 0 18-4 24-8 12-16 22-24 34l-8-8c8-10 14-22 18-32l-2-12z" fill="#241626" stroke="#2b1020" stroke-width="2"/>
+    <path d="M190 168h22" stroke="#e0285a" stroke-width="2.4"/>
+  
+    <!-- 首・チョーカー -->
+    <path d="M138 98v24q12 8 24 0V98z" fill="#ffe3d6" stroke="#2b1020" stroke-width="2"/>
+    <path d="M138 104q12 10 24 0v8q-12 8-24 0z" fill="#f2b9a8" stroke="none"/>
+    <path d="M138 112q12 6 24 0v6q-12 6-24 0z" fill="#1a0a1c" stroke="#2b1020" stroke-width="1.4"/>
+    <circle cx="150" cy="119" r="2.8" fill="#e0285a" stroke="none"/>
+  
+    <!-- 顔 -->
+    <path d="M122 62c0-20 12-30 28-30s28 10 28 30c0 20-4 32-12 40-6 6-11 8-16 8s-10-2-16-8c-8-8-12-20-12-40z" fill="#ffe3d6" stroke="#2b1020" stroke-width="2"/>
+    <!-- 前髪の影 -->
+    <path d="M124 66c8-6 18-8 26-4 8-4 18-2 26 4-4-12-14-18-26-18s-22 6-26 18z" fill="#f2b9a8" stroke="none"/>
+    <!-- 眉（細く、余裕のある弧） -->
+    <path d="M128 63q8-5 16-2M156 61q8-3 16 2" stroke="#a02e6c" stroke-width="2" fill="none"/>
+    <!-- 目（アニメ調：大きな瞳、太いまつげ、ハイライト2つ） -->
+    <path d="M127 75c2-7 9-10 17-6 2 5 1 11-3 14-6 1-11-2-14-8z" fill="#ffffff" stroke="none"/>
+    <path d="M173 75c-2-7-9-10-17-6-2 5-1 11 3 14 6 1 11-2 14-8z" fill="#ffffff" stroke="none"/>
+    <ellipse cx="137" cy="76" rx="5.6" ry="7.4" fill="url(#iris)" stroke="none"/>
+    <ellipse cx="163" cy="76" rx="5.6" ry="7.4" fill="url(#iris)" stroke="none"/>
+    <ellipse cx="137" cy="76" rx="2.4" ry="3.6" fill="#2a0414" stroke="none"/>
+    <ellipse cx="163" cy="76" rx="2.4" ry="3.6" fill="#2a0414" stroke="none"/>
+    <circle cx="134.8" cy="72.6" r="2" fill="#ffffff" stroke="none"/>
+    <circle cx="160.8" cy="72.6" r="2" fill="#ffffff" stroke="none"/>
+    <circle cx="139" cy="80" r="1" fill="#ffffff" stroke="none"/>
+    <circle cx="165" cy="80" r="1" fill="#ffffff" stroke="none"/>
+    <path d="M126 73c4-6 12-9 20-4M174 73c-4-6-12-9-20-4" stroke="#2b1020" stroke-width="3" fill="none"/>
+    <path d="M126 73l-4-2M174 73l4-2" stroke="#2b1020" stroke-width="2" fill="none"/>
+    <path d="M131 84q6 2 11 0M158 84q5 2 11 0" stroke="#c97a8c" stroke-width="1.2" fill="none"/>
+    <!-- ほっぺ（斜線）・鼻・口（からかう笑みと、八重歯） -->
+    <path d="M127 88l3-3M131 88l3-3M135 88l3-3M162 88l3-3M166 88l3-3M170 88l3-3" stroke="#ff8fb0" stroke-width="1.4"/>
+    <path d="M150 85l1.4 3.6" stroke="#d98f7c" stroke-width="1.4"/>
+    <path d="M143 96q7 4 15-2" stroke="#7a1030" stroke-width="2" fill="none"/>
+    <path d="M155 95l1.6 3 1.6-3.6z" fill="#ffffff" stroke="#7a1030" stroke-width="0.6"/>
+  
+    <!-- 前髪（とがった毛束）・顔の横の髪・天使の輪 -->
+    <path d="M120 74c-6-30 8-48 30-48s36 18 30 48c-4-10-8-16-14-20 2 8 0 14-4 18-2-10-6-16-12-20 0 8-4 14-10 18 0-8-4-14-10-16 0 8-4 14-10 20z" fill="url(#hair)" stroke="#2b1020" stroke-width="2"/>
+    <path d="M122 66c-8 28-8 58-2 88-10-18-12-52-6-80z" fill="#e05aa0" stroke="#2b1020" stroke-width="2"/>
+    <path d="M178 66c8 28 8 58 2 88 10-18 12-52 6-80z" fill="#c63f88" stroke="#2b1020" stroke-width="2"/>
+    <path d="M130 40q20-10 40 0" stroke="#ffc0e0" stroke-width="3.2" fill="none"/>
+    <!-- 角（内にくるっと） -->
+    <path d="M130 36c-8-8-10-20-4-28 2 10 6 16 14 20z" fill="#2a1030" stroke="#12060f" stroke-width="1.6"/>
+    <path d="M170 36c8-8 10-20 4-28-2 10-6 16-14 20z" fill="#2a1030" stroke="#12060f" stroke-width="1.6"/>
+  
     <!-- メガネ（細い赤フレーム） -->
-    <g fill="none">
-      <rect x="87" y="50" width="12" height="8" rx="3" stroke="#7a1234" stroke-width="1.1"/>
-      <rect x="101" y="50" width="12" height="8" rx="3" stroke="#7a1234" stroke-width="1.1"/>
-      <path d="M99 53h2M87 53l-3-1M113 53l3-1" stroke="#7a1234" stroke-width="1"/>
+    <g fill="none" stroke="#c0123c" stroke-width="1.8">
+      <rect x="125" y="67" width="23" height="17" rx="6"/>
+      <rect x="152" y="67" width="23" height="17" rx="6"/>
+      <path d="M148 72q2-2 4 0M125 72l-5-1M175 72l5-1"/>
     </g>
-    <!-- 頬・口（からかうような笑み、赤い口紅） -->
-    <ellipse cx="90" cy="61" rx="3.5" ry="1.8" fill="#f08aa0" opacity="0.4"/>
-    <ellipse cx="110" cy="61" rx="3.5" ry="1.8" fill="#f08aa0" opacity="0.4"/>
-    <path d="M96 66q4 2 9-1q-4 3-9 1z" fill="#9a1838"/>
+    <path d="M128 81l8-11" stroke="#ffffff" stroke-width="1.6" opacity="0.5" fill="none"/>
+  
+    <!-- 左腕（メガネをくいっと上げる。ひじから先は黒い長手袋） -->
+    <path d="M114 124c-12 6-18 24-20 46-1 8 3 14 9 14 4-18 10-36 20-50z" fill="#ffe3d6" stroke="#2b1020" stroke-width="2"/>
+    <path d="M94 176c4-30 10-60 18-86l10 3c-6 28-12 58-16 87z" fill="#241626" stroke="#2b1020" stroke-width="2"/>
+    <path d="M96 170l12 4" stroke="#e0285a" stroke-width="2.4"/>
+    <!-- 手（黒い手袋の指先で、フレームに触れている） -->
+    <path d="M111 80c1-6 7-9 12-6 3 2 2 7-1 9-4 2-9 1-11-3z" fill="#241626" stroke="#2b1020" stroke-width="1.6"/>
+    <path d="M121 75l4 0" stroke="#3e2448" stroke-width="1.4"/>
+    </g>
   </svg>`,
   },
 };
@@ -450,7 +491,7 @@ async function drawSprite(name) {
   const canvas = box.querySelector("canvas");
   // tall … 縦の長さの、横に対する倍率（全身の立ち絵は 1.5）
   const tall = p.tall || 1;
-  for (const px of [8, 16, 32, 64, p.px]) {
+  for (const px of [8, 16, 32, 64, 100, p.px]) {
     await drawPixels(canvas, p.face, px, Math.round(px * tall));
     SFX.tick();
     await sleep(140);
