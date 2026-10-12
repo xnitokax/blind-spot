@@ -442,18 +442,19 @@ async function talkLine(s) {
   const spk = m?.[1],
     text = m ? m[2] : fill(s);
   const chat = talkEl.classList.contains("chat");
-  // 会う場面（受付で依頼人と話す）は、チャットよりゆっくり。顔を見て話す間（ま）をとる
+  // 会う場面（受付で依頼人と話す）は、具体的な話が続くので、チャットより少しゆっくり（情景の文は、ふつうの速さ）
   //   pace … 読む時間の倍率 ／ beat … セリフが出る前の間
-  const pace = chat ? 1 : 1.6,
-    beat = chat ? 0 : 900;
-  // 話す人が変わるとき（右の自分 ⇔ 左の相手・情景）は、目を動かす間を足す
   const side = !m ? "narr" : spk === "*" ? talkSide : spk === "自分" ? "me" : "them";
-  if (talkSide && side !== talkSide) await talkWait(chat ? 300 : 800);
+  // 自分の問いかけ → 相手の答え：目を右から左へ動かす間。ここは、ほかより長めに（nitoka の調整：2026-10-13）
+  const fromMe = !chat && talkSide === "me" && side === "them";
+  const pace = chat ? 1 : 1.3,
+    beat = chat ? 0 : fromMe ? 990 : 700;
+  // 話す人が変わるとき（右の自分 ⇔ 左の相手・情景）は、目を動かす間を足す
+  if (talkSide && side !== talkSide) await talkWait(chat ? 300 : fromMe ? 880 : 800);
   talkSide = side;
   if (!m) {
-    await talkWait(beat);
     talkAdd(esc(text), "tk-narr");
-    return talkWait(readMs(text) * 1.1 * pace);
+    return talkWait(readMs(text) * 1.1);
   }
   if (spk === "*") {
     talkAdd(esc(text), "tk-sys");
@@ -465,7 +466,7 @@ async function talkLine(s) {
     talkAdd(`<span class="tk-name">${esc(handle || "あなた")}</span><span class="tk-bubble">${esc(text)}</span>`, "tk-me");
     SFX.enter();
     // 会う場面では、自分の短い問いかけのあとも、相手が答えるまでの間をしっかりとる
-    return talkWait(readMs(text) * (chat ? 0.8 : 1) * pace);
+    return talkWait(readMs(text) * (chat ? 0.8 : 1.76));
   }
   // 会う場面の師匠：吹き出しではなく、受付のイヤホンから聞こえる声（いつもの師匠の表示）
   if (!chat && spk === "師匠") {
