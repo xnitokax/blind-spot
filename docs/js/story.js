@@ -158,6 +158,8 @@ async function play(steps) {
     if (s.sprite) await drawSprite(s.sprite);
     // { hit: "king" } … 王妃のビンタ。「ペチーン！」と鳴って、王様の腹が赤くなる（talk.js の hitSprite）
     if (s.hit) await hitSprite(s.hit);
+    // { heal: "king" } … たたかれた跡（赤み）を消す
+    if (s.heal) await healSprite(s.heal);
     // { art: "文字の図" } … 文字で描いた図を、1行ずつ出す
     // 練習では、図を出したあと、タップするまで次へ進まない（図をじっくり見られるように）
     if (s.art) {

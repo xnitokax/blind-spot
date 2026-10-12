@@ -682,3 +682,12 @@ function redden(canvas, name) {
   c.fill();
   c.restore();
 }
+// { heal: "king" }：たたかれた跡を消す（やくそうを塗ってもらう）。赤みが、すうっと引いていく
+async function healSprite(name) {
+  spriteHits[name] = 0;
+  const one = [...document.querySelectorAll(`.rpg-sprite .rs-one[data-name="${name}"]`)].pop();
+  const canvas = one?.querySelector("canvas");
+  if (canvas?._base) canvas.getContext("2d").putImageData(canvas._base, 0, 0);
+  SFX.sparkle?.();
+  await wait(600);
+}
