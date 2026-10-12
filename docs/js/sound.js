@@ -414,6 +414,8 @@ const SFX = (() => {
     run: { bpm: 128, play: (n, t) => playRun(n, t) },
     // gain … 曲ごとの音量の倍率。daily はパッドがなく音が薄いので、ほかの曲と同じくらいに聞こえるよう上げる
     daily: { bpm: 90, gain: 2, play: (n, t) => playDaily(n, t) },
+    // office … 探偵事務所の受付（会話パート）。夜のジャズ・ラウンジ風：エレピ・歩くベース・ブラシ・ときどきビブラフォン
+    office: { bpm: 76, gain: 1.9, play: (n, t) => playOffice(n, t) },
     // 練習のゲームの世界：castle（王城の、のんきな行進曲）／dungeon（ダンジョンの、うす暗い曲）／boss（魔王城の戦闘曲）
     castle: { bpm: 116, gain: 1.6, play: (n, t) => playChip(CHIP.castle, n, t) },
     dungeon: { bpm: 84, gain: 1.8, play: (n, t) => playChip(CHIP.dungeon, n, t) },
@@ -961,6 +963,67 @@ const SFX = (() => {
     [3, 7, 523.25],
     [3, 12, 440.0],
   ];
+  // ── 探偵事務所の受付の曲（office）：夜のジャズ・ラウンジ風。会話パートで流れる ──
+  //   Cm9 → Fm9 → Dm7♭5 → G7♭9（短調の ii-V。フィルム・ノワールの雰囲気）。8分はスウィング（裏を3連の3つ目に）
+  const OFFICE = [
+    { ep: [155.56, 196.0, 233.08, 293.66], walk: [65.41, 77.78, 98.0, 82.41] }, // Cm9
+    { ep: [207.65, 261.63, 311.13, 392.0], walk: [87.31, 103.83, 98.0, 77.78] }, // Fm9
+    { ep: [174.61, 207.65, 261.63, 293.66], walk: [73.42, 87.31, 98.0, 103.83] }, // Dm7♭5
+    { ep: [174.61, 207.65, 246.94, 293.66], walk: [98.0, 61.74, 73.42, 69.3] }, // G7♭9
+  ];
+  // ビブラフォン（8小節ループの後半4小節だけ）：[何小節目 0〜3, 16分の位置, 周波数]
+  const OFFICE_MEL = [
+    [0, 2, 392.0],
+    [0, 6, 466.16],
+    [0, 10, 523.25],
+    [1, 0, 622.25],
+    [1, 8, 587.33],
+    [2, 4, 523.25],
+    [2, 10, 466.16],
+    [3, 0, 392.0],
+    [3, 6, 349.23],
+  ];
+  function playOffice(n, t) {
+    const ST = bgm.stepLen,
+      s = n % 16,
+      bar = Math.floor(n / 16),
+      bus = bgm.bus;
+    const ch = OFFICE[bar % 4];
+    const sw = s % 4 === 2 ? t + ST * 0.67 : t; // 裏の8分を遅らせて、スウィングさせる
+    // エレピ：1拍目にゆったり、3拍目の裏に短く添える
+    if (s === 0) ep(bus, t, ch.ep, ST * 9, 0.85);
+    if (s === 10) ep(bus, sw, ch.ep, ST * 3, 0.4);
+    // 歩くベース：4分音符。最後の音は、次の和音の根音へ寄っていく
+    if (s % 4 === 0) roundBass(bus, t, ch.walk[s / 4], ST * 3.2);
+    // ブラシ：2拍目と4拍目に「シャー」、ライドは4分と、スウィングした裏をそっと
+    if (s === 4 || s === 12) brush(bus, t);
+    if (s % 4 === 0) hat(bus, t, 0.5);
+    if (s % 4 === 2 && Math.random() < 0.6) hat(bus, sw, 0.3);
+    if (bar % 8 >= 4)
+      for (const [mb, at, f] of OFFICE_MEL) if (mb === (bar % 8) - 4 && at === s) vibe(bus, at % 4 === 2 ? sw : t, f);
+  }
+  // ブラシ：低めに絞ったノイズが、ゆっくりふくらんで消える（スネアをブラシでなでる音）
+  function brush(bus, t) {
+    const g = voice(
+      bus,
+      t,
+      0.32,
+      0.03,
+      g => {
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuf;
+        const f = ctx.createBiquadFilter();
+        f.type = "bandpass";
+        f.frequency.value = 2400;
+        f.Q.value = 0.6;
+        src.connect(f).connect(g);
+        src.start(t, Math.random());
+        src.stop(t + 0.36);
+      },
+      0.06,
+    );
+    send(g, 0.25);
+  }
   function playDaily(n, t) {
     const ST = bgm.stepLen,
       s = n % 16,

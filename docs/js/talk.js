@@ -288,6 +288,8 @@ async function talkAsk(a) {
 async function runTalk(steps) {
   const res = {};
   talkEl.className = "on chat";
+  // 会話パートの BGM：探偵事務所の受付の曲（右上の BGM の設定には従う。会話の画面にはボタンを出さない）
+  SFX.music(true, { track: "office" });
   let shown = false; // 何か出したか（場面を切りかえる前に、読み終える間をおくため）
   for (const s of steps || []) {
     const mode = s?.chat && "chat" || s?.meet && "meet";
@@ -306,6 +308,8 @@ async function runTalk(steps) {
     if (mode) shown = false;
   }
   await talkWait(SCENE_END_MS);
+  // 会話が終わったら、曲はゆっくり消す（次の任務では、いつもの曲に戻る）
+  SFX.music(false, { track: "calm" });
   talkEl.classList.add("leaving");
   await sleep(500);
   talkEl.className = "";
