@@ -31,6 +31,11 @@ async function startChapter(ch) {
   CH = ch;
   state = freshState();
   resetScreen();
+  // 進み具合を覚えておく（タイトル画面で continue と打つと、この任務から始まる。練習とエピローグは覚えない）
+  if (!CH.practice && CH.objectives?.length)
+    try {
+      localStorage.setItem("uzu-progress", CH.code);
+    } catch {}
 
   // 師匠が回線をつなぐ（移動の演出）
   await busy(async () => {
@@ -560,7 +565,7 @@ async function showEnding(text, opt = {}) {
 
   const ov = $("overlay");
   ov.className = "on" + (opt.cut ? " cut visible" : "");
-  ov.innerHTML = `<div class="inner"><div class="text"></div><div class="clues"></div><div class="todo"></div><div class="endtag"></div><div class="hint">クリック / Enter で${opt.retry ? "この任務をやり直す" : "タイトルに戻る"}</div></div>`;
+  ov.innerHTML = `<div class="inner"><div class="text"></div><div class="clues"></div><div class="todo"></div><div class="endtag"></div><div class="hint">クリック / Enter で${opt.retry ? "この任務をやり直す" : CH?.afterTalk ? "続ける" : "タイトルに戻る"}</div></div>`;
   ov.scrollTop = 0;
   await sleep(50);
   ov.classList.add("visible");
@@ -637,7 +642,17 @@ function overlayInput() {
   }
   $("overlay").className = "";
   if (state.retry) busy(() => startChapter(CH));
+  else if (CH?.afterTalk) continueStory();
   else boot();
+}
+
+// 任務のあと：師匠とのチャット（報告と理解度チェック）→ 次の任務へ（チャットの { next: "回線コード" }）
+async function continueStory() {
+  const { next } = await runTalk(CH.afterTalk);
+  const ch = next && (await openChapter(next));
+  if (!ch) return boot();
+  if (ch.prologue) await runTalk(ch.prologue);
+  return startChapter(ch);
 }
 $("overlay").addEventListener("click", overlayInput);
 document.addEventListener("keydown", e => {

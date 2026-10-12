@@ -39,7 +39,8 @@ function updateNext() {
     chips = handle
       ? [
           ...(train && !trained ? [train] : []),
-          chip("connect ", "connect 回線コード…", "go"),
+          ...(storyCmd() ? [chip(storyCmd(), `${storyCmd()}（仕事）`, "go")] : [chip("connect ", "connect 回線コード…", "go")]),
+          ...(savedCode() ? [chip("continue", "continue（続きから）", "go")] : []),
           ...(train && trained ? [train] : []),
           chip("handle ", "handle（呼び名を変える）"),
         ]

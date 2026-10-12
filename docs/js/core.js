@@ -25,6 +25,15 @@ try {
 } catch {}
 // 練習の回線コード（タイトル画面で案内する文字。小文字で見せる）
 const trainCmd = () => (S.training ? `connect ${S.training.toLowerCase()}` : "");
+// 仕事（物語）の始まりの回線（connect teiwa）と、続きから（保存した任務の回線コード）
+const storyCmd = () => (S.story ? `connect ${S.story.toLowerCase()}` : "");
+const savedCode = () => {
+  try {
+    return localStorage.getItem("uzu-progress") || "";
+  } catch {
+    return "";
+  }
+};
 const who = () => handle || "guest";
 // {elapsed} … clockStart の場所に来てから何分たったか（1分より短くても 1）／ {turn} … ターン制のいまのターン
 const elapsedMin = () =>
@@ -121,8 +130,14 @@ async function openChapter(code) {
   }
   for (const box of S.chapters) {
     const text = await NZ.unlock(box, c);
-    if (text !== null) return JSON.parse(text);
+    if (text === null) continue;
+    // 公開データの任務には、回線コードそのものは入っていない（答えなので）。開けたコードを覚えておく（続きからの保存に使う）
+    const ch = JSON.parse(text);
+    ch.code ??= String(code).trim().toUpperCase();
+    return ch;
   }
+  // 見つからなければ、続きの章（scenario.more.js）も読み込んで、もう一度探す（話の流れで次の任務へ進むとき）
+  if (await loadMore().catch(() => false)) return openChapter(code);
   return null;
 }
 

@@ -109,7 +109,9 @@ async function boot(autoCode) {
     } else {
       await speak([
         `[師匠] おかえり、${handle}。`,
-        "[師匠] 回線コードは、connect のあとに打て。",
+        ...(storyCmd()
+          ? [savedCode() ? `[師匠] 続きからなら continue。最初からなら ${storyCmd()} だ。` : `[師匠] 仕事は ${storyCmd()} だ。`]
+          : ["[師匠] 回線コードは、connect のあとに打て。"]),
         ...(!trained && trainCmd() ? [`[師匠] 練習がまだなら、${trainCmd()} だ。`] : []),
       ]);
     }

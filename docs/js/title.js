@@ -24,9 +24,17 @@ async function titleCommand(raw) {
     return speak([
       "[師匠] まずは呼び名だ。handle と打って、その後ろに名前。例えば handle anonymous",
     ]);
+  // 続きから：最後に始めた任務から（物語の始まりの会話は飛ばす）
+  if (c === "continue") {
+    const ch = savedCode() && (await busy(() => openChapter(savedCode())));
+    if (!ch) return speak(["[師匠] 続きは、まだないぞ。最初からなら " + storyCmd() + " だ。"]);
+    state.mode = null;
+    return startChapter(ch);
+  }
   if (c === "help") {
     const rows = [
-      ["connect <回線コード>", "師匠から受け取った回線につなぐ"],
+      ...(storyCmd() ? [[storyCmd(), "仕事を始める（物語の最初から）"]] : [["connect <回線コード>", "師匠から受け取った回線につなぐ"]]),
+      ...(savedCode() ? [["continue", "続きから（最後に始めた任務から）"]] : []),
       ...(trainCmd() ? [[trainCmd(), "師匠の練習用サーバーで、操作を練習する（何回でも）"]] : []),
       ["handle <名前>", "呼び名を変える"],
     ]
@@ -300,10 +308,11 @@ async function confirmHandle(raw) {
       if (m.autoCode) await autoConnect(m.autoCode);
       return;
     }
-    // 練習の案内は uzu 側で師匠がするので、ここでは肩慣らしを軽く勧めるだけ
+    // 肩慣らし（練習）を勧めて、仕事の始め方も伝えておく
     await speak([
       `[師匠] よし、${handle}。覚えた。`,
       `[師匠] 肩慣らしに、${trainCmd()} で練習していった方がいいぞ。`,
+      ...(storyCmd() ? [`[師匠] 準備ができたら、${storyCmd()} だ。仕事を始める。`] : []),
     ]);
     return;
   }
@@ -356,6 +365,8 @@ async function connectLine(code) {
       return print("回線コードが違います。師匠に確認してください。", "alert");
     }
     state.mode = null;
+    // 物語の始まり（prologue）：師匠とのチャット → 依頼人と会う場面。それから回線をつなぐ
+    if (ch.prologue) await runTalk(ch.prologue);
     return startChapter(ch);
   }
 }

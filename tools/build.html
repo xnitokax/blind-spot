@@ -301,6 +301,13 @@
         ) {
           log(`⚠ training の回線コード ${SCENARIO.training} の任務がありません`, "ng");
         }
+        // 物語の始まりの回線（story）と、トークの { next }（次の任務へ）の回線コードが、本当にあるか
+        const hasCode = c => Object.values(SCENARIO.chapters).some(ch => NZ.norm(ch.code) === NZ.norm(c));
+        if (SCENARIO.story && !hasCode(SCENARIO.story))
+          log(`⚠ story の回線コード ${SCENARIO.story} の任務がありません`, "ng");
+        for (const [id, ch] of Object.entries(SCENARIO.chapters))
+          for (const s of [...(ch.prologue || []), ...(ch.afterTalk || [])])
+            if (s?.next && !hasCode(s.next)) log(`⚠ ${id} のトークの next「${s.next}」の任務がありません`, "ng");
         const data = {
           title: SCENARIO.title,
           gameOver: SCENARIO.gameOver,
@@ -308,6 +315,7 @@
           case: SCENARIO.case,
           author: SCENARIO.author,
           training: SCENARIO.training,
+          story: SCENARIO.story,
           demo,
           chapters,
         };
