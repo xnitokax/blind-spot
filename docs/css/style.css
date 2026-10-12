@@ -3751,3 +3751,9 @@ body[data-zone="rpg"] #eviCount {
   color: #fff;
   padding-top: 4px;
 }
+/* 画像ファイルの立ち絵（ほかのツールで描いた絵）は、なめらかなまま出す */
+.rpg-sprite .rs-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}

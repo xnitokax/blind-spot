@@ -312,7 +312,8 @@ function drawPixels(canvas, svg, px, h = px) {
       done();
     };
     img.onerror = () => done();
-    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    // svg … SVG の文字列か、画像ファイルの場所（img/maou.png など）
+    img.src = String(svg).trim().startsWith("<") ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg) : svg;
   });
 }
 // { reveal }：影から顔へ。粗いモザイクから、だんだん細かくなって浮かび上がる
@@ -489,12 +490,25 @@ async function drawSprite(name) {
     `<div class="rpg-sprite reveal"><canvas></canvas>${p.name ? `<div class="rs-name">${esc(p.name)}</div>` : ""}</div>`,
   );
   const canvas = box.querySelector("canvas");
-  // tall … 縦の長さの、横に対する倍率（全身の立ち絵は 1.5）
-  const tall = p.tall || 1;
-  for (const px of [8, 16, 32, 64, 100, p.px]) {
-    await drawPixels(canvas, p.face, px, Math.round(px * tall));
+  // img … 画像ファイル（ほかのツールで描いた絵）。あれば、モザイクから浮かび上がったあと、その画像をそのまま出す
+  //   読めなければ、face（SVG）をドット絵にして出す
+  const img = p.img && (await new Promise(ok => {
+    const i = new Image();
+    i.onload = () => ok(i);
+    i.onerror = () => ok(null);
+    i.src = p.img;
+  }));
+  const src = img ? p.img : p.face;
+  // tall … 縦の長さの、横に対する倍率（全身の立ち絵は 1.5）。画像なら、画像の縦横比
+  const tall = img ? img.naturalHeight / img.naturalWidth : p.tall || 1;
+  for (const px of [8, 16, 32, 64, 100, ...(img ? [] : [p.px])]) {
+    await drawPixels(canvas, src, px, Math.round(px * tall));
     SFX.tick();
     await sleep(140);
+  }
+  if (img) {
+    img.className = "rs-img";
+    canvas.replaceWith(img);
   }
   scrollDown();
   await wait(500);
