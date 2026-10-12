@@ -99,11 +99,21 @@ async function boot(autoCode) {
       SFX.tick();
     }
     await wait(300);
+    // 物語の始まり（opening）：初めて開いたとき、呼び名を決める前に流れる（汐里が事務所に来る。雰囲気をつかんでから名前を決める）
+    let opened = false;
+    if (S.opening && !openingSeen()) {
+      await runTalk(S.opening);
+      opened = true;
+      try {
+        localStorage.setItem("uzu-opening", "1");
+      } catch {}
+    }
     // 初めての人：師匠がハンドル名の決め方（＝コマンドの打ち方）を教える
     if (!handle) {
       await speak([
-        "[師匠] ……繋がったな。聞こえるか。",
-        "[師匠] 始める前に、お前の呼び名を決めておく。本名は使うなよ。",
+        ...(opened
+          ? ["[師匠] ……で、だ。仕事の前に、一つ決めとくことがある。", "[師匠] お前の呼び名だ。表の名前で潜るバカはいねえからな。"]
+          : ["[師匠] ……繋がったな。聞こえるか。", "[師匠] 始める前に、お前の呼び名を決めておく。本名は使うなよ。"]),
         "[師匠] handle と打って、その後ろに名前だ。例えば handle anonymous",
       ]);
     } else {

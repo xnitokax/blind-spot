@@ -3688,3 +3688,44 @@ body[data-zone="rpg"] #eviCount {
     margin-top: 10px;
   }
 }
+/* 写真のドット絵：小さな canvas を、ドットのまま拡大して見せる */
+.tk-photo canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #000;
+}
+/* 顔が浮かび上がったら、写真が少しだけ明るく光る */
+.tk-photo.lit {
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.7),
+    0 0 26px rgba(255, 220, 200, 0.12);
+}
+/* 会う場面の師匠：吹き出しではなく、受付のイヤホンから聞こえる声（ターミナルの師匠と同じ見た目） */
+.tk-voice {
+  color: var(--voice);
+  border-left: 3px solid rgba(143, 200, 255, 0.45);
+  background: rgba(143, 200, 255, 0.06);
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.tk-voice .who {
+  color: var(--dim);
+  margin-right: 10px;
+  font-size: 12px;
+}
+.tk-voice .who::before {
+  content: "▸ ";
+}
+/* 「タップで先へ」：いつも画面の下に、うすく */
+.tk-tip {
+  text-align: center;
+  font-size: 11px;
+  color: var(--dim);
+  opacity: 0.6;
+  padding: 4px 0 10px;
+  letter-spacing: 0.1em;
+}

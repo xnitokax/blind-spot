@@ -24,6 +24,8 @@ async function titleCommand(raw) {
     return speak([
       "[師匠] まずは呼び名だ。handle と打って、その後ろに名前。例えば handle anonymous",
     ]);
+  // 物語の始まり（汐里が事務所に来る場面）を、もう一度見る
+  if (c === "opening" && S.opening) return runTalk(S.opening);
   // 続きから：最後に始めた任務から（物語の始まりの会話は飛ばす）
   if (c === "continue") {
     const ch = savedCode() && (await busy(() => openChapter(savedCode())));
@@ -311,8 +313,8 @@ async function confirmHandle(raw) {
     // 肩慣らし（練習）を勧めて、仕事の始め方も伝えておく
     await speak([
       `[師匠] よし、${handle}。覚えた。`,
-      `[師匠] 肩慣らしに、${trainCmd()} で練習していった方がいいぞ。`,
-      ...(storyCmd() ? [`[師匠] 準備ができたら、${storyCmd()} だ。仕事を始める。`] : []),
+      `[師匠] 潜る前に、肩慣らしだ。${trainCmd()} で、ちょっと練習していけ。`,
+      ...(storyCmd() ? [`[師匠] 準備ができたら ${storyCmd()}。……今夜、潜るぞ。`] : []),
     ]);
     return;
   }

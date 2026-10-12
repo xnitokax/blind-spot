@@ -27,6 +27,14 @@ try {
 const trainCmd = () => (S.training ? `connect ${S.training.toLowerCase()}` : "");
 // 仕事（物語）の始まりの回線（connect teiwa）と、続きから（保存した任務の回線コード）
 const storyCmd = () => (S.story ? `connect ${S.story.toLowerCase()}` : "");
+// 物語の始まり（opening）を、もう見たか
+const openingSeen = () => {
+  try {
+    return localStorage.getItem("uzu-opening") === "1";
+  } catch {
+    return false;
+  }
+};
 const savedCode = () => {
   try {
     return localStorage.getItem("uzu-progress") || "";

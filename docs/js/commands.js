@@ -191,6 +191,7 @@ const COMMANDS = {
     }
     if (d.say && !state.said.has(d)) {
       state.said.add(d);
+      await busy(() => tapWait()); // フォルダの中身を読んでから、師匠が話す（tap の任務）
       await speak(d.say, BEAT.react);
     }
     setGuide(d.next, d.say);

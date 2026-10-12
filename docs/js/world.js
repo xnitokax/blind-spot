@@ -184,13 +184,13 @@ async function enterNode(id, opt = {}) {
   // clockStart：ここから時間を測り始める（台本の {elapsed} に、ここから何分たったかが入る）
   if (node.clockStart && !state.clock0) state.clock0 = Date.now();
 
-  // 練習：来たときに会話（初めての say / scene、条件に合う arrive）があるなら、
-  // 行き先の一覧は会話が終わってから出す（場所の説明 → 会話 → 選べる行き先、の順）
+  // 来たときに会話（初めての say / scene、条件に合う arrive）があるなら、行き先の一覧は会話が終わってから出す
+  // （場所の説明 → 会話 → 選べる行き先、の順）。練習ではいつも。任務では、ノードに talkFirst: true と書いた場所だけ
   const arrives = (node.arrive || []).filter(
     (ev, i) => !state.said.has(`arrive:${id}:${i}`) && cond(ev.if),
   );
-  const talkFirst =
-    tapMode() && ((first && (node.say?.length || node.scene)) || arrives.length > 0);
+  const talks = (first && (node.say?.length || node.scene)) || arrives.length > 0;
+  const talkFirst = tapMode() && (CH.practice || node.talkFirst) && talks;
 
   await busy(async () => {
     const view = { say: first ? node.say : null, noMenu: talkFirst };
@@ -198,6 +198,8 @@ async function enterNode(id, opt = {}) {
     const menus = state.menus || 0;
     // 場所の説明を読む間をおいてから、会話が始まる
     if (talkFirst) await pause(900);
+    // 任務（tap）：画面と行き先の一覧が出たら、読み終えてタップしてから、師匠が話す
+    else if (talks && !view.said && !CH.practice) await tapWait();
     if (first) {
       if (node.clue) {
         await wait(600);

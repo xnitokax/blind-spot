@@ -254,7 +254,7 @@ async function typeLine(s, opt = {}) {
     // 師匠のセリフは、読み切れるように少しゆっくり（「, 」「. 」でも一拍おく）
     //   練習の師匠は、もう少しゆっくり（説明をちゃんと読めるように）
     const slow = tapMode();
-    const charMs = say || name ? (slow ? 46 : 33) : slow ? 30 : 16;
+    const charMs = say || name ? (slow ? 46 : 33) : slow && !cls ? 30 : 16;
     await sleep(opt.charMs ?? ("。、…！？.,".includes(chars[i]) ? 90 : charMs));
   }
   t.textContent = text;
@@ -281,7 +281,8 @@ async function speak(lines, beat = 0) {
 // タップ（クリック・Enter）するまで次へ進まない（読み終えてから、師匠が話し出す）
 let tapResolve = null,
   tapHints = 0;
-const tapMode = () => !!CH?.practice && !REDUCED;
+// 練習（practice）と、tap: true の任務（任務1・2）で使う
+const tapMode = () => !!(CH?.practice || CH?.tap) && !REDUCED;
 // 「▼ タップで次へ」を、出たものの下に1行で出して、タップを待つ（文字は最初の数回だけ。あとは ▼ だけ）
 function tapWait() {
   if (!tapMode() || fast || state?.over) return Promise.resolve();
@@ -306,9 +307,10 @@ function tapGo() {
 // セリフを1行出したあとの間
 async function afterLine(s) {
   const p = lineParts(s);
-  // 練習は、読み切れるように行と行の間を長めに
+  // 練習と tap の任務は、読み切れるように、セリフとナレーションの間を長めに（[*] [!] のようなシステムの行は、いつもの速さ）
   const slow = tapMode();
-  await (p.say || p.who ? pause(slow ? 1150 : 560) : wait(slow ? 750 : 420));
+  if (p.say || p.who) return pause(slow ? 1150 : 560);
+  await wait(slow && !p.cls ? 750 : 420);
 }
 
 // ---------------- 間（ま） ----------------

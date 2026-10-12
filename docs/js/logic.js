@@ -456,6 +456,8 @@ async function showResults(conf, q, terms, hits, shown, limit) {
     });
   }
   if (nothing && !lines.length) lines.push("[師匠] この中に必要そうなものはなさそうだな。");
+  // 任務（tap）：検索結果が出たら、読み終えてタップしてから、師匠が話す
+  if (shown.length && (lines.length || noteScripts.length)) await tapWait();
   await speak(lines, BEAT.react);
   // notes の script（師匠が話したあとの見せ場）
   for (const sc of noteScripts) await play(sc);
