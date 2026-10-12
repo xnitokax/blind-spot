@@ -7,6 +7,7 @@
 const talkEl = $("talk");
 let talkSkip = false; // タップで、いまの待ち時間を飛ばす
 let talkPick = null; // 選択肢を待っているとき：選んだら呼ぶ
+let talkSide = null; // いま話している側（me … 自分 ／ them … 相手 ／ narr … 情景）。話し手が変わったら間をとる
 
 // タップで飛ばせる待ち時間
 function talkWait(ms) {
@@ -406,6 +407,7 @@ async function drawShadow(canvas, p) {
 
 // トークの画面を開く（mode：chat か meet）
 function talkMode(kind, opt = {}) {
+  talkSide = null; // 場面が変わったら、話し手の切りかわりは数えなおす
   talkEl.className = `on ${kind}`;
   const head =
     kind === "chat"
@@ -442,8 +444,12 @@ async function talkLine(s) {
   const chat = talkEl.classList.contains("chat");
   // 会う場面（受付で依頼人と話す）は、チャットよりゆっくり。顔を見て話す間（ま）をとる
   //   pace … 読む時間の倍率 ／ beat … セリフが出る前の間
-  const pace = chat ? 1 : 1.4,
-    beat = chat ? 0 : 700;
+  const pace = chat ? 1 : 1.6,
+    beat = chat ? 0 : 900;
+  // 話す人が変わるとき（右の自分 ⇔ 左の相手・情景）は、目を動かす間を足す
+  const side = !m ? "narr" : spk === "*" ? talkSide : spk === "自分" ? "me" : "them";
+  if (talkSide && side !== talkSide) await talkWait(chat ? 300 : 800);
+  talkSide = side;
   if (!m) {
     await talkWait(beat);
     talkAdd(esc(text), "tk-narr");
@@ -458,7 +464,8 @@ async function talkLine(s) {
     await talkWait(600 + beat);
     talkAdd(`<span class="tk-name">${esc(handle || "あなた")}</span><span class="tk-bubble">${esc(text)}</span>`, "tk-me");
     SFX.enter();
-    return talkWait(readMs(text) * 0.8 * pace);
+    // 会う場面では、自分の短い問いかけのあとも、相手が答えるまでの間をしっかりとる
+    return talkWait(readMs(text) * (chat ? 0.8 : 1) * pace);
   }
   // 会う場面の師匠：吹き出しではなく、受付のイヤホンから聞こえる声（いつもの師匠の表示）
   if (!chat && spk === "師匠") {
