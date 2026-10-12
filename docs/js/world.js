@@ -177,6 +177,8 @@ async function enterNode(id, opt = {}) {
   await busy(async () => {
     const view = { say: first ? node.say : null };
     await showNode(view);
+    // 練習：新しい場所の画面を読んでから、師匠が話す（タップするまで待つ）
+    if (first && !view.said && (node.say?.length || node.scene || node.clue)) await tapWait();
     if (first) {
       if (node.clue) {
         await wait(600);
@@ -188,10 +190,15 @@ async function enterNode(id, opt = {}) {
       setGuide(node.next);
     }
     // arrive：来るたびに、条件に合う出来事を上から順に流す（それぞれ一度だけ。例：パンツを持って戻ると、平手打ち）
+    let readFirst = !first; // 2回目以降に来たときも、画面を読んでから出来事が始まる（練習）
     for (const [i, ev] of (node.arrive || []).entries()) {
       const k = `arrive:${id}:${i}`;
       if (state.halt || state.said.has(k) || !cond(ev.if)) continue;
       state.said.add(k);
+      if (readFirst) {
+        readFirst = false;
+        await tapWait();
+      }
       await play(ev.script || []);
     }
     if (await followWarp()) return;

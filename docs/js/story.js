@@ -647,11 +647,14 @@ document.addEventListener("keydown", e => {
     if (!e.repeat) overlayInput();
     return;
   }
+  // 練習でタップを待っていたら、Enter（スペース）で次へ進むだけ（早送りには数えない）
+  if (tapResolve && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault();
+    if (!e.repeat) tapGo();
+    return;
+  }
   if (isBusy() && state?.mode?.type !== "choose" && (e.key === "Enter" || e.key === " ")) {
     e.preventDefault();
-    if (e.repeat) return;
-    // 練習でタップを待っていたら、次へ進むだけ（早送りには数えない）
-    if (tapGo()) return;
-    if (skipTap()) fast = true;
+    if (!e.repeat && skipTap()) fast = true;
   }
 });

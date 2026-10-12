@@ -375,6 +375,8 @@ async function reactTo(at, key) {
   state.said.add(k);
   await busy(async () => {
     await wait(BEAT.small);
+    // 練習：出てきた一覧（help など）を読んでから、師匠が話す（タップするまで待つ）
+    await tapWait();
     await play(r.script || []);
   });
   if (await busy(() => followWarp())) return;

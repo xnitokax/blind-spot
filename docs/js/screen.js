@@ -247,7 +247,8 @@ async function typeLine(s, opt = {}) {
     if (name && i % 3 === 0 && chars[i].trim()) SFX.tick();
     // 師匠のセリフは、読み切れるように少しゆっくり（「, 」「. 」でも一拍おく）
     //   練習の師匠は、もう少しゆっくり（説明をちゃんと読めるように）
-    const charMs = say ? (tapMode() ? 46 : 33) : name ? 33 : 16;
+    const slow = tapMode();
+    const charMs = say || name ? (slow ? 46 : 33) : slow ? 30 : 16;
     await sleep(opt.charMs ?? ("。、…！？.,".includes(chars[i]) ? 90 : charMs));
   }
   t.textContent = text;
@@ -269,11 +270,12 @@ async function speak(lines, beat = 0) {
 }
 
 // ---------------- 練習：タップで進む ----------------
-// 練習の章（チュートリアル）では、師匠のセリフと図のあとは、タップ（クリック・Enter）するまで次へ進まない
-//   自分のペースで読めるように。ゲームの世界（rpg）では、ふつうのテンポで流す
+// 練習の章（チュートリアル）では、セリフ（師匠・登場人物）・ナレーション・図のあとは、
+// タップ（クリック・Enter）するまで次へ進まない。自分のペースで読めるように
+//   ゲームの世界（rpg）も同じ（昔の RPG の「▼」で次へ）。新しい画面や一覧が出たあとも、読んでから師匠が話す
 let tapResolve = null,
   tapHints = 0;
-const tapMode = () => !!CH?.practice && document.body.dataset.zone !== "rpg" && !REDUCED;
+const tapMode = () => !!CH?.practice && !REDUCED;
 // el の行の終わりに「▼」を点滅させて、タップを待つ（最初の数回だけ「タップで次へ」と書く）
 function tapWait(el) {
   if (!tapMode() || fast || state?.over) return Promise.resolve();
@@ -302,7 +304,8 @@ function tapGo() {
 // セリフを1行出したあとの間：練習の師匠のセリフはタップ待ち、ほかはいつもの間
 async function afterLine(s, el) {
   const p = lineParts(s);
-  if (p.say && tapMode()) return tapWait(el);
+  // セリフとナレーションはタップ待ち（[*] [!] のようなシステムの行は、ふつうに流す）
+  if ((p.say || p.who || !p.cls) && tapMode()) return tapWait(el);
   await (p.say || p.who ? pause(560) : wait(420));
 }
 
