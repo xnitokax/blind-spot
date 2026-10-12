@@ -159,10 +159,13 @@ const SFX = (() => {
       stale = true;
       if (ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
     },
-    // キー入力：乾いたクリックに、少しだけ芯のある音を重ねる
+    // キー入力：iPhone のキーボードのような、短くて柔らかい「トッ」
+    //   低い音でふくらみ（ト）、真ん中のノイズではじく音（ッ）、ごく小さな高い音で輪郭。毎回、高さを少しだけ揺らす
     key: () => {
-      hiss(0.014, { vol: 0.075, freq: 4800, q: 1.2 });
-      tone(1900 + Math.random() * 300, 0.012, { vol: 0.02 });
+      const r = 0.94 + Math.random() * 0.12;
+      tone(240 * r, 0.03, { vol: 0.07, slide: 170 * r, attack: 0.002 });
+      hiss(0.022, { vol: 0.07, freq: 2300 * r, q: 0.9, attack: 0.001 });
+      hiss(0.006, { vol: 0.012, filter: "highpass", freq: 7000, attack: 0.001 });
     },
     // 師匠の無線：行の頭で一度だけ「ザッ」
     radio: () => {
