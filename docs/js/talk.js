@@ -454,11 +454,13 @@ async function talkLine(s) {
   const pace = chat ? 1 : 1.3 * k,
     beat = chat ? 0 : fromMe ? 990 : 700 * k;
   // 話す人が変わるとき（右の自分 ⇔ 左の相手・情景）は、目を動かす間を足す
-  if (talkSide && side !== talkSide) await talkWait(chat ? 300 : fromMe ? 880 : 800 * k);
+  //   地の文（情景）のあとは、目の移動の間はいらない（読み終えたら、すぐ次へ）
+  if (talkSide && talkSide !== "narr" && side !== talkSide) await talkWait(chat ? 300 : fromMe ? 880 : 800 * k);
   talkSide = side;
   if (!m) {
     talkAdd(esc(text), "tk-narr");
-    return talkWait(readMs(text) * 1.1);
+    // 情景の文：会う場面では、読む時間を少し短めに（長い情景のあとで、待たされないように）
+    return talkWait(readMs(text) * (chat ? 1.1 : 0.9));
   }
   if (spk === "*") {
     talkAdd(esc(text), "tk-sys");
