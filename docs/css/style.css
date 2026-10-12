@@ -3191,6 +3191,10 @@ body[data-zone="rpg"] #eviCount {
 .cast.hero {
   --cast: #9dffb0;
 }
+/* 主人公（自分）：ゲームの外で、師匠と話すとき。色は控えめに */
+.cast.me {
+  --cast: #c9d1cd;
+}
 /* コマンドを選ぶ窓（{ choose }） */
 .rpg-menu {
   display: inline-block;
