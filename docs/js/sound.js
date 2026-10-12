@@ -422,7 +422,8 @@ const SFX = (() => {
     // gain … 曲ごとの音量の倍率。daily はパッドがなく音が薄いので、ほかの曲と同じくらいに聞こえるよう上げる
     daily: { bpm: 90, gain: 2, play: (n, t) => playDaily(n, t) },
     // office … 探偵事務所の受付（会話パート）。夜のジャズ・ラウンジ風：エレピ・歩くベース・ブラシ・ときどきビブラフォン
-    office: { bpm: 76, gain: 1.9, play: (n, t) => playOffice(n, t) },
+    //   2026-10-13：会話の場面で小さく聞こえたので 1.5 倍（1.9 → 2.8）
+    office: { bpm: 76, gain: 2.8, play: (n, t) => playOffice(n, t) },
     // 練習のゲームの世界：castle（王城の、のんきな行進曲）／dungeon（ダンジョンの、うす暗い曲）／boss（魔王城の戦闘曲）
     castle: { bpm: 116, gain: 1.6, play: (n, t) => playChip(CHIP.castle, n, t) },
     dungeon: { bpm: 84, gain: 1.8, play: (n, t) => playChip(CHIP.dungeon, n, t) },

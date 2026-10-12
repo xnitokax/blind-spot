@@ -440,9 +440,14 @@ async function talkLine(s) {
   const spk = m?.[1],
     text = m ? m[2] : fill(s);
   const chat = talkEl.classList.contains("chat");
+  // 会う場面（受付で依頼人と話す）は、チャットよりゆっくり。顔を見て話す間（ま）をとる
+  //   pace … 読む時間の倍率 ／ beat … セリフが出る前の間
+  const pace = chat ? 1 : 1.4,
+    beat = chat ? 0 : 700;
   if (!m) {
+    await talkWait(beat);
     talkAdd(esc(text), "tk-narr");
-    return talkWait(readMs(text) * 1.1);
+    return talkWait(readMs(text) * 1.1 * pace);
   }
   if (spk === "*") {
     talkAdd(esc(text), "tk-sys");
@@ -450,16 +455,17 @@ async function talkLine(s) {
     return talkWait(1200);
   }
   if (spk === "自分") {
-    await talkWait(600);
+    await talkWait(600 + beat);
     talkAdd(`<span class="tk-name">${esc(handle || "あなた")}</span><span class="tk-bubble">${esc(text)}</span>`, "tk-me");
     SFX.enter();
-    return talkWait(readMs(text) * 0.8);
+    return talkWait(readMs(text) * 0.8 * pace);
   }
   // 会う場面の師匠：吹き出しではなく、受付のイヤホンから聞こえる声（いつもの師匠の表示）
   if (!chat && spk === "師匠") {
+    await talkWait(beat);
     talkAdd(`<span class="who">師匠</span><span>${esc(shishou(text))}</span>`, "tk-voice");
     SFX.radio();
-    return talkWait(readMs(text));
+    return talkWait(readMs(text) * pace);
   }
   // 相手：チャットでは「入力中…」を出してから届く
   if (chat) {
@@ -467,10 +473,10 @@ async function talkLine(s) {
     // 長いメッセージほど、打つのに時間がかかる
     await talkWait(Math.min(1300, 400 + [...text].length * 18));
     typing.remove();
-  }
+  } else await talkWait(beat);
   talkAdd(`<span class="tk-name">${esc(spk)}</span><span class="tk-bubble">${esc(text)}</span>`, "tk-them");
   SFX.radio();
-  return talkWait(readMs(text));
+  return talkWait(readMs(text) * pace);
 }
 
 // 理解度チェック：{ ask: { q, options: [{ label, ok, reply: [...] }], miss: [...] } }
