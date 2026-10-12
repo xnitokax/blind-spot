@@ -3744,6 +3744,18 @@ body[data-zone="rpg"] #eviCount {
   padding: 4px 0 10px;
   letter-spacing: 0.1em;
 }
+/* 場面の切りかわりを待っているとき：「▼ タップで次へ」を、はっきり、ゆっくり点滅させる */
+.tk-tip.wait {
+  font-size: 13px;
+  color: var(--fg);
+  opacity: 1;
+  animation: tkTipBlink 1.4s ease-in-out infinite;
+}
+@keyframes tkTipBlink {
+  50% {
+    opacity: 0.35;
+  }
+}
 /* 練習のゲームの世界：登場人物のドット絵（RPG の白い二重線の窓に入れる） */
 .rpg-sprite {
   width: min(240px, 66vw);

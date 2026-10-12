@@ -24,8 +24,22 @@ function talkWait(ms) {
 }
 // 読む時間：文字数に合わせる（短い「……。」はすぐ、長い文はゆっくり読み切れるように）
 const readMs = text => Math.min(5600, Math.max(1200, 500 + [...text].length * 95));
-// 場面が切りかわる前と、トークの終わりに、下まで読み終えるのを待つ間
-const SCENE_END_MS = 2400;
+// 場面の切りかわりと、トークの終わり：タップするまで待つ（急に場面が変わらないように）
+//   下の「タップで先へ」を、光る「▼ タップで次へ」にかえて知らせる
+async function talkTap() {
+  const tip = talkEl.querySelector(".tk-tip");
+  const was = tip?.textContent;
+  if (tip) {
+    tip.textContent = "▼ タップで次へ";
+    tip.classList.add("wait");
+  }
+  await talkWait(Infinity);
+  SFX.select();
+  if (tip) {
+    tip.textContent = was;
+    tip.classList.remove("wait");
+  }
+}
 
 // 依頼人などの「写真」：その場で描いた絵を、粗いドット絵にして出す（px … 一辺のドット数）
 //   shadow … 最初の逆光の影 ／ face … 近づいてきたときの顔（{ reveal } で、モザイクから浮かび上がる）
@@ -493,8 +507,8 @@ async function runTalk(steps) {
   let shown = false; // 何か出したか（場面を切りかえる前に、読み終える間をおくため）
   for (const s of steps || []) {
     const mode = s?.chat && "chat" || s?.meet && "meet";
-    // 場面が切りかわる前に、下まで読み終えるのを待つ
-    if (mode && shown) await talkWait(SCENE_END_MS);
+    // 場面が切りかわる前に、タップするまで待つ（読み終えてから、自分のタイミングで次の場面へ）
+    if (mode && shown) await talkTap();
     if (typeof s === "string") await talkLine(s);
     else if (s.chat) talkMode("chat", s.chat === true ? {} : s.chat);
     else if (s.meet) talkMode("meet", s.meet);
@@ -507,7 +521,8 @@ async function runTalk(steps) {
     if (typeof s === "string" || s.ask) shown = true;
     if (mode) shown = false;
   }
-  await talkWait(SCENE_END_MS);
+  // トークの終わりも、タップするまで待つ
+  if (shown) await talkTap();
   // 会話が終わったら、曲はゆっくり消す（次の任務では、いつもの曲に戻る）
   SFX.music(false, { track: "calm" });
   talkEl.classList.add("leaving");
