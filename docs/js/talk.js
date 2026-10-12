@@ -304,11 +304,11 @@ const PORTRAITS = {
   </svg>`,
   },
   // 練習のゲームの、ほかの登場人物（nitoka が別の AI で描いた絵）。魔王と同じく、粗いドット絵のまま出す
-  //   画像がまだないとき（queen・slimeSmoke）は、出さずに飛ばす
+  //   画像がまだないとき（queen）は、出さずに飛ばす
   king: { img: "img/king.jpg", dots: 80, name: "王様" }, // やる気のない王様。玉座で、スマホを片手にあくび
   queen: { img: "img/queen.jpg", dots: 80, name: "王妃" }, // 口うるさい王妃（絵はまだ）
-  slime: { img: "img/slime.jpg", dots: 64, w: 170, name: "スライム" }, // ふつうの、弱い、かわいいスライム（w … 窓の幅。小さめに）
-  slimeSmoke: { img: "img/slime_smoke.jpg", dots: 64, w: 170, name: "スライム" }, // 裏の顔：体の中が、タバコの煙でいっぱい（絵はまだ）
+  slime: { img: "img/slime.jpg", dots: 100, w: 190, name: "スライム" }, // ふつうの、弱い、かわいいスライム（w … 窓の幅。小さめに）
+  slimeSmoke: { img: "img/slime_smoke.jpg", dots: 100, w: 190, name: "スライム" }, // 裏の顔：半目で、口の端にタバコ（タバコが見えるよう、スライムは 100 ドット）
 };
 // 絵（SVG か画像ファイル）を、px ドット四方の canvas に描く（CSS で拡大して、ドットのまま見せる）
 //   top … 画像ファイルの縦横比が枠と違うとき、どこを切り取るか（0 なら一番上、0.5 なら真ん中）
