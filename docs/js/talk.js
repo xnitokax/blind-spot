@@ -439,18 +439,22 @@ function talkAdd(html, cls) {
 // 1行：[師匠] セリフ ／ [自分] 自分のセリフ ／ [*] システム ／ それ以外の [名前] は相手 ／ [] なしは情景（ナレーション）
 async function talkLine(s) {
   const m = fill(s).match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
-  const spk = m?.[1],
+  // [汐里!] … 名前のあとの ! は「大事な話」の印（会う場面で、読む時間を少し長めにとる）
+  const important = !!m && m[1].length > 1 && m[1].endsWith("!");
+  const spk = important ? m[1].slice(0, -1) : m?.[1],
     text = m ? m[2] : fill(s);
   const chat = talkEl.classList.contains("chat");
-  // 会う場面（受付で依頼人と話す）は、具体的な話が続くので、チャットより少しゆっくり（情景の文は、ふつうの速さ）
+  // 会う場面（受付で依頼人と話す）は、チャットより少しゆっくり。情景の文は、ふつうの速さ
+  //   k … 会う場面の間の倍率（nitoka の調整：2026-10-13。ふつうは 0.8、大事な話は 0.95）
   //   pace … 読む時間の倍率 ／ beat … セリフが出る前の間
+  const k = important ? 0.95 : 0.8;
   const side = !m ? "narr" : spk === "*" ? talkSide : spk === "自分" ? "me" : "them";
-  // 自分の問いかけ → 相手の答え：目を右から左へ動かす間。ここは、ほかより長めに（nitoka の調整：2026-10-13）
+  // 自分の問いかけ → 相手の答え：目を右から左へ動かす間。ここは、ほかより長めに（ここは k を掛けない）
   const fromMe = !chat && talkSide === "me" && side === "them";
-  const pace = chat ? 1 : 1.3,
-    beat = chat ? 0 : fromMe ? 990 : 700;
+  const pace = chat ? 1 : 1.3 * k,
+    beat = chat ? 0 : fromMe ? 990 : 700 * k;
   // 話す人が変わるとき（右の自分 ⇔ 左の相手・情景）は、目を動かす間を足す
-  if (talkSide && side !== talkSide) await talkWait(chat ? 300 : fromMe ? 880 : 800);
+  if (talkSide && side !== talkSide) await talkWait(chat ? 300 : fromMe ? 880 : 800 * k);
   talkSide = side;
   if (!m) {
     talkAdd(esc(text), "tk-narr");
