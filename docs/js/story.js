@@ -93,8 +93,6 @@ async function startChapter(ch) {
 
 // 演出の台本を再生する（書き方は src/scenario.js の先頭を参照）
 async function play(steps) {
-  // エンドに向かう場面（{ ending } を含む台本）は、1行ごとの間を長めに。結末をじっくり読めるように
-  const endScene = steps.some(x => x && typeof x === "object" && x.ending);
   for (const s of steps) {
     // エンドを迎えたら（{ ending }）、流れている台本はそこで打ち切る
     if (state.halt) return;
@@ -102,7 +100,6 @@ async function play(steps) {
       await typeLine(s);
       // セリフ（[師匠] や登場人物）は読めるように、テンポに関係なく間をおく（練習は、ゆっくりめ）
       await afterLine(s);
-      if (endScene) await pause(lineParts(s).say || lineParts(s).who ? 500 : 900);
       continue;
     }
     // ── チュートリアルのゲームの世界（王城・ダンジョン・魔王城）──
@@ -604,7 +601,8 @@ async function showEnding(text, opt = {}) {
     el.textContent += ch;
     if (ch === "\n") follow();
     if (ch.trim() && Math.random() < 0.3) SFX.tick();
-    await sleep(ch === "\n" ? 240 : "。』」".includes(ch) ? 200 : "、…".includes(ch) ? 100 : 34);
+    // 任務の結末の文：読みながら追えるように、ゆっくり打ち出す（句点・改行では、ひと呼吸おく）
+    await sleep(ch === "\n" ? 650 : "。』」".includes(ch) ? 480 : "、…".includes(ch) ? 170 : 62);
   }
   el.textContent = body;
   follow();
