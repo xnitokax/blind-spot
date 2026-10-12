@@ -23,9 +23,9 @@ function talkWait(ms) {
   });
 }
 // 読む時間：文字数に合わせる（短い「……。」はすぐ、長い文はゆっくり読み切れるように）
-const readMs = text => Math.min(7000, Math.max(1500, 600 + [...text].length * 120));
+const readMs = text => Math.min(5600, Math.max(1200, 500 + [...text].length * 95));
 // 場面が切りかわる前と、トークの終わりに、下まで読み終えるのを待つ間
-const SCENE_END_MS = 3000;
+const SCENE_END_MS = 2400;
 
 // 依頼人などの「写真」：その場で描いた絵を、粗いドット絵にして出す（px … 一辺のドット数）
 //   shadow … 最初の逆光の影 ／ face … 近づいてきたときの顔（{ reveal } で、モザイクから浮かび上がる）
@@ -233,10 +233,10 @@ async function talkLine(s) {
   if (spk === "*") {
     talkAdd(esc(text), "tk-sys");
     SFX.tick();
-    return talkWait(1500);
+    return talkWait(1200);
   }
   if (spk === "自分") {
-    await talkWait(900);
+    await talkWait(600);
     talkAdd(`<span class="tk-name">${esc(handle || "あなた")}</span><span class="tk-bubble">${esc(text)}</span>`, "tk-me");
     SFX.enter();
     return talkWait(readMs(text) * 0.8);
@@ -251,7 +251,7 @@ async function talkLine(s) {
   if (chat) {
     const typing = talkAdd(`<span class="tk-name">${esc(spk)}</span><span class="tk-bubble tk-typing">入力中<span>.</span><span>.</span><span>.</span></span>`, "tk-them");
     // 長いメッセージほど、打つのに時間がかかる
-    await talkWait(Math.min(3200, 700 + [...text].length * 60));
+    await talkWait(Math.min(1300, 400 + [...text].length * 18));
     typing.remove();
   }
   talkAdd(`<span class="tk-name">${esc(spk)}</span><span class="tk-bubble">${esc(text)}</span>`, "tk-them");
