@@ -313,6 +313,13 @@ const SFX = (() => {
       hiss(0.09, { vol: 0.22, filter: "highpass", freq: 1500 });
       hiss(0.4, { vol: 0.05, filter: "bandpass", freq: 2500, at: 0.02, echo: 0.4 });
     },
+    // 王妃のビンタが、王様の腹に「ペチーン！」：乾いた音のあと、腹の肉が「ぼよん」と低く揺れる
+    belly: () => {
+      hiss(0.07, { vol: 0.24, filter: "highpass", freq: 1800 });
+      hiss(0.3, { vol: 0.05, filter: "bandpass", freq: 2200, at: 0.02, echo: 0.35 });
+      tone(120, 0.32, { vol: 0.2, slide: 52, at: 0.015 });
+      tone(78, 0.22, { vol: 0.1, slide: 60, at: 0.12 });
+    },
     // 警報：こもったうねり
     siren(on) {
       if (siren) {

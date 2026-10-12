@@ -3801,3 +3801,15 @@ body[data-zone="rpg"] #eviCount {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
   margin-top: 4px;
 }
+
+/* 王妃のビンタ：たたかれた人の絵が、ぶるんと揺れる */
+.rpg-sprite .rs-one.rs-hit {
+  animation: rsHit 0.45s ease-out;
+}
+@keyframes rsHit {
+  0% { transform: translate(0, 0) scale(1); }
+  15% { transform: translate(-5px, 0) scale(1.04, 0.96); }
+  35% { transform: translate(4px, 0) scale(0.97, 1.03); }
+  55% { transform: translate(-2px, 0) scale(1.02, 0.98); }
+  100% { transform: translate(0, 0) scale(1); }
+}

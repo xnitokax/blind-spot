@@ -553,12 +553,12 @@ async function drawSprite(names) {
     if (!p) continue;
     // img … 画像ファイル（ほかのツールで描いた絵）。読めなければ、face（SVG）をドット絵にして出す
     const img = await portraitImg(p);
-    if (img || p.face) list.push({ p, img });
+    if (img || p.face) list.push({ p, img, name });
   }
   if (!list.length) return;
   const box = print(
     `<div class="rpg-sprite reveal${list.length > 1 ? " duo" : ""}"${list.length === 1 && list[0].p.w ? ` style="width: min(${list[0].p.w}px, 66vw)"` : ""}>` +
-      list.map(({ p }) => `<div class="rs-one"><canvas></canvas>${p.name ? `<div class="rs-name">${esc(p.name)}</div>` : ""}</div>`).join("") +
+      list.map(({ p, name }) => `<div class="rs-one" data-name="${name}"><canvas></canvas>${p.name ? `<div class="rs-name">${esc(p.name)}</div>` : ""}</div>`).join("") +
       `</div>`,
   );
   const canvases = [...box.querySelectorAll("canvas")];
@@ -600,6 +600,50 @@ async function drawSprite(names) {
     el.src = p.img;
     canvases[k].replaceWith(el);
   });
+  // これまでにたたかれた跡（王様の腹の赤み）を、描き直した絵にも残す
+  list.forEach(({ name }, k) => redden(canvases[k], name));
   scrollDown();
   await wait(500);
+}
+
+// { hit: "king" }：王妃のビンタ。「ペチーン！」と鳴って、窓が揺れ、たたかれた所が赤くなる（たたかれるほど、赤くなる）
+//   HIT_SPOT … たたかれる場所（絵の横・縦に対する割合）と、赤い跡の大きさ
+const HIT_SPOT = { king: { x: 0.47, y: 0.47, rx: 0.2, ry: 0.11 } };
+const spriteHits = {};
+async function hitSprite(name) {
+  spriteHits[name] = (spriteHits[name] || 0) + 1;
+  SFX.belly();
+  // いちばん新しい、その人の絵
+  const one = [...document.querySelectorAll(`.rpg-sprite .rs-one[data-name="${name}"]`)].pop();
+  if (one) {
+    redden(one.querySelector("canvas"), name);
+    pulse(one, "rs-hit", 450);
+  }
+  impact(0.5);
+  await wait(450);
+}
+// 赤い跡を描く（同じ絵に何度も重ねないよう、いつも「元の絵＋いまの赤み」にする）
+function redden(canvas, name) {
+  const spot = HIT_SPOT[name],
+    n = spriteHits[name] || 0;
+  if (!canvas || !spot || !n) return;
+  const c = canvas.getContext("2d");
+  canvas._base ??= c.getImageData(0, 0, canvas.width, canvas.height);
+  c.putImageData(canvas._base, 0, 0);
+  const w = canvas.width,
+    h = canvas.height;
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+  const a = Math.min(0.85, 0.35 + n * 0.17);
+  g.addColorStop(0, `rgba(255, 40, 50, ${a})`);
+  g.addColorStop(0.6, `rgba(255, 60, 70, ${a * 0.7})`);
+  g.addColorStop(1, "rgba(255, 60, 70, 0)");
+  c.save();
+  c.translate(spot.x * w, spot.y * h);
+  c.scale(spot.rx * w, spot.ry * h);
+  c.globalCompositeOperation = "multiply";
+  c.fillStyle = g;
+  c.beginPath();
+  c.arc(0, 0, 1, 0, Math.PI * 2);
+  c.fill();
+  c.restore();
 }

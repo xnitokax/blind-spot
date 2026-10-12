@@ -156,6 +156,8 @@ async function play(steps) {
     if (s.guide) setGuide(s.guide);
     // { sprite: "名前" } … 登場人物のドット絵を、RPG の窓に出す（talk.js の PORTRAITS）
     if (s.sprite) await drawSprite(s.sprite);
+    // { hit: "king" } … 王妃のビンタ。「ペチーン！」と鳴って、王様の腹が赤くなる（talk.js の hitSprite）
+    if (s.hit) await hitSprite(s.hit);
     // { art: "文字の図" } … 文字で描いた図を、1行ずつ出す
     // 練習では、図を出したあと、タップするまで次へ進まない（図をじっくり見られるように）
     if (s.art) {
