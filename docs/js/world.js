@@ -102,8 +102,16 @@ function refreshLinks() {
   if (!node) return;
   const { links } = parseNode(fill(node.body || ""));
   state.bodyLinks = links;
-  state.links = [...links, ...navLinks(links)];
+  setLinks([...links, ...navLinks(links)]);
   updateNext();
+}
+
+// 行き先を決める。ひとつ前にいた場所（来た道）は出さない。戻るのは back（ssh で戻る行き先と back が並ばないように）
+//   allLinks には全部残しておく（ssh で来た道の名前を打たれたら、back として扱うため）
+function setLinks(all) {
+  const prev = state.history.at(-1);
+  state.allLinks = all;
+  state.links = all.filter(l => l.go !== prev);
 }
 
 // 画面をさかのぼった古い一覧は押せないようにする
@@ -134,7 +142,7 @@ async function showNode(opt = {}) {
     (node.body || "").replaceAll("{handle}", esc(who())).replaceAll("{login}", esc(login)),
   );
   state.bodyLinks = links;
-  state.links = [...links, ...navLinks(links)];
+  setLinks([...links, ...navLinks(links)]);
   // compact（任務2）：本文の説明（日本語）は出さない。情報は師匠のセリフから拾う
   if (CH.compact && !node.keepBody) html = "";
   const head = print(`<span class="host">▶ ssh://${esc(node.host)}</span>`, "node-head");

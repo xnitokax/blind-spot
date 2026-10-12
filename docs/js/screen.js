@@ -19,8 +19,13 @@ function guideCmd() {
   const g = state.guide;
   if (!g || state.over) return null;
   if (state.current === g.at) return g.cmd;
-  const link = state.links.find(l => l.go === g.at) || state.links.find(l => l.go === "portal");
-  return link ? `ssh ${link.name}` : null;
+  const link = state.links.find(l => l.go === g.at);
+  if (link) return `ssh ${link.name}`;
+  // 行き先が来た道（ひとつ前の場所）なら back。直接行けなければ、ポータルへ（ポータルが来た道なら back）
+  const prev = state.history.at(-1);
+  if (prev && (prev === g.at || prev === "portal")) return "back";
+  const portal = state.links.find(l => l.go === "portal");
+  return portal ? `ssh ${portal.name}` : prev ? "back" : null;
 }
 
 function updateNext() {

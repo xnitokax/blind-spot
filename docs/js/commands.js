@@ -95,6 +95,14 @@ const COMMANDS = {
   async ssh(arg) {
     if (!arg) return print("使い方：ssh &lt;名前&gt;", "dim");
     const link = state.links.find(l => l.name.toLowerCase() === arg.toLowerCase());
+    // 来た道（ひとつ前の場所）の名前を打ったときは、back と同じように戻る（一覧には出していない）
+    const prev = state.history.at(-1);
+    const backLink =
+      !link && (state.allLinks || []).find(l => l.go === prev && l.name.toLowerCase() === arg.toLowerCase());
+    if (backLink) {
+      await COMMANDS.back();
+      return oops("sshBack", ["[師匠] 来た道を戻るなら、back でいい。"]);
+    }
     if (!link) {
       print(`ssh: 接続先が見つかりません: ${esc(arg)}`, "alert");
       // 説明の言葉（「人事」など）で打ったときは、左の名前で打つことを教える
