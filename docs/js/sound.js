@@ -323,11 +323,6 @@ const SFX = (() => {
       tone(120, 0.32, { vol: 0.2, slide: 52, at: 0.015 });
       tone(78, 0.22, { vol: 0.1, slide: 60, at: 0.12 });
     },
-    // おなかが「ぐぎゅるるる」：低くこもった音が、不規則にうねりながら鳴る（プリンのエンド）
-    gurgle: () => {
-      for (let i = 0; i < 6; i++)
-        tone(70 + Math.random() * 60, 0.14, { type: "triangle", filter: 380, vol: 0.16, slide: 50 + Math.random() * 90, at: i * 0.085 });
-    },
     // 警報：こもったうねり
     siren(on) {
       if (siren) {
