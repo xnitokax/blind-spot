@@ -30,7 +30,7 @@ const SCENE_END_MS = 3000;
 // 依頼人などの「写真」：その場で描いた絵を、粗いドット絵にして出す（px … 一辺のドット数）
 //   shadow … 最初の逆光の影 ／ face … 近づいてきたときの顔（{ reveal } で、モザイクから浮かび上がる）
 const PORTRAITS = {
-  // 真壁 汐里：長い黒髪、黒いコート。夜の事務所で、左の窓の光が顔の半分に当たる。静かな美人で、幸の薄そうな顔（写実寄り。細いフレームのメガネ・困り眉・目尻が少し下がる・白い肌・うっすら隈）
+  // 真壁 汐里：長い黒髪、黒いコート。夜の事務所で、左の窓の光が顔の半分に当たる。静かな美人で、幸の薄そうな顔（写実寄り。ブラウンのべっ甲柄で丸みのあるメガネ（やさしいお姉さん風）・困り眉・目尻が少し下がる・白い肌・うっすら隈）
   shiori: {
     px: 120,
     shadow: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
@@ -145,19 +145,18 @@ const PORTRAITS = {
     <path d="M140.5 198q11.5 7.8 23 0-11.5 2.3-23 0z" fill="#d49e94"/>
     <path d="M139.5 197.6q12.5 2 25 0" stroke="#6b3a33" stroke-width="1" fill="none"/>
     <path d="M146.5 202.8q5.5 1.6 11 0" stroke="#f0c6bc" stroke-width="1.1" fill="none" opacity="0.6"/>
-    <!-- メガネ（細いフレームの楕円レンズ。左のレンズに窓の光が映る） -->
-    <rect x="105" y="128" width="42" height="26" rx="13" fill="#ffffff" opacity="0.05"/>
-    <rect x="158" y="128" width="42" height="26" rx="13" fill="#ffffff" opacity="0.03"/>
-    <path d="M110 151l16-20" stroke="#dfe9ee" stroke-width="3" opacity="0.18" stroke-linecap="round"/>
-    <path d="M118 153l12-15" stroke="#dfe9ee" stroke-width="1.6" opacity="0.14" stroke-linecap="round"/>
+    <!-- メガネ B：やわらかいブラウンのべっ甲柄。少し大きめで、丸みのある形。左のレンズに窓の光が映る -->
+    <rect x="103" y="126" width="45" height="32" rx="15" fill="#ffffff" opacity="0.05"/>
+    <rect x="157" y="126" width="45" height="32" rx="15" fill="#ffffff" opacity="0.03"/>
+    <path d="M110 155l17-23" stroke="#dfe9ee" stroke-width="3" opacity="0.16" stroke-linecap="round"/>
     <g fill="none" stroke-linecap="round">
-      <rect x="105" y="128" width="42" height="26" rx="13" stroke="#3a3034" stroke-width="1.5"/>
-      <rect x="158" y="128" width="42" height="26" rx="13" stroke="#1d1719" stroke-width="1.5"/>
-      <path d="M147 137q5.5-3.5 11 0" stroke="#2b2327" stroke-width="1.8"/>
-      <path d="M105 136l-6-1" stroke="#2b2327" stroke-width="1.8"/>
-      <path d="M200 136l5-1" stroke="#120e10" stroke-width="1.8"/>
+      <rect x="103" y="126" width="45" height="32" rx="15" stroke="#8a5a3c" stroke-width="2.6"/>
+      <rect x="157" y="126" width="45" height="32" rx="15" stroke="#4a2f22" stroke-width="2.6"/>
+      <path d="M108 128q14-4 30 0" stroke="#c08a5e" stroke-width="1.2" opacity="0.8"/>
+      <path d="M148 136q4.5-3 9 0" stroke="#7a4e34" stroke-width="2.2"/>
+      <path d="M103 135l-6-1" stroke="#7a4e34" stroke-width="2.2"/>
+      <path d="M202 135l5-1" stroke="#3d271c" stroke-width="2.2"/>
     </g>
-    <path d="M108 131q10-3 22-1" stroke="#9fb3bc" stroke-width="0.9" fill="none" opacity="0.5"/>
     <!-- 前髪（左で分けて、右へ流れる）と、顔の横の髪 -->
     <path d="M100 132c-2-50 26-80 56-82 34 0 54 30 48 78-8-24-22-40-40-48-6 14-20 24-42 28-10 4-16 12-22 24z" fill="url(#hair)"/>
     <path d="M100 128c-6 42-2 82 14 112-12-10-26-40-26-80 0-14 4-24 12-32z" fill="url(#hair)"/>
