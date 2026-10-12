@@ -322,6 +322,7 @@ const PORTRAITS = {
   //   画像が読めないときは、出さずに飛ばす
   king: { img: "img/king.jpg", dots: 80, name: "王様" }, // やる気のない王様。玉座で、スマホを片手にあくび
   queen: { img: "img/queen.jpg", dots: 80, name: "王妃" }, // 口うるさい、ドSな美人の王妃。コテコテのドレスに扇子
+  queenJoy: { img: "img/queen_joy.jpg", dots: 100, w: 200, name: "王妃" }, // 王様をたたいて、愉悦の表情（頬を赤らめて目を細める。顔のアップ）
   slime: { img: "img/slime.jpg", dots: 100, w: 190, name: "スライム" }, // ふつうの、弱い、かわいいスライム（w … 窓の幅。小さめに）
   slimeSmoke: { img: "img/slime_smoke.jpg", dots: 100, w: 190, name: "スライム" }, // 裏の顔：半目で、口の端にタバコ（タバコが見えるよう、スライムは 100 ドット）
 };
