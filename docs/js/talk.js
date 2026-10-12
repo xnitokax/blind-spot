@@ -30,7 +30,7 @@ const SCENE_END_MS = 3000;
 // 依頼人などの「写真」：その場で描いた絵を、粗いドット絵にして出す（px … 一辺のドット数）
 //   shadow … 最初の逆光の影 ／ face … 近づいてきたときの顔（{ reveal } で、モザイクから浮かび上がる）
 const PORTRAITS = {
-  // 真壁 汐里：長い黒髪、黒いコート。夜の事務所で、左の窓の光が顔の半分に当たる。思いつめた顔（写実寄り）
+  // 真壁 汐里：長い黒髪、黒いコート。夜の事務所で、左の窓の光が顔の半分に当たる。静かな美人で、幸の薄そうな顔（写実寄り。細いフレームのメガネ・困り眉・目尻が少し下がる・白い肌・うっすら隈）
   shiori: {
     px: 120,
     shadow: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
@@ -48,34 +48,38 @@ const PORTRAITS = {
         <stop offset="1" stop-color="#0d1012"/>
       </linearGradient>
       <linearGradient id="skin" x1="0" x2="1" y1="0" y2="0.15">
-        <stop offset="0" stop-color="#f1d8c9"/>
-        <stop offset="0.5" stop-color="#dcb7a4"/>
-        <stop offset="0.82" stop-color="#a98070"/>
-        <stop offset="1" stop-color="#6a4b41"/>
+        <stop offset="0" stop-color="#f6e6dd"/>
+        <stop offset="0.5" stop-color="#e3c8ba"/>
+        <stop offset="0.82" stop-color="#ad8c80"/>
+        <stop offset="1" stop-color="#6b5049"/>
       </linearGradient>
       <linearGradient id="neck" x1="0" x2="1">
-        <stop offset="0" stop-color="#b48a78"/>
-        <stop offset="1" stop-color="#4a332c"/>
+        <stop offset="0" stop-color="#c29e8f"/>
+        <stop offset="1" stop-color="#4c3630"/>
       </linearGradient>
       <linearGradient id="hair" x1="0" x2="1">
         <stop offset="0" stop-color="#3f3b44"/>
-        <stop offset="0.35" stop-color="#1e1a1f"/>
-        <stop offset="1" stop-color="#0a090b"/>
+        <stop offset="0.35" stop-color="#1c181d"/>
+        <stop offset="1" stop-color="#09080a"/>
       </linearGradient>
       <linearGradient id="coat" x1="0" x2="1">
         <stop offset="0" stop-color="#2d3238"/>
         <stop offset="1" stop-color="#08090b"/>
       </linearGradient>
       <radialGradient id="blush" cx="0.5" cy="0.5" r="0.5">
-        <stop offset="0" stop-color="#e59a92" stop-opacity="0.35"/>
-        <stop offset="1" stop-color="#e59a92" stop-opacity="0"/>
+        <stop offset="0" stop-color="#e8a5a0" stop-opacity="0.22"/>
+        <stop offset="1" stop-color="#e8a5a0" stop-opacity="0"/>
       </radialGradient>
       <radialGradient id="socket" cx="0.5" cy="0.5" r="0.5">
-        <stop offset="0" stop-color="#7a5448" stop-opacity="0.3"/>
+        <stop offset="0" stop-color="#7a5448" stop-opacity="0.26"/>
         <stop offset="1" stop-color="#7a5448" stop-opacity="0"/>
       </radialGradient>
-      <clipPath id="eyeL"><path d="M113 142Q126 132 139 141Q126 148 113 142Z"/></clipPath>
-      <clipPath id="eyeR"><path d="M165 141Q178 132 191 142Q178 148 165 141Z"/></clipPath>
+      <radialGradient id="kuma" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#7d6070" stop-opacity="0.12"/>
+        <stop offset="1" stop-color="#7d6070" stop-opacity="0"/>
+      </radialGradient>
+      <clipPath id="eyeL"><path d="M110 143Q125 130 142 140Q127 149 110 143Z"/></clipPath>
+      <clipPath id="eyeR"><path d="M162 140Q179 130 194 143Q177 149 162 140Z"/></clipPath>
     </defs>
     <!-- 夜の事務所。左の窓（ブラインド）から、街の青い光 -->
     <rect width="300" height="300" fill="url(#bg)"/>
@@ -86,57 +90,82 @@ const PORTRAITS = {
     </g>
     <!-- うしろ髪（長い黒髪） -->
     <path d="M150 40C92 40 74 90 76 140c2 60-6 110-20 160h190c-14-50-22-100-20-160 2-50-18-100-76-100z" fill="url(#hair)"/>
-    <!-- 首と、コート・白いシャツ -->
-    <path d="M132 204c2 22 0 36-6 48h52c-6-12-8-26-6-48-8 10-14 16-20 16s-12-6-20-16z" fill="url(#neck)"/>
+    <!-- 首（細め）と、コート・白いシャツ -->
+    <path d="M135 204c2 22 0 36-5 48h44c-5-12-7-26-5-48-7 9-12 14-17 14s-10-5-17-14z" fill="url(#neck)"/>
     <path d="M30 300c10-34 40-52 84-56l38 28 38-28c44 4 74 22 84 56z" fill="url(#coat)"/>
     <path d="M126 246l26 30 26-30-8-6-18 22-18-22z" fill="#d6d3cd"/>
-    <!-- 顔（左から光、右は影） -->
-    <path d="M96 130c0-44 26-68 56-68s54 24 54 68c0 38-14 66-34 82-8 7-14 10-20 10s-12-3-20-10c-22-16-36-44-36-82z" fill="url(#skin)"/>
+    <!-- 顔（あごは小さく、やわらかく。左から光、右は影） -->
+    <path d="M98 130c0-44 26-68 54-68s54 24 54 68c0 36-12 62-30 78-9 8-16 12-24 12s-15-4-24-12c-18-16-30-42-30-78z" fill="url(#skin)"/>
     <!-- 右頬からあごにかけての影 -->
-    <path d="M178 120c8 30 4 62-10 86 14-10 26-34 28-62 1-12-2-20-18-24z" fill="#5f4138" opacity="0.35"/>
+    <path d="M178 120c8 30 4 60-10 84 14-10 24-32 26-60 1-12-2-20-16-24z" fill="#5f4138" opacity="0.3"/>
     <!-- あごの下の影 -->
-    <path d="M128 208c8 9 16 14 24 14s16-5 24-14c-4 10-12 20-24 22-12-2-20-12-24-22z" fill="#4e352e" opacity="0.6"/>
-    <!-- 目のくぼみ・頬の赤み -->
-    <ellipse cx="126" cy="140" rx="18" ry="10" fill="url(#socket)"/>
-    <ellipse cx="178" cy="140" rx="18" ry="10" fill="url(#socket)"/>
-    <ellipse cx="120" cy="168" rx="16" ry="9" fill="url(#blush)"/>
-    <!-- 眉（内側が少し上がる。思いつめた顔） -->
-    <path d="M110 128q14-8 30-2" stroke="#3a2a25" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M164 126q16-6 30 2" stroke="#271b17" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <!-- 左目（光が当たる側） -->
-    <path d="M113 142Q126 132 139 141Q126 148 113 142Z" fill="#ece3de"/>
+    <path d="M130 208c8 8 15 12 22 12s14-4 22-12c-4 10-11 18-22 20-11-2-18-10-22-20z" fill="#4e352e" opacity="0.55"/>
+    <!-- 目のくぼみ・目の下の隈・頬（ほんのり） -->
+    <ellipse cx="126" cy="140" rx="19" ry="10" fill="url(#socket)"/>
+    <ellipse cx="178" cy="140" rx="19" ry="10" fill="url(#socket)"/>
+    <ellipse cx="126" cy="152" rx="14" ry="5" fill="url(#kuma)"/>
+    <ellipse cx="178" cy="152" rx="14" ry="5" fill="url(#kuma)"/>
+    <ellipse cx="118" cy="170" rx="15" ry="8" fill="url(#blush)"/>
+    <ellipse cx="186" cy="170" rx="12" ry="7" fill="url(#blush)"/>
+    <!-- 眉（細く、内側が上がる。困ったような、幸の薄そうな眉） -->
+    <path d="M111 128Q125 124 140 123" stroke="#4a3832" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M164 123Q179 124 193 128" stroke="#2e221e" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- 左目（光が当たる側。目尻が少し下がる） -->
+    <path d="M110 143Q125 130 142 140Q127 149 110 143Z" fill="#efe7e3"/>
     <g clip-path="url(#eyeL)">
-      <circle cx="126" cy="141.5" r="6.2" fill="#4a3329"/>
-      <circle cx="126" cy="141.5" r="2.6" fill="#140d0b"/>
-      <circle cx="123.6" cy="139.6" r="1.5" fill="#fff"/>
+      <circle cx="127" cy="141.5" r="7" fill="#4b3429"/>
+      <circle cx="127" cy="142" r="4.2" fill="#2c1d17"/>
+      <circle cx="127" cy="142" r="2.4" fill="#120b09"/>
+      <circle cx="124.4" cy="139.4" r="1.7" fill="#fff"/>
+      <circle cx="129.6" cy="144.4" r="0.9" fill="#fff" opacity="0.6"/>
     </g>
-    <path d="M112 142q14-12 28-1" stroke="#1c1210" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-    <path d="M115 136q11-7 23-1" stroke="#9a7062" stroke-width="1.2" fill="none" opacity="0.7"/>
-    <path d="M116 145q10 4 21-1" stroke="#b08878" stroke-width="1" fill="none" opacity="0.6"/>
+    <path d="M109 143q15-15 34-3" stroke="#160e0c" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <path d="M109 143l-3 2" stroke="#160e0c" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M113 136q12-8 26-2" stroke="#a67c6e" stroke-width="1.1" fill="none" opacity="0.7"/>
+    <path d="M114 146q12 4 25-2" stroke="#9a7466" stroke-width="0.9" fill="none" opacity="0.6"/>
     <!-- 右目（影の側） -->
-    <path d="M165 141Q178 132 191 142Q178 148 165 141Z" fill="#b9a49b"/>
+    <path d="M162 140Q179 130 194 143Q177 149 162 140Z" fill="#bfaba3"/>
     <g clip-path="url(#eyeR)">
-      <circle cx="178" cy="141.5" r="6" fill="#3a271f"/>
-      <circle cx="178" cy="141.5" r="2.5" fill="#0f0908"/>
-      <circle cx="175.8" cy="139.7" r="1.2" fill="#e8e0dc"/>
+      <circle cx="177" cy="141.5" r="6.8" fill="#3a271f"/>
+      <circle cx="177" cy="142" r="4" fill="#22150f"/>
+      <circle cx="177" cy="142" r="2.3" fill="#0d0807"/>
+      <circle cx="174.6" cy="139.6" r="1.4" fill="#ece4e0"/>
     </g>
-    <path d="M164 141q14-11 28 1" stroke="#140c0a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-    <path d="M166 135q12-6 23 1" stroke="#6e4d42" stroke-width="1.2" fill="none" opacity="0.7"/>
-    <!-- 鼻（右側に影、鼻先に光） -->
-    <path d="M157 140c1 15 4 27 6 35" stroke="#8b6355" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.8"/>
-    <path d="M143 180q9 5 19 0" stroke="#7a5246" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-    <ellipse cx="146" cy="181" rx="2.6" ry="1.4" fill="#6a463b" opacity="0.6"/>
-    <ellipse cx="159" cy="181" rx="2.6" ry="1.4" fill="#45302a" opacity="0.8"/>
-    <path d="M150 172q2-1 4 0" stroke="#f6e2d7" stroke-width="1.6" fill="none" opacity="0.7"/>
-    <!-- 唇（きゅっと結んでいる） -->
-    <path d="M138 199q7-4 14-2 7-2 14 2-14 2-28 0z" fill="#a9645b"/>
-    <path d="M139 200q13 9 26 0-13 3-26 0z" fill="#c68479"/>
-    <path d="M138 199.5q14 2.5 28 0" stroke="#5a2f28" stroke-width="1.2" fill="none"/>
-    <path d="M146 204q6 2 11 0" stroke="#e8b4a8" stroke-width="1.2" fill="none" opacity="0.6"/>
+    <path d="M161 140q19-12 34 3" stroke="#110a08" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <path d="M195 143l3 2" stroke="#110a08" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M165 134q14-6 26 2" stroke="#6e4d42" stroke-width="1.1" fill="none" opacity="0.7"/>
+    <!-- 鼻（小さめ。右側に影、鼻先に光） -->
+    <path d="M156 142c1 13 3 22 5 29" stroke="#93695b" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M145 176q8 4 15 0" stroke="#7d5649" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="147.5" cy="177" rx="2.2" ry="1.2" fill="#6a463b" opacity="0.5"/>
+    <ellipse cx="158" cy="177" rx="2.2" ry="1.2" fill="#45302a" opacity="0.7"/>
+    <path d="M150 168q2-1 4 0" stroke="#fbece4" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <!-- 唇（小さく、淡い色。かすかに結んでいる） -->
+    <path d="M139.5 197q6.2-3.4 12.5-1.2 6.3-2.2 12.5 1.2-12.5 1.8-25 0z" fill="#b8786f"/>
+    <path d="M140.5 198q11.5 7.8 23 0-11.5 2.3-23 0z" fill="#d49e94"/>
+    <path d="M139.5 197.6q12.5 2 25 0" stroke="#6b3a33" stroke-width="1" fill="none"/>
+    <path d="M146.5 202.8q5.5 1.6 11 0" stroke="#f0c6bc" stroke-width="1.1" fill="none" opacity="0.6"/>
+    <!-- メガネ（細いフレームの楕円レンズ。左のレンズに窓の光が映る） -->
+    <rect x="105" y="128" width="42" height="26" rx="13" fill="#ffffff" opacity="0.05"/>
+    <rect x="158" y="128" width="42" height="26" rx="13" fill="#ffffff" opacity="0.03"/>
+    <path d="M110 151l16-20" stroke="#dfe9ee" stroke-width="3" opacity="0.18" stroke-linecap="round"/>
+    <path d="M118 153l12-15" stroke="#dfe9ee" stroke-width="1.6" opacity="0.14" stroke-linecap="round"/>
+    <g fill="none" stroke-linecap="round">
+      <rect x="105" y="128" width="42" height="26" rx="13" stroke="#3a3034" stroke-width="1.5"/>
+      <rect x="158" y="128" width="42" height="26" rx="13" stroke="#1d1719" stroke-width="1.5"/>
+      <path d="M147 137q5.5-3.5 11 0" stroke="#2b2327" stroke-width="1.8"/>
+      <path d="M105 136l-6-1" stroke="#2b2327" stroke-width="1.8"/>
+      <path d="M200 136l5-1" stroke="#120e10" stroke-width="1.8"/>
+    </g>
+    <path d="M108 131q10-3 22-1" stroke="#9fb3bc" stroke-width="0.9" fill="none" opacity="0.5"/>
     <!-- 前髪（左で分けて、右へ流れる）と、顔の横の髪 -->
-    <path d="M98 132c-2-50 26-80 58-82 34 0 56 30 50 78-8-24-22-40-40-48-6 14-20 24-42 28-10 4-20 12-26 24z" fill="url(#hair)"/>
-    <path d="M98 128c-6 42-2 82 14 112-12-10-26-40-26-80 0-14 4-24 12-32z" fill="url(#hair)"/>
-    <path d="M206 124c6 44 0 84-16 114 14-12 28-42 28-82 0-14-4-24-12-32z" fill="#0b0a0c"/>
+    <path d="M100 132c-2-50 26-80 56-82 34 0 54 30 48 78-8-24-22-40-40-48-6 14-20 24-42 28-10 4-16 12-22 24z" fill="url(#hair)"/>
+    <path d="M100 128c-6 42-2 82 14 112-12-10-26-40-26-80 0-14 4-24 12-32z" fill="url(#hair)"/>
+    <path d="M204 124c6 44 0 84-16 114 14-12 28-42 28-82 0-14-4-24-12-32z" fill="#0a090b"/>
+    <!-- 頬にかかる、ほつれた髪 -->
+    <path d="M101 150c-2 18 0 34 6 48" stroke="#141115" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M203 148c1 16-1 30-6 42" stroke="#0c0a0d" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M138 104c-6 6-10 12-12 18" stroke="#1c181d" stroke-width="1.3" fill="none" stroke-linecap="round"/>
     <g stroke="#6e6a74" stroke-width="1.3" fill="none" opacity="0.5" stroke-linecap="round">
       <path d="M120 64c-12 12-18 28-20 50"/>
       <path d="M134 56c-12 14-18 30-20 46"/>

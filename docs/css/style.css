@@ -3684,7 +3684,7 @@ body[data-zone="rpg"] #eviCount {
     max-width: 92%;
   }
   .tk-photo {
-    width: min(170px, 46vw);
+    width: min(210px, 56vw);
     margin-top: 10px;
   }
 }
