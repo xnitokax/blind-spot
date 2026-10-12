@@ -31,7 +31,11 @@ const SCENE_END_MS = 2400;
 //   shadow … 最初の逆光の影 ／ face … 近づいてきたときの顔（{ reveal } で、モザイクから浮かび上がる）
 const PORTRAITS = {
   // 真壁 汐里：長い黒髪、黒いコート。夜の事務所で、左の窓の光が顔の半分に当たる。静かな美人で、幸の薄そうな顔（写実寄り。困り眉・目尻が少し下がる・白い肌・うっすら隈）
+  //   img … nitoka が別の AI で描いた絵（img/shiori.jpg）。top … 正方形の写真に切り取る位置（顔が真ん中に来るように）
+  //   読めないときだけ、下の SVG（影と顔）を使う
   shiori: {
+    img: "img/shiori.jpg",
+    top: 0.2,
     px: 120,
     shadow: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
     <defs><linearGradient id="bg" x1="0" x2="1"><stop offset="0" stop-color="#46555d"/><stop offset="0.5" stop-color="#20272b"/><stop offset="1" stop-color="#0d1012"/></linearGradient></defs>
@@ -164,6 +168,7 @@ const PORTRAITS = {
   //   img … nitoka が別の AI で描いた絵（img/maou.jpg）。読めないときだけ、下の SVG（前に作った、ピンクの小悪魔）を出す
   maou: {
     img: "img/maou.jpg",
+    dots: 160, // 最後もドット絵のまま（横 160 ドット。色の数は減らさない：減らすと肌がまだらになる）
     px: 150,
     tall: 1.5,
     name: "魔王",
@@ -299,8 +304,9 @@ const PORTRAITS = {
   </svg>`,
   },
 };
-// 絵（SVG）を、px ドット四方の canvas に描く（CSS で拡大して、ドットのまま見せる）
-function drawPixels(canvas, svg, px, h = px) {
+// 絵（SVG か画像ファイル）を、px ドット四方の canvas に描く（CSS で拡大して、ドットのまま見せる）
+//   top … 画像ファイルの縦横比が枠と違うとき、どこを切り取るか（0 なら一番上、0.5 なら真ん中）
+function drawPixels(canvas, svg, px, h = px, top = 0) {
   return new Promise(done => {
     const img = new Image();
     img.onload = () => {
@@ -308,22 +314,31 @@ function drawPixels(canvas, svg, px, h = px) {
       canvas.height = h;
       const c = canvas.getContext("2d");
       c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = "high";
       c.clearRect(0, 0, px, h);
-      // 画像ファイルの縦横比が枠と違うときは、上を合わせて切り取る（顔が切れないように）
       const iw = img.naturalWidth,
         ih = img.naturalHeight;
       if (!isSvg && iw && ih && Math.abs(iw / ih - px / h) > 0.01) {
         const sw = Math.min(iw, (ih * px) / h),
           sh = Math.min(ih, (iw * h) / px);
-        c.drawImage(img, (iw - sw) / 2, 0, sw, sh, 0, 0, px, h);
+        c.drawImage(img, (iw - sw) / 2, (ih - sh) * top, sw, sh, 0, 0, px, h);
       } else c.drawImage(img, 0, 0, px, h);
       done();
     };
     img.onerror = () => done();
-    // svg … SVG の文字列か、画像ファイルの場所（img/maou.png など）
+    // svg … SVG の文字列か、画像ファイルの場所（img/maou.jpg など）
     const isSvg = String(svg).trim().startsWith("<");
     img.src = isSvg ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg) : svg;
   });
+}
+// 色の数を減らして、昔のゲームのドット絵っぽくする（levels … 赤・緑・青それぞれの段階の数）
+function posterize(canvas, levels) {
+  const c = canvas.getContext("2d");
+  const d = c.getImageData(0, 0, canvas.width, canvas.height);
+  const step = 255 / (levels - 1);
+  for (let i = 0; i < d.data.length; i += 4)
+    for (let k = 0; k < 3; k++) d.data[i + k] = Math.round(d.data[i + k] / step) * step;
+  c.putImageData(d, 0, 0);
 }
 // { reveal }：影から顔へ。粗いモザイクから、だんだん細かくなって浮かび上がる
 //   img（画像ファイル）があれば、モザイクのあと、その画像をそのまま出す
@@ -335,7 +350,7 @@ async function revealFace() {
   const src = img ? p.img : p.face;
   if (!src) return;
   for (const px of [6, 10, 16, 26, 42, 64, 90, ...(img ? [] : [p.px])]) {
-    await drawPixels(canvas, src, px);
+    await drawPixels(canvas, src, px, px, p.top);
     SFX.tick();
     await sleep(170);
   }
@@ -344,6 +359,7 @@ async function revealFace() {
     el.className = "tk-img";
     el.alt = "";
     el.src = p.img;
+    el.style.objectPosition = `center ${(p.top || 0) * 100}%`;
     canvas.replaceWith(el);
   }
   talkEl.querySelector(".tk-photo").classList.add("lit");
@@ -362,7 +378,7 @@ function portraitImg(p) {
 async function drawShadow(canvas, p) {
   const img = await portraitImg(p);
   if (!img && p.shadow) return drawPixels(canvas, p.shadow, p.px);
-  await drawPixels(canvas, img ? p.img : p.face, 40);
+  await drawPixels(canvas, img ? p.img : p.face, 40, 40, p.top);
   const c = canvas.getContext("2d");
   c.fillStyle = "rgba(6, 8, 10, 0.9)";
   c.fillRect(0, 0, canvas.width, canvas.height);
@@ -529,18 +545,20 @@ async function drawSprite(name) {
     `<div class="rpg-sprite reveal"><canvas></canvas>${p.name ? `<div class="rs-name">${esc(p.name)}</div>` : ""}</div>`,
   );
   const canvas = box.querySelector("canvas");
-  // img … 画像ファイル（ほかのツールで描いた絵）。あれば、モザイクから浮かび上がったあと、その画像をそのまま出す
-  //   読めなければ、face（SVG）をドット絵にして出す
+  // img … 画像ファイル（ほかのツールで描いた絵）。読めなければ、face（SVG）をドット絵にして出す
+  //   dots があれば、最後もドット絵のまま（横 dots ドット。colors で色の段階も減らす）。なければ、画像をそのまま出す
   const img = await portraitImg(p);
   const src = img ? p.img : p.face;
   // tall … 縦の長さの、横に対する倍率（全身の立ち絵は 1.5）。画像なら、画像の縦横比
   const tall = img ? img.naturalHeight / img.naturalWidth : p.tall || 1;
-  for (const px of [8, 16, 32, 64, 100, ...(img ? [] : [p.px])]) {
+  const last = img ? p.dots : p.px;
+  for (const px of [8, 16, 32, 64, 100, ...(last ? [last] : [])]) {
     await drawPixels(canvas, src, px, Math.round(px * tall));
+    if (img && p.colors) posterize(canvas, p.colors);
     SFX.tick();
     await sleep(140);
   }
-  if (img) {
+  if (img && !p.dots) {
     // 同じ魔王に二度会ってもいいように、毎回新しい img を作る
     const el = new Image();
     el.className = "rs-img";
