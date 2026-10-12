@@ -446,8 +446,9 @@ const NIPPO_NODE = {
 //   3つめに "odd" と書くと、その行だけ赤黒く浮いて見える（ほかの記録にはない、異質な項目に）
 const HR_LABEL_W = 14;
 const hrWidth = s => [...s].reduce((n, c) => n + (c.charCodeAt(0) > 0xff ? 2 : 1), 0);
-const hrRecord = ({ no, name, kana, age, rows }) => `<p class="meta">社員番号 ${no}</p>
-<p><b>${name}</b>（${kana}）${age ? `　${age}歳` : ""}</p>
+//   photo … 顔写真の画像（社員証の写真）。あれば、名前の右に出す
+const hrRecord = ({ no, name, kana, age, rows, photo }) => `<div class="hr-head"><div><p class="meta">社員番号 ${no}</p>
+<p><b>${name}</b>（${kana}）${age ? `　${age}歳` : ""}</p></div>${photo ? `<img class="hr-photo" src="${photo}" alt="">` : ""}</div>
 <pre class="log">
 ${rows.map(r => {
   if (typeof r === "string") return r;   // 空行や「※ …」の注記は、そのまま
@@ -461,7 +462,7 @@ ${rows.map(r => {
 const hrEntries = (m, goal) => [
   {
     html: hrRecord({
-      no: "T-160412", name: "真壁 湊", kana: "まかべ みなと", age: 33,
+      no: "T-160412", name: "真壁 湊", kana: "まかべ みなと", age: 33, photo: "img/minato.jpg",
       rows: [
         ["所属（現在）", "特別プロジェクト室　※ 部署コード未登録"],
         ["職種", "技術職　システム開発"],
@@ -1093,6 +1094,7 @@ const SCENARIO = {
   <li><a data-go="dungeon" data-need="gate">dungeon.world　── 城を出て、ダンジョンへ</a></li>
 </ul>`,
           scene: [
+            { sprite: ["king", "queen"] }, // 王様と王妃を、ひとつの窓に並べて（王妃の絵がまだなら、王様だけ）
             "[王様] あー……。目覚めたか、勇者{handle}よ。",
             "[王妃] 起きるのが遅いのよ。まったく、近ごろの勇者は。",
             "[王様] ……で、なんだっけ。あー、そうそう。魔王。魔王がさ、やばいんだわ。",
@@ -1222,6 +1224,7 @@ const SCENARIO = {
   <li><a data-go="b3" data-need="slimeDone">door.b2　── 大きな扉（地下3階へ）</a></li>
 </ul>`,
           scene: [
+            { sprite: "slime" },
             "スライムが　あらわれた！",
             "[スライム] ぷるぷる。ぼく、わるいスライムじゃないよ。",
             "[スライム] ……たぶん。",
@@ -1258,6 +1261,7 @@ const SCENARIO = {
                       "[スライム] ……おつかれっす。",
                       { pause: 1200 },
                       "……背後で、カチッと　ライターの　音がした。",
+                      { sprite: "slimeSmoke" }, // 振り返ると、体の中が煙でいっぱい（絵がまだなら、出さない）
                       "[スライム] ……ふぅ〜〜〜。（タール30mg）",
                       "……見なかったことにした。",
                       { flag: "slimeDone" },

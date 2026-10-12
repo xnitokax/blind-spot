@@ -3633,8 +3633,12 @@ body[data-zone="rpg"] #eviCount {
 }
 
 /* 会う場面：上に写真（ざらついたモノクロ）、下に情景（ナレーション）と会話 */
+/* 会う場面：雨の夜の、事務所の受付（nitoka が別の AI で描いた絵）。文字が読めるよう、下ほど暗くする */
 #talk.meet {
-  background: #070a0a;
+  background:
+    linear-gradient(rgba(7, 10, 10, 0.45), rgba(7, 10, 10, 0.78) 45%, rgba(7, 10, 10, 0.94) 75%),
+    url("../img/office.jpg") center 35% / cover no-repeat,
+    #070a0a;
 }
 #talk.meet .tk-head {
   color: var(--fg);
@@ -3755,6 +3759,17 @@ body[data-zone="rpg"] #eviCount {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
+/* ふたり並べるとき（王様と王妃）：ひとつの窓に、横に並べる。足もとをそろえる */
+.rpg-sprite.duo {
+  width: min(360px, 92vw);
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+.rpg-sprite .rs-one {
+  flex: 1;
+  min-width: 0;
+}
 .rpg-sprite .rs-name {
   text-align: center;
   font-family: "DotGothic16", monospace;
@@ -3767,4 +3782,22 @@ body[data-zone="rpg"] #eviCount {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* 人事DB の記録：社員証の顔写真（名前の右に、小さく） */
+.hr-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.hr-photo {
+  flex: none;
+  width: 78px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: top;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  margin-top: 4px;
 }

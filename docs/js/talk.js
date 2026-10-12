@@ -303,6 +303,12 @@ const PORTRAITS = {
     </g>
   </svg>`,
   },
+  // 練習のゲームの、ほかの登場人物（nitoka が別の AI で描いた絵）。魔王と同じく、粗いドット絵のまま出す
+  //   画像がまだないとき（queen・slimeSmoke）は、出さずに飛ばす
+  king: { img: "img/king.jpg", dots: 80, name: "王様" }, // やる気のない王様。玉座で、スマホを片手にあくび
+  queen: { img: "img/queen.jpg", dots: 80, name: "王妃" }, // 口うるさい王妃（絵はまだ）
+  slime: { img: "img/slime.jpg", dots: 64, w: 170, name: "スライム" }, // ふつうの、弱い、かわいいスライム（w … 窓の幅。小さめに）
+  slimeSmoke: { img: "img/slime_smoke.jpg", dots: 64, w: 170, name: "スライム" }, // 裏の顔：体の中が、タバコの煙でいっぱい（絵はまだ）
 };
 // 絵（SVG か画像ファイル）を、px ドット四方の canvas に描く（CSS で拡大して、ドットのまま見せる）
 //   top … 画像ファイルの縦横比が枠と違うとき、どこを切り取るか（0 なら一番上、0.5 なら真ん中）
@@ -538,35 +544,62 @@ document.addEventListener(
 );
 
 // { sprite: "名前" }：練習のゲームの世界で、登場人物のドット絵を、RPG の窓に出す（粗いドットから、だんだん細かく）
-async function drawSprite(name) {
-  const p = PORTRAITS[name];
-  if (!p) return;
+//   { sprite: ["king", "queen"] } のように並べると、ひとつの窓に横に並べて出す
+//   絵が読めない人（画像がまだない、SVG もない）は、黙って飛ばす。誰も出せなければ、窓ごと出さない
+async function drawSprite(names) {
+  const list = [];
+  for (const name of [].concat(names)) {
+    const p = PORTRAITS[name];
+    if (!p) continue;
+    // img … 画像ファイル（ほかのツールで描いた絵）。読めなければ、face（SVG）をドット絵にして出す
+    const img = await portraitImg(p);
+    if (img || p.face) list.push({ p, img });
+  }
+  if (!list.length) return;
   const box = print(
-    `<div class="rpg-sprite reveal"><canvas></canvas>${p.name ? `<div class="rs-name">${esc(p.name)}</div>` : ""}</div>`,
+    `<div class="rpg-sprite reveal${list.length > 1 ? " duo" : ""}"${list.length === 1 && list[0].p.w ? ` style="width: min(${list[0].p.w}px, 66vw)"` : ""}>` +
+      list.map(({ p }) => `<div class="rs-one"><canvas></canvas>${p.name ? `<div class="rs-name">${esc(p.name)}</div>` : ""}</div>`).join("") +
+      `</div>`,
   );
-  const canvas = box.querySelector("canvas");
-  // img … 画像ファイル（ほかのツールで描いた絵）。読めなければ、face（SVG）をドット絵にして出す
+  const canvases = [...box.querySelectorAll("canvas")];
+  // 並べた人は、いっしょにモザイクから浮かび上がる
   //   dots があれば、最後もドット絵のまま（横 dots ドット。colors で色の段階も減らす）。なければ、画像をそのまま出す
-  const img = await portraitImg(p);
-  const src = img ? p.img : p.face;
-  // tall … 縦の長さの、横に対する倍率（全身の立ち絵は 1.5）。画像なら、画像の縦横比
-  const tall = img ? img.naturalHeight / img.naturalWidth : p.tall || 1;
-  const last = img ? p.dots : p.px;
+  const plans = list.map(({ p, img }) => ({
+    p,
+    img,
+    src: img ? p.img : p.face,
+    // tall … 縦の長さの、横に対する倍率（全身の立ち絵は 1.5）。画像なら、画像の縦横比
+    tall: img ? img.naturalHeight / img.naturalWidth : p.tall || 1,
+    last: img ? p.dots : p.px,
+  }));
   // モザイクは、最後のドット数より細かくならないところまで
-  for (const px of [...[8, 16, 32, 64, 100].filter(n => !last || n < last), ...(last ? [last] : [])]) {
-    await drawPixels(canvas, src, px, Math.round(px * tall));
-    if (img && p.colors) posterize(canvas, p.colors);
+  const steps = [8, 16, 32, 64, 100];
+  for (let i = 0; i < steps.length + 1; i++) {
+    let drew = false;
+    await Promise.all(
+      plans.map(({ p, img, src, tall, last }, k) => {
+        const mine = [...steps.filter(n => !last || n < last), ...(last ? [last] : [])];
+        const px = mine[i];
+        if (!px) return;
+        drew = true;
+        return drawPixels(canvases[k], src, px, Math.round(px * tall)).then(() => {
+          if (img && p.colors) posterize(canvases[k], p.colors);
+        });
+      }),
+    );
+    if (!drew) break;
     SFX.tick();
     await sleep(140);
   }
-  if (img && !p.dots) {
-    // 同じ魔王に二度会ってもいいように、毎回新しい img を作る
+  plans.forEach(({ p, img }, k) => {
+    if (!img || p.dots) return;
+    // 同じ人に二度会ってもいいように、毎回新しい img を作る
     const el = new Image();
     el.className = "rs-img";
     el.alt = "";
     el.src = p.img;
-    canvas.replaceWith(el);
-  }
+    canvases[k].replaceWith(el);
+  });
   scrollDown();
   await wait(500);
 }
