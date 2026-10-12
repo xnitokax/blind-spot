@@ -65,6 +65,22 @@ async function cmdOops(raw, cname) {
   ]);
 }
 
+// 場所の stay：{ if, to, warn, force } … 条件（if）のあいだ、to 以外へ移動しようとすると止められる
+//   1回目は warn（その場にとどまる）。2回目からは force の台本のあと、むりやり to へ送られる（練習：師匠に castle へ行けと言われたあと）
+async function holdHere(go) {
+  const r = here()?.stay;
+  if (!r || go === r.to || state.visited.has(r.to) || !cond(r.if)) return false;
+  const k = `stay:${state.current}`;
+  state.flags[k] = (state.flags[k] || 0) + 1;
+  if (state.flags[k] === 1) {
+    await speak(r.warn || [], BEAT.small);
+    return true;
+  }
+  await busy(() => play(r.force || []));
+  await connect(r.to);
+  return true;
+}
+
 // ---------------- コマンド ----------------
 const COMMANDS = {
   help() {
@@ -100,6 +116,7 @@ const COMMANDS = {
     const backLink =
       !link && (state.allLinks || []).find(l => l.go === prev && l.name.toLowerCase() === arg.toLowerCase());
     if (backLink) {
+      if (await holdHere(backLink.go)) return;
       await COMMANDS.back();
       return oops("sshBack", ["[師匠] 来た道を戻るなら、back でいい。"]);
     }
@@ -119,6 +136,7 @@ const COMMANDS = {
         "[師匠] ls で、今いる場所から行ける先をもう一度出せるぞ。",
       ]);
     }
+    if (await holdHere(link.go)) return;
     if (link.oneway) {
       disablePicks();
       SFX.alert();
@@ -187,8 +205,9 @@ const COMMANDS = {
     // 調べ終わる前に打つと、師匠に止められる
     await speak(["[師匠] まだ帰ってくるな。", "[師匠] 成果もなにもないだろ。"], BEAT.small);
   },
-  back() {
+  async back() {
     if (!state.history.length) return print("back: これ以上戻れません。", "dim");
+    if (await holdHere(state.history.at(-1))) return;
     return connect(state.history.pop(), { isBack: true });
   },
   ls() {
