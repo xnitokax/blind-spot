@@ -85,6 +85,7 @@ function printMenu(force = false) {
   }
   if (!rows.length) return false;
   print(`<div class="menu reveal"><div class="ls">${rows.join("")}</div></div>`);
+  state.menus = (state.menus || 0) + 1; // 一覧を出した回数（会話の途中で { menu } を出したら、会話のあとでは出し直さない）
   return true;
 }
 const printLinks = () => printMenu();
@@ -152,7 +153,8 @@ async function showNode(opt = {}) {
     if (html2.trim()) await decode(print(html2, "node reveal"));
   }
   await wait(BEAT.block);
-  printMenu();
+  // noMenu … 行き先の一覧は、会話のあとに出す（練習：会話が終わってから選べるように）
+  if (!opt.noMenu) printMenu();
   normalPrompt();
 }
 
@@ -174,11 +176,20 @@ async function enterNode(id, opt = {}) {
   // clockStart：ここから時間を測り始める（台本の {elapsed} に、ここから何分たったかが入る）
   if (node.clockStart && !state.clock0) state.clock0 = Date.now();
 
+  // 練習：来たときに会話（初めての say / scene、条件に合う arrive）があるなら、
+  // 行き先の一覧は会話が終わってから出す（場所の説明 → 会話 → 選べる行き先、の順）
+  const arrives = (node.arrive || []).filter(
+    (ev, i) => !state.said.has(`arrive:${id}:${i}`) && cond(ev.if),
+  );
+  const talkFirst =
+    tapMode() && ((first && (node.say?.length || node.scene)) || arrives.length > 0);
+
   await busy(async () => {
-    const view = { say: first ? node.say : null };
+    const view = { say: first ? node.say : null, noMenu: talkFirst };
     await showNode(view);
-    // 練習：新しい場所の画面を読んでから、師匠が話す（タップするまで待つ）
-    if (first && !view.said && (node.say?.length || node.scene || node.clue)) await tapWait();
+    const menus = state.menus || 0;
+    // 場所の説明を読む間をおいてから、会話が始まる
+    if (talkFirst) await pause(900);
     if (first) {
       if (node.clue) {
         await wait(600);
@@ -190,18 +201,18 @@ async function enterNode(id, opt = {}) {
       setGuide(node.next);
     }
     // arrive：来るたびに、条件に合う出来事を上から順に流す（それぞれ一度だけ。例：パンツを持って戻ると、平手打ち）
-    let readFirst = !first; // 2回目以降に来たときも、画面を読んでから出来事が始まる（練習）
     for (const [i, ev] of (node.arrive || []).entries()) {
       const k = `arrive:${id}:${i}`;
       if (state.halt || state.said.has(k) || !cond(ev.if)) continue;
       state.said.add(k);
-      if (readFirst) {
-        readFirst = false;
-        await tapWait();
-      }
       await play(ev.script || []);
     }
     if (await followWarp()) return;
+    // 会話が終わったら、行き先の一覧を出す（会話の中で { menu } を出していたら、出し直さない）
+    if (talkFirst && !state.over && (state.menus || 0) === menus) {
+      await wait(BEAT.block);
+      printMenu();
+    }
     await checkObjectives();
     if (node.goal) await runGoal(node.goal);
   });

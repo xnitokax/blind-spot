@@ -893,7 +893,6 @@ const SCENARIO = {
 <ul class="links">
   <li><a data-go="desk">desk.training.uzu　── 師匠の机</a></li>
   <li><a data-go="castle" data-need="invite">castle.game　── ？？？（師匠が昔つくったゲーム）</a></li>
-  <li><a data-go="gate">gate.training.uzu　── 入口に戻る</a></li>
 </ul>`,
           say: [
             "[師匠] よし、移動できたな。",
@@ -1065,7 +1064,6 @@ const SCENARIO = {
 <p>ほこりっぽい　物置だ。</p>
 <p>床に　いろいろ　落ちている。</p>
 <ul class="links">
-  <li><a data-go="castle">castle　── 玉座の間に戻る</a></li>
 </ul>`,
           items: {
             勇者の剣: { alias: ["剣", "つるぎ", "sword"], desc: "さっき王様が投げ捨てた。床に刺さっている", script: ["ずっしりと　重い。……ちょっと　刃こぼれしている。"] },
@@ -1082,7 +1080,6 @@ const SCENARIO = {
 <p>王妃の　衣装部屋だ。ドレスが　ずらりと　並んでいる。</p>
 <p>奥に　宝箱が　ひとつ。</p>
 <ul class="links">
-  <li><a data-go="castle">castle　── 玉座の間に戻る</a></li>
 </ul>`,
           actions: {
             "open 宝箱": {
@@ -1115,7 +1112,6 @@ const SCENARIO = {
 <p>金ぴかの　トイレだ。まぶしい。</p>
 <p>たなの上に　日記帳が　置いてある。</p>
 <ul class="links">
-  <li><a data-go="castle">castle　── 玉座の間に戻る</a></li>
 </ul>`,
           items: {
             王妃の日記: {
@@ -1147,7 +1143,6 @@ const SCENARIO = {
 <p>奥へと　道が　続いている。</p>
 <ul class="links">
   <li><a data-go="maou" data-need="slimeDone">maou.castle　── さらに奥へ（魔王城）</a></li>
-  <li><a data-go="castle">castle　── 王城に戻る</a></li>
 </ul>`,
           scene: [
             "スライムが　あらわれた！",
