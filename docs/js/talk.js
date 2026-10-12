@@ -160,9 +160,10 @@ const PORTRAITS = {
     </g>
   </svg>`,
   },
-  // 魔王（練習のゲームの世界）：アニメ調の、大人の小悪魔。ピンクの長い髪、小さな角、細い赤フレームのメガネ（片手でくいっと上げる）、
-  //   コウモリの羽、ハートのしっぽ、胸元の開いた黒いビスチェ、ミニスカート、長い手袋、ニーハイブーツ。全身の立ち絵（150×225 ドット）
+  // 魔王（練習のゲームの世界）：赤い髪の竜の娘。竜の角、メガネ、竜の爪、赤いうろこの衣装。全身の立ち絵
+  //   img … nitoka が別の AI で描いた絵（img/maou.jpg）。読めないときだけ、下の SVG（前に作った、ピンクの小悪魔）を出す
   maou: {
+    img: "img/maou.jpg",
     px: 150,
     tall: 1.5,
     name: "魔王",
@@ -308,25 +309,63 @@ function drawPixels(canvas, svg, px, h = px) {
       const c = canvas.getContext("2d");
       c.imageSmoothingEnabled = true;
       c.clearRect(0, 0, px, h);
-      c.drawImage(img, 0, 0, px, h);
+      // 画像ファイルの縦横比が枠と違うときは、上を合わせて切り取る（顔が切れないように）
+      const iw = img.naturalWidth,
+        ih = img.naturalHeight;
+      if (!isSvg && iw && ih && Math.abs(iw / ih - px / h) > 0.01) {
+        const sw = Math.min(iw, (ih * px) / h),
+          sh = Math.min(ih, (iw * h) / px);
+        c.drawImage(img, (iw - sw) / 2, 0, sw, sh, 0, 0, px, h);
+      } else c.drawImage(img, 0, 0, px, h);
       done();
     };
     img.onerror = () => done();
     // svg … SVG の文字列か、画像ファイルの場所（img/maou.png など）
-    img.src = String(svg).trim().startsWith("<") ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg) : svg;
+    const isSvg = String(svg).trim().startsWith("<");
+    img.src = isSvg ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg) : svg;
   });
 }
 // { reveal }：影から顔へ。粗いモザイクから、だんだん細かくなって浮かび上がる
+//   img（画像ファイル）があれば、モザイクのあと、その画像をそのまま出す
 async function revealFace() {
   const canvas = talkEl.querySelector(".tk-photo canvas"),
     p = talkEl._portrait;
-  if (!canvas || !p?.face) return;
-  for (const px of [6, 10, 16, 26, 42, 64, 90, p.px]) {
-    await drawPixels(canvas, p.face, px);
+  if (!canvas || !(p?.face || p?.img)) return;
+  const img = await portraitImg(p);
+  const src = img ? p.img : p.face;
+  if (!src) return;
+  for (const px of [6, 10, 16, 26, 42, 64, 90, ...(img ? [] : [p.px])]) {
+    await drawPixels(canvas, src, px);
     SFX.tick();
     await sleep(170);
   }
+  if (img) {
+    const el = new Image();
+    el.className = "tk-img";
+    el.alt = "";
+    el.src = p.img;
+    canvas.replaceWith(el);
+  }
   talkEl.querySelector(".tk-photo").classList.add("lit");
+}
+// 画像ファイルを読む（読めなければ null）。一度読んだら覚えておく
+function portraitImg(p) {
+  if (!p?.img) return Promise.resolve(null);
+  return (p._img ??= new Promise(ok => {
+    const i = new Image();
+    i.onload = () => ok(i);
+    i.onerror = () => ok(null);
+    i.src = p.img;
+  }));
+}
+// 最初の影：画像ファイルがあれば、それをうんと暗くして、輪郭だけ見せる。なければ shadow（影絵の SVG）
+async function drawShadow(canvas, p) {
+  const img = await portraitImg(p);
+  if (!img && p.shadow) return drawPixels(canvas, p.shadow, p.px);
+  await drawPixels(canvas, img ? p.img : p.face, 40);
+  const c = canvas.getContext("2d");
+  c.fillStyle = "rgba(6, 8, 10, 0.9)";
+  c.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 // トークの画面を開く（mode：chat か meet）
@@ -346,7 +385,7 @@ function talkMode(kind, opt = {}) {
       ? `<div class="tk-photo">${art}<div class="tk-cap">${esc(fill(opt.who || ""))}</div></div>`
       : "") +
     `<div class="tk-body"></div><div class="tk-foot"></div><div class="tk-tip">タップで先へ</div>`;
-  if (p) drawPixels(talkEl.querySelector(".tk-photo canvas"), p.shadow || p.face, p.px);
+  if (p && kind === "meet") drawShadow(talkEl.querySelector(".tk-photo canvas"), p);
   SFX.select();
 }
 function talkAdd(html, cls) {
@@ -492,12 +531,7 @@ async function drawSprite(name) {
   const canvas = box.querySelector("canvas");
   // img … 画像ファイル（ほかのツールで描いた絵）。あれば、モザイクから浮かび上がったあと、その画像をそのまま出す
   //   読めなければ、face（SVG）をドット絵にして出す
-  const img = p.img && (await new Promise(ok => {
-    const i = new Image();
-    i.onload = () => ok(i);
-    i.onerror = () => ok(null);
-    i.src = p.img;
-  }));
+  const img = await portraitImg(p);
   const src = img ? p.img : p.face;
   // tall … 縦の長さの、横に対する倍率（全身の立ち絵は 1.5）。画像なら、画像の縦横比
   const tall = img ? img.naturalHeight / img.naturalWidth : p.tall || 1;
@@ -507,8 +541,12 @@ async function drawSprite(name) {
     await sleep(140);
   }
   if (img) {
-    img.className = "rs-img";
-    canvas.replaceWith(img);
+    // 同じ魔王に二度会ってもいいように、毎回新しい img を作る
+    const el = new Image();
+    el.className = "rs-img";
+    el.alt = "";
+    el.src = p.img;
+    canvas.replaceWith(el);
   }
   scrollDown();
   await wait(500);

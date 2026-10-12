@@ -3697,6 +3697,13 @@ body[data-zone="rpg"] #eviCount {
   image-rendering: crisp-edges;
   background: #000;
 }
+/* 画像ファイルの写真（ほかのツールで描いた絵）：モザイクのあと、なめらかなまま、色もそのまま出す */
+.tk-photo img.tk-img {
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: top;
+  filter: none;
+}
 /* 顔が浮かび上がったら、写真が少しだけ明るく光る */
 .tk-photo.lit {
   box-shadow:
