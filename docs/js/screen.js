@@ -95,7 +95,7 @@ function updateNext() {
           l.oneway ? "ow" : "",
         ),
       );
-    if (state.history.length) chips.push(chip("back"));
+    if (state.history.length || state.door) chips.push(chip("back"));
   }
   box.innerHTML = chips.length ? `<span class="next-label">NEXT</span>${chips.join("")}` : "";
   box.scrollLeft = 0; // スマホ（横にスクロールする1行）で、先頭の光るボタンが見えるように
@@ -338,7 +338,9 @@ function setPrompt(text) {
   updateNext();
 }
 function normalPrompt() {
-  setPrompt(`${who()}@${shortHost(here().host)}:~$`);
+  // 鍵のかかった扉の前にいるときは、その扉の名前（back で戻る）
+  const at = state.door ? nodeOf(state.door) : here();
+  setPrompt(`${who()}@${shortHost(at.host)}:~$`);
   cmd.type = "text";
 }
 

@@ -40,7 +40,7 @@ const SFX = (() => {
       comp.threshold.value = -6;
       comp.ratio.value = 8; // 大きくしても音が割れないように押さえる
       out = ctx.createGain();
-      out.gain.value = 2.7; // 全体の音量（効果音はここで決まる）
+      out.gain.value = 3.8; // 全体の音量（効果音も BGM も、ここを通る）。2026-10-12 に 2.7 → 3.8（約 1.4 倍）
       out.connect(comp).connect(ctx.destination);
       // エコー：音が空間に残る感じ
       const delay = ctx.createDelay(1),

@@ -110,6 +110,16 @@ const COMMANDS = {
   },
   async ssh(arg) {
     if (!arg) return print("使い方：ssh &lt;名前&gt;", "dim");
+    // 鍵のかかった扉の前：その扉の名前なら、もう一度ログインを試す。ほかへは、back で戻ってから
+    if (state.door) {
+      const d = nodeOf(state.door);
+      if (shortHost(d.host).toLowerCase() === arg.toLowerCase()) {
+        const id = state.door;
+        state.door = null;
+        return connect(id);
+      }
+      return print(`ssh: いまは ${esc(shortHost(d.host))} の扉の前です。`, "alert");
+    }
     const link = state.links.find(l => l.name.toLowerCase() === arg.toLowerCase());
     // 来た道（ひとつ前の場所）の名前を打ったときは、back と同じように戻る（一覧には出していない）
     const prev = state.history.at(-1);
@@ -207,6 +217,12 @@ const COMMANDS = {
     await speak(["[師匠] まだ帰ってくるな。", "[師匠] 成果もなにもないだろ。"], BEAT.small);
   },
   async back() {
+    // 鍵のかかった扉の前から戻る（扉の手前の場所を、もう一度出す）
+    if (state.door) {
+      state.door = null;
+      await busy(() => showNode());
+      return;
+    }
     if (!state.history.length) return print("back: これ以上戻れません。", "dim");
     if (await holdHere(state.history.at(-1))) return;
     return connect(state.history.pop(), { isBack: true });
@@ -239,13 +255,17 @@ COMMANDS.exit = COMMANDS.back;
 // 認証をやめて、元いた場所に戻る
 function cancelAuth() {
   if (!["user", "password"].includes(state.mode?.type)) return;
-  const label = state.mode.label;
+  const label = state.mode.label,
+    door = state.mode.id;
   state.mode = null;
   disablePicks();
   print(`<span class="ps">${esc(label)}:</span> <span class="dim">（入力しない）</span>`, "echo");
   print("認証をやめました。", "dim");
   SFX.enter();
-  printLinks();
+  // 鍵のかかった扉の前にとどまる。ほかへ行くには、back で戻る（来た道は back、の決まりどおり）
+  state.door = door;
+  state.links = [];
+  updateNext();
   normalPrompt();
   cmd.value = "";
   focusCmd();
