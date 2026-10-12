@@ -144,12 +144,13 @@ const SFX = (() => {
     wake() {
       touched = true;
       if (muted) return;
-      const c = ac();
-      // 別のタブから戻った直後：iPhone では "running" のまま音が出なくなっていることがあるので、一度止めて動かし直す
-      if (c && stale) {
+      // 別のタブから戻って、最初に触ったとき：iPhone の Safari では、音の仕組みが止まったまま戻らない
+      // （"running" のまま無音になることもある）ので、作り直す。触った瞬間なら、新しいものはすぐ鳴らせる
+      if (stale) {
         stale = false;
-        if (IOS && c.state === "running") c.suspend().then(() => c.resume()).catch(() => {});
+        if (IOS && ctx) return rebuild();
       }
+      ac();
     },
     // ページが裏に回って、また表に戻ってきたとき（input.js の visibilitychange）
     //   ここで再開を試み、だめなら次に触ったとき（wake）に動かし直す
@@ -480,6 +481,26 @@ const SFX = (() => {
     };
     bgm.timer = setInterval(scheduleBgm, 25);
     scheduleBgm();
+  }
+  // 音の仕組み（AudioContext）を作り直す。古いものは閉じて、鳴っていた BGM とサイレンは、新しいほうで鳴らし直す
+  function rebuild() {
+    const hadSiren = !!siren;
+    if (siren) {
+      try {
+        siren.stop();
+      } catch {}
+      siren = null;
+    }
+    if (bgm) {
+      clearInterval(bgm.timer);
+      bgm = null;
+    }
+    const old = ctx;
+    ctx = out = echo = noiseBuf = null;
+    old?.close().catch(() => {});
+    ac();
+    applyBgm();
+    if (hadSiren) api.siren(true);
   }
   function stopBgm(opt = {}) {
     const b = bgm;

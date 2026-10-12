@@ -92,9 +92,9 @@ async function play(steps) {
     // エンドを迎えたら（{ ending }）、流れている台本はそこで打ち切る
     if (state.halt) return;
     if (typeof s === "string") {
-      const d = await typeLine(s);
-      // セリフ（[師匠] や登場人物）は読めるように、テンポに関係なく間をおく（練習の師匠は、タップするまで待つ）
-      await afterLine(s, d);
+      await typeLine(s);
+      // セリフ（[師匠] や登場人物）は読めるように、テンポに関係なく間をおく（練習は、ゆっくりめ）
+      await afterLine(s);
       continue;
     }
     // ── チュートリアルのゲームの世界（王城・ダンジョン・魔王城）──

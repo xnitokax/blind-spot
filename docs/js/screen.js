@@ -263,28 +263,24 @@ async function speak(lines, beat = 0) {
     // 師匠のセリフの間は、演出のテンポ（tempo）に関係なく一定（速くしない）
     for (const s of lines) {
       await pause(220);
-      const d = await typeLine(s);
-      await afterLine(s, d);
+      await typeLine(s);
+      await afterLine(s);
     }
   });
 }
 
 // ---------------- 練習：タップで進む ----------------
-// 練習の章（チュートリアル）では、セリフ（師匠・登場人物）・ナレーション・図のあとは、
-// タップ（クリック・Enter）するまで次へ進まない。自分のペースで読めるように
-//   ゲームの世界（rpg）も同じ（昔の RPG の「▼」で次へ）。新しい画面や一覧が出たあとも、読んでから師匠が話す
+// 練習の章（チュートリアル）では、セリフは読み切れるよう、ゆっくり自動で流す。
+// 図・新しい場所の画面・help などの一覧のように、情報が一気に出たときだけ、
+// タップ（クリック・Enter）するまで次へ進まない（読み終えてから、師匠が話し出す）
 let tapResolve = null,
   tapHints = 0;
 const tapMode = () => !!CH?.practice && !REDUCED;
-// el の行の終わりに「▼」を点滅させて、タップを待つ（最初の数回だけ「タップで次へ」と書く）
-function tapWait(el) {
+// 「▼ タップで次へ」を、出たものの下に1行で出して、タップを待つ（文字は最初の数回だけ。あとは ▼ だけ）
+function tapWait() {
   if (!tapMode() || fast || state?.over) return Promise.resolve();
   const label = tapHints++ < 3 ? (finePointer ? " クリックか Enter で次へ" : " タップで次へ") : "";
-  const hint = document.createElement("span");
-  hint.className = "tap-hint";
-  hint.textContent = `▼${label}`;
-  (el || out.lastElementChild || out).appendChild(hint);
-  scrollDown();
+  const hint = print(`<span class="tap-hint">▼${label}</span>`, "tap-line");
   return new Promise(r => {
     tapResolve = () => {
       hint.remove();
@@ -301,12 +297,12 @@ function tapGo() {
   r();
   return true;
 }
-// セリフを1行出したあとの間：練習の師匠のセリフはタップ待ち、ほかはいつもの間
-async function afterLine(s, el) {
+// セリフを1行出したあとの間
+async function afterLine(s) {
   const p = lineParts(s);
-  // セリフとナレーションはタップ待ち（[*] [!] のようなシステムの行は、ふつうに流す）
-  if ((p.say || p.who || !p.cls) && tapMode()) return tapWait(el);
-  await (p.say || p.who ? pause(560) : wait(420));
+  // 練習は、読み切れるように行と行の間を長めに
+  const slow = tapMode();
+  await (p.say || p.who ? pause(slow ? 1150 : 560) : wait(slow ? 750 : 420));
 }
 
 // ---------------- 間（ま） ----------------
