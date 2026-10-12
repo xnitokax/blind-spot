@@ -3729,3 +3729,25 @@ body[data-zone="rpg"] #eviCount {
   padding: 4px 0 10px;
   letter-spacing: 0.1em;
 }
+/* 練習のゲームの世界：登場人物のドット絵（RPG の白い二重線の窓に入れる） */
+.rpg-sprite {
+  width: 168px;
+  margin: 10px auto 6px;
+  border: 4px double #fff;
+  background: #000;
+  padding: 4px;
+}
+.rpg-sprite canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.rpg-sprite .rs-name {
+  text-align: center;
+  font-family: "DotGothic16", monospace;
+  font-size: 13px;
+  color: #fff;
+  padding-top: 4px;
+}

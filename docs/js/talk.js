@@ -160,6 +160,57 @@ const PORTRAITS = {
     </g>
   </svg>`,
   },
+  // 魔王（練習のゲームの世界）：ちいさくて、かわいくて、最強。ラベンダーの髪に黒い角、むらさきの大きな目、きば。レトロ RPG のドット絵（64 ドット）
+  maou: {
+    px: 64,
+    name: "魔王",
+    face: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+    <!-- 魔王城の玉座の間（むらさきの闇と、玉座の背もたれ） -->
+    <rect width="300" height="300" fill="#1a1026"/>
+    <path d="M60 300V70q90-50 180 0v230z" fill="#2c1b40"/>
+    <path d="M80 300V86q70-38 140 0v214z" fill="#3a2453"/>
+    <!-- マント（外は黒、内は赤） -->
+    <path d="M40 300c10-70 50-110 110-110s100 40 110 110z" fill="#1b1322"/>
+    <path d="M86 300c8-52 32-84 64-84s56 32 64 84z" fill="#8c1f3c"/>
+    <!-- 小さな体と、白い襟 -->
+    <path d="M112 300c4-40 18-62 38-62s34 22 38 62z" fill="#2a1f33"/>
+    <path d="M132 236l18 22 18-22-18 8z" fill="#f2eef6"/>
+    <!-- うしろ髪（ラベンダー） -->
+    <path d="M150 52c-62 0-88 44-86 92 2 44 6 70 22 92h128c16-22 20-48 22-92 2-48-24-92-86-92z" fill="#a993ea"/>
+    <!-- 角（くるっと曲がった黒い角） -->
+    <path d="M96 78c-22-14-26-40-14-56 2 18 12 30 30 36z" fill="#2a2030"/>
+    <path d="M204 78c22-14 26-40 14-56-2 18-12 30-30 36z" fill="#2a2030"/>
+    <path d="M90 50c-4-8-4-16 0-22" stroke="#6a5878" stroke-width="3" fill="none"/>
+    <!-- 顔（大きな頭のちびキャラ） -->
+    <ellipse cx="150" cy="148" rx="66" ry="62" fill="#ffe4d9"/>
+    <!-- 前髪 -->
+    <path d="M84 140c-4-52 26-84 66-84s70 32 66 84c-8-22-18-34-30-40 0 12-4 20-10 26-6-14-16-24-28-28 0 12-4 22-12 28-6-12-14-20-26-24 0 10-4 18-10 24-6-6-10-8-16-8z" fill="#c4b2ff"/>
+    <path d="M84 136c-6 30-2 60 10 86-12-6-22-36-20-66z" fill="#a993ea"/>
+    <path d="M216 136c6 30 2 60-10 86 12-6 22-36 20-66z" fill="#a993ea"/>
+    <path d="M112 74c14-10 28-14 42-14-12 6-24 14-32 22z" fill="#e6dcff"/>
+    <!-- 目（大きく、むらさき。ハイライト） -->
+    <ellipse cx="124" cy="152" rx="15" ry="19" fill="#3b1d5c"/>
+    <ellipse cx="176" cy="152" rx="15" ry="19" fill="#3b1d5c"/>
+    <ellipse cx="124" cy="157" rx="10" ry="12" fill="#8b4fd8"/>
+    <ellipse cx="176" cy="157" rx="10" ry="12" fill="#8b4fd8"/>
+    <circle cx="118" cy="145" r="5.5" fill="#fff"/>
+    <circle cx="170" cy="145" r="5.5" fill="#fff"/>
+    <circle cx="129" cy="162" r="2.6" fill="#fff" opacity="0.8"/>
+    <circle cx="181" cy="162" r="2.6" fill="#fff" opacity="0.8"/>
+    <path d="M106 140q18-12 36-2" stroke="#2a1440" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M158 138q18-10 36 2" stroke="#2a1440" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- 眉（ちょっと得意げ） -->
+    <path d="M110 122q12-6 24-2" stroke="#7d68c4" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M166 120q12-4 24 2" stroke="#7d68c4" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- ほっぺ -->
+    <ellipse cx="108" cy="178" rx="13" ry="7" fill="#ff9fb2" opacity="0.6"/>
+    <ellipse cx="192" cy="178" rx="13" ry="7" fill="#ff9fb2" opacity="0.6"/>
+    <!-- 口（にっと笑って、小さなきば） -->
+    <path d="M138 184q12 12 24 0" fill="#c2405c"/>
+    <path d="M138 184q12 4 24 0" stroke="#7a2236" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M154 185l3 6 3-5z" fill="#ffffff"/>
+  </svg>`,
+  },
 };
 // 絵（SVG）を、px ドット四方の canvas に描く（CSS で拡大して、ドットのまま見せる）
 function drawPixels(canvas, svg, px) {
@@ -342,3 +393,20 @@ document.addEventListener(
   },
   { capture: true },
 );
+
+// { sprite: "名前" }：練習のゲームの世界で、登場人物のドット絵を、RPG の窓に出す（粗いドットから、だんだん細かく）
+async function drawSprite(name) {
+  const p = PORTRAITS[name];
+  if (!p) return;
+  const box = print(
+    `<div class="rpg-sprite reveal"><canvas></canvas>${p.name ? `<div class="rs-name">${esc(p.name)}</div>` : ""}</div>`,
+  );
+  const canvas = box.querySelector("canvas");
+  for (const px of [8, 16, 32, p.px]) {
+    await drawPixels(canvas, p.face, px);
+    SFX.tick();
+    await sleep(140);
+  }
+  scrollDown();
+  await wait(500);
+}
