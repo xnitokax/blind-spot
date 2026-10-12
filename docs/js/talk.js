@@ -168,7 +168,7 @@ const PORTRAITS = {
   //   img … nitoka が別の AI で描いた絵（img/maou.jpg）。読めないときだけ、下の SVG（前に作った、ピンクの小悪魔）を出す
   maou: {
     img: "img/maou.jpg",
-    dots: 160, // 最後もドット絵のまま（横 160 ドット。色の数は減らさない：減らすと肌がまだらになる）
+    dots: 80, // 最後もドット絵のまま（横 80 ドットの、粗いドット。色の数は減らさない：減らすと肌がまだらになる）
     px: 150,
     tall: 1.5,
     name: "魔王",
@@ -552,7 +552,8 @@ async function drawSprite(name) {
   // tall … 縦の長さの、横に対する倍率（全身の立ち絵は 1.5）。画像なら、画像の縦横比
   const tall = img ? img.naturalHeight / img.naturalWidth : p.tall || 1;
   const last = img ? p.dots : p.px;
-  for (const px of [8, 16, 32, 64, 100, ...(last ? [last] : [])]) {
+  // モザイクは、最後のドット数より細かくならないところまで
+  for (const px of [...[8, 16, 32, 64, 100].filter(n => !last || n < last), ...(last ? [last] : [])]) {
     await drawPixels(canvas, src, px, Math.round(px * tall));
     if (img && p.colors) posterize(canvas, p.colors);
     SFX.tick();
