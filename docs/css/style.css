@@ -3731,7 +3731,7 @@ body[data-zone="rpg"] #eviCount {
 }
 /* 練習のゲームの世界：登場人物のドット絵（RPG の白い二重線の窓に入れる） */
 .rpg-sprite {
-  width: 168px;
+  width: min(200px, 60vw);
   margin: 10px auto 6px;
   border: 4px double #fff;
   background: #000;
@@ -3740,7 +3740,7 @@ body[data-zone="rpg"] #eviCount {
 .rpg-sprite canvas {
   display: block;
   width: 100%;
-  aspect-ratio: 1;
+  height: auto;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
