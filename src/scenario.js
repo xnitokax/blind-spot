@@ -1918,25 +1918,54 @@ help　　　　── 手札を確かめる
   <li><a data-go="jyoshi">jyoshi.teiwa.local　── 情報システム部（変更ログ・入館ログ）</a></li>
   <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト（社外）</a></li>`),
 
-        // ── ファイルサーバー：プロジェクトのフォルダの中に、名前のないフォルダが1つ。開かない（任務3で開く）──
+        // ── ファイルサーバー：一覧には、ふつうのフォルダだけ。search でフォルダを名前・持ち主（部署コード）で探せる
+        //    「特別プロジェクト室」では 0件。割り出した 1770 で探すと、一覧に出ない名前のないフォルダが見つかる → 開かない（任務3で開く）──
         files: {
           host: "files.teiwa.local/projects",
           zone: "files",
           breach: ["scan SMB shares", "mount //files/projects"],
           title: "ファイルサーバー",
-          body: FILES_BODY,
-          dir: filesDir({ desc: "※ 名前が登録されていない", text: "（暗号化されています）" }),
+          body: FILES_BODY + `<p class="dim">＞ search で、フォルダを名前・持ち主（部署コード）で探せる。</p>`,
+          // 名前のないフォルダ（??????）は、search で見つけるまで一覧に出ない（need: secretDir）
+          dir: filesDir({ desc: "※ 名前が登録されていない", text: "（暗号化されています）", need: "secretDir" }),
           tools: [
-            { cmd: "open", usage: "open <フォルダ名>", desc: "フォルダを開ける", miss: "open: {arg} ── 鍵はかかっていません。（cd {arg} で入れます）" },
+            { cmd: "open", usage: "open <フォルダ名>", desc: "フォルダを開ける", miss: "open: {arg} ── 鍵のかかったフォルダは、見つかりません。（ふつうのフォルダは cd で入れます）" },
           ],
+          search: {
+            label: "ファイルサーバー",
+            records: 12408,
+            fakeTotals: true,
+            exact: ["特別プロジェクト室", "プロジェクト室"],
+            aliases: SEARCH_ALIASES,
+            entries: [
+              { html: `<pre class="log">NGA-2026/      持ち主：dept:1081 経理部　　　　　次世代会計基盤プロジェクト</pre>`, keys: "会計 議事録 要件定義 移行計画" },
+              { html: `<pre class="log">LOGI-AI/       持ち主：dept:1431 物流部　　　　　物流最適化AIプロジェクト</pre>`, keys: "AI 配送 倉庫 ルート" },
+              { html: `<pre class="log">DX-HUB/        持ち主：dept:1596 情報システム部　社内DX推進プロジェクト</pre>`, keys: "情シス DX ペーパーレス アンケート" },
+              // 名前のないフォルダ：割り出した部署コード（1770）で探したときだけ見つかる
+              {
+                html: `<pre class="log">??????/        持ち主：■■■■
+               <span class="warn">※ 名前が登録されていない ／ 一覧に出ない設定 ／ 暗号化</span></pre>`,
+                keys: "1770 dept:1770",
+                say: ["[師匠] ……出たな。一覧には出てこない、名前のないフォルダだ。"],
+                after: [{ flag: "secretDir" }],
+              },
+            ],
+            notes: [
+              ...NAMELESS_NOTES,
+              { when: ["議事録", "見積", "請求", "設計", "写真", "提案"], say: ["[師匠] ふつうの資料ばかりだな。"] },
+            ],
+            empty: "該当するフォルダ・ファイルはありません。",
+          },
           actions: {
             // 名前のないフォルダ：cd でも open でも、ここに来る（一度だけ。そのあとの cd は、ふつうに中を見る）
+            //   search で見つけるまで（secretDir）は、打っても何も起きない
             "open ??????": {
               alias: ["cd ??????"],
+              need: "secretDir",
               script: [
                 { locked: "??????/ ── 暗号化されています" },
                 "[師匠] ……開かないな。持ち主の欄まで、塗りつぶされてる。",
-                "[師匠] 中身どころか、名前すらないフォルダか。",
+                "[師匠] 中身どころか、名前すらないフォルダか。……鍵は、こいつの本当の名前ってとこだな。",
                 { clue: "名前のないフォルダ：持ち主も伏せられている。暗号化されている" },
               ],
             },
