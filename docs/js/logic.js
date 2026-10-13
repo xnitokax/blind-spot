@@ -147,7 +147,8 @@ const eviTipShown = () => {
 async function checkObjectives() {
   // 初めて手がかりを見つけたら、どこにまとめてあるかを師匠が教える（この端末で一度だけ）
   //   スマホでは手がかりの欄が画面の上にたたまれていて、気づきにくいので
-  if (state.clues.length && !eviTipShown()) {
+  //   教えるのは eviTip のある任務（任務1）と練習だけ。任務2からは、チュートリアルの言葉は出さない
+  if (state.clues.length && !eviTipShown() && (CH.eviTip || CH.practice)) {
     state.eviTipDone = true;
     try {
       localStorage.setItem("uzu-evi-tip", "1");
