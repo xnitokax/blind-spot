@@ -443,6 +443,8 @@ const cmdKey = s => fold(s).replace(/\s+/g, "").replace(/[?？]+/g, "?");
 async function useTool(tool, raw) {
   const arg = raw.trim().split(/\s+/).slice(tool.cmd.split(/\s+/).length).join(" ");
   if (!arg) return print(`使い方：${esc(tool.usage || tool.cmd)}`, "dim");
+  // rec … 監視カメラの録画を、時間を区切って抜き出す道具（任務2）
+  if (tool.rec) return camRec(tool.rec, arg);
   await busy(async () => {
     SFX.tick();
     await wait(BEAT.small);
@@ -492,4 +494,47 @@ function complete() {
   const hits = pool.filter(p => p.toLowerCase().startsWith(prefix.toLowerCase()));
   if (hits.length === 1) cmd.value = head + hits[0] + (m ? "" : " ");
   else if (hits.length > 1) print(hits.map(esc).join("    "), "dim");
+}
+
+// cam --rec <開始>-<終了> [--sort]：決めた時間のあいだに、カメラごとに何秒ぶん録画が残っているかを出す（任務2）
+//   rec.cams … [{ id, gaps: [["01:30:00", "02:00:00"], ...] }]（録画が止まっていた時間）
+//   rec.max … 一度に抜き出せる長さ（分）。rec.target … 止められていたカメラ。rec.found … 並び替えて見つけたときの師匠のセリフ
+//   --sort を付けると、録画の短い順に並べる（止まっていたカメラが、いちばん上に来る）
+async function camRec(rec, arg) {
+  const m = arg.match(/(\d{1,2}):?(\d{2})\s*[-~〜～]\s*(\d{1,2}):?(\d{2})/);
+  if (!m) return print(`使い方：cam --rec 01:00-01:30（時刻は 24 時間で。--sort で、録画の短い順に並べる）`, "dim");
+  const from = (+m[1] * 60 + +m[2]) * 60,
+    to = (+m[3] * 60 + +m[4]) * 60;
+  if (to <= from) return print("cam: 終わりの時刻は、始まりより後にしてください。", "alert");
+  if (to - from > (rec.max || 60) * 60)
+    return print(`cam: 一度に抜き出せるのは ${rec.max || 60} 分までです。`, "alert");
+  const sec = t => t.split(":").reduce((a, b) => a * 60 + +b, 0);
+  const rows = rec.cams.map(c => {
+    let lost = 0;
+    for (const [a, b] of c.gaps || []) lost += Math.max(0, Math.min(to, sec(b)) - Math.max(from, sec(a)));
+    return { id: c.id, kept: to - from - lost };
+  });
+  const sorted = /--sort/.test(arg);
+  if (sorted) rows.sort((a, b) => a.kept - b.kept);
+  const mmss = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const span = `${m[1].padStart(2, "0")}:${m[2]}-${m[3].padStart(2, "0")}:${m[4]}`;
+  await busy(async () => {
+    SFX.tick();
+    await wait(BEAT.small);
+    const box = print(
+      `<pre class="log">${esc(rec.date || "")} ${span}　録画の残り時間（${sorted ? "短い順" : "カメラ番号順"}）\n</pre>`,
+    ).querySelector("pre");
+    for (const r of rows) {
+      box.insertAdjacentHTML(
+        "beforeend",
+        `${r.kept < to - from ? '<span class="warn">' : ""}${esc(r.id.padEnd(12))} ${mmss(r.kept)} / ${mmss(to - from)}${r.kept < to - from ? "</span>" : ""}\n`,
+      );
+      SFX.tick();
+      scrollDown();
+      await wait(60);
+    }
+  });
+  // 並び替えて、止められていたカメラがいちばん上に来たら、師匠がひとこと（一度だけ）
+  if (sorted && rows[0]?.id === rec.target && rows[0].kept < to - from && rec.found)
+    await oops(`camrec:${state.current}`, rec.found);
 }

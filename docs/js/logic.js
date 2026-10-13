@@ -6,16 +6,17 @@
 // ---------------- 手がかり ----------------
 function countClues(ch) {
   if (ch.clueTotal != null) return ch.clueTotal;
-  let n = 0;
+  // 同じ手がかりが何か所かにあっても（検索の notes など）、1つと数える
+  const set = new Set();
   for (const node of Object.values(ch.nodes)) {
-    if (node.clue) n++;
-    n += (node.search?.entries || []).filter(e => e.clue).length;
-    n += (node.dir || []).filter(d => d.clue).length;
-    n += Object.values(node.actions || {})
-      .flatMap(a => a.script || [])
-      .filter(x => x?.clue).length;
+    if (node.clue) set.add(node.clue);
+    for (const e of node.search?.entries || []) if (e.clue) set.add(e.clue);
+    for (const d of node.dir || []) if (d.clue) set.add(d.clue);
+    for (const a of Object.values(node.actions || {})) for (const x of a.script || []) if (x?.clue) set.add(x.clue);
+    // 検索の notes の台本の中で渡す手がかり（任務2：「特別プロジェクト室」がどこにも出てこない）
+    for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) set.add(x.clue);
   }
-  return n;
+  return set.size;
 }
 // ---------------- 目標（objectives） ----------------
 // 任務の中の小さな目標を、上から順に1つずつ進める（書き方は src/scenario.js の先頭を参照）

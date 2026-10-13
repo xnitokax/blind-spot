@@ -191,6 +191,7 @@
           for (const d of node.dir || []) if (d.clue) clues.add(d.clue);
           for (const a of Object.values(node.actions || {}))
             for (const x of a.script || []) if (x?.clue) clues.add(x.clue);
+          for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) clues.add(x.clue);
         }
         for (const o of ch.objectives || []) {
           for (const c of o.clues || [])
@@ -269,17 +270,16 @@
           const { code: _, ...ch } = JSON.parse(JSON.stringify(src));
           ch.id = cid;
           // 手がかりの総数（鍵付きノードの中身は暗号化すると数えられないので、先に数えておく）
-          ch.clueTotal = Object.values(ch.nodes).reduce(
-            (n, node) =>
-              n +
-              (node.clue ? 1 : 0) +
-              (node.search?.entries || []).filter(e => e.clue).length +
-              (node.dir || []).filter(d => d.clue).length +
-              Object.values(node.actions || {})
-                .flatMap(a => a.script || [])
-                .filter(x => x?.clue).length,
-            0,
-          );
+          //   同じ手がかりが何か所かにあっても、1つと数える（検索の notes の台本で渡す手がかりも数える）
+          const clueSet = new Set();
+          for (const node of Object.values(ch.nodes)) {
+            if (node.clue) clueSet.add(node.clue);
+            for (const e of node.search?.entries || []) if (e.clue) clueSet.add(e.clue);
+            for (const d of node.dir || []) if (d.clue) clueSet.add(d.clue);
+            for (const a of Object.values(node.actions || {})) for (const x of a.script || []) if (x?.clue) clueSet.add(x.clue);
+            for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) clueSet.add(x.clue);
+          }
+          ch.clueTotal = clueSet.size;
           log(`■ ${cid}（${ch.label}）　手がかり ${ch.clueTotal} 個`);
           for (const [id, node] of Object.entries(ch.nodes)) {
             if (node.lock) ch.nodes[id] = await lockNode(cid, id, node);
