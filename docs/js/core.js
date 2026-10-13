@@ -171,6 +171,8 @@ async function tryUnlock(node, input, account) {
 
 const nodeOf = id => state.opened.get(id) || CH.nodes[id];
 const here = () => nodeOf(state.current);
+// 今いる場所のフォルダ（need の付いたフォルダは、その flag が立つまで隠す。任務2の名前のないフォルダなど）
+const dirHere = (node = here()) => (node?.dir || []).filter(d => !d.need || state.flags[d.need]);
 
 // ---------------- 入力のロック ----------------
 // 演出の途中はコマンドを受け付けない（入れ子で呼んでもよい）

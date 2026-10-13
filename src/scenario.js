@@ -1841,8 +1841,8 @@ help　　　　── 手札を確かめる
       clock: "23:05",
       route: ["uzu://safehouse", "tor-entry.anon", "tor-relay-19.anon", "tor-relay-02.anon", "tor-exit-jp.anon", "vpn.teiwa.local"],
       noise: true,
-      // nav … どのシステムからでも、ほかのシステムへ直接移動できる（bank は need の flag が立つまで出ない）
-      nav: ["portal", "files", "nippo", "hr", "seek", "keiri", "bank", "jyoshi"],
+      // 移動：ほかのシステムへは、back でポータルに戻ってから（どこからでも直接は行けない）
+      //   海外の銀行（bank）だけは、財務会計（keiri）の先にある（口座「SRG」が分かってから）
       intro: [
         "[師匠] まずはお疲れさん。最初の仕事にしちゃ、やるじゃないか。",
         "[師匠] 今夜は「特別プロジェクト室」を洗う。何をしている部屋なのか、正体を暴け。",
@@ -1862,34 +1862,55 @@ help　　　　── 手札を確かめる
   <li><a data-go="jyoshi">jyoshi.teiwa.local　── 情報システム部（変更ログ）</a></li>
   <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト（社外）</a></li>`),
 
-        // ── ファイルサーバー：ファイルがあふれ出す → AIで仕分け → 名前のないフォルダ → 攻防に負ける → 社長の写真 ──
+        // ── ファイルサーバー：ファイルがあふれ出す → search で「特別プロジェクト室」を探す → 一覧に出ない、名前のないフォルダが見つかる
+        //    → open ?????? → 攻防に負ける → 社長の写真 ──
         files: {
           host: "files.teiwa.local/projects",
           zone: "files",
-          talkFirst: true,   // 着いたらすぐファイルがあふれ出す。フォルダの一覧は、師匠が scan を頼んだあとに出す
+          talkFirst: true,   // 着いたらすぐファイルがあふれ出す。フォルダの一覧は、師匠が話したあとに出す
           breach: ["scan SMB shares", "mount //files/projects"],
           title: "ファイルサーバー",
           body: FILES_BODY,
-          dir: filesDir({ desc: "※ 名前が登録されていない", text: "（暗号化されています）" }),
+          // 名前のないフォルダ（??????）は、search で見つけるまで一覧に出ない（need: secretDir）
+          dir: filesDir({ desc: "※ 名前が登録されていない", text: "（暗号化されています）", need: "secretDir" }),
           scene: [
             { flood: 70, kind: "file" },
             "[師匠] ──ストップ。多すぎる。",
-            "[師匠] scan で、AIに仕分けさせてくれ。",
+            "[師匠] こういうときは、search だ。",
           ],
           tools: [
-            { cmd: "scan", desc: "フォルダの中身を、AIで仕分ける" },
-            { cmd: "open", usage: "open <フォルダ名>", desc: "フォルダを開ける", miss: "{arg}: 鍵はかかっていません。（cd {arg} で入れます）" },
+            { cmd: "open", usage: "open <フォルダ名>", desc: "フォルダを開ける", miss: "open: {arg} ── 鍵のかかったフォルダは、見つかりません。（ふつうのフォルダは cd で入れます）" },
           ],
+          // ファイルサーバーの検索：フォルダを、名前・持ち主（部署）・中身で探せる
+          //   「特別プロジェクト室」で探すと、一覧に出ていなかった名前のないフォルダが見つかる
+          search: {
+            label: "ファイルサーバー",
+            records: 12408,
+            fakeTotals: true,
+            aliases: SEARCH_ALIASES,
+            entries: [
+              {
+                html: `<pre class="log">??????/        持ち主：特別プロジェクト室
+               <span class="warn">※ 名前が登録されていない ／ 一覧に出ない設定 ／ 暗号化</span></pre>`,
+                keys: "特別プロジェクト室 プロジェクト室 特別 室長 鷲尾 0000 暗号 名前なし 隠し",
+                say: ["[師匠] ……あった。一覧に出てこないフォルダだ。", "[師匠] 名前もない。持ち主は「特別プロジェクト室」。"],
+                after: [{ flag: "secretDir" }],
+              },
+              { html: `<pre class="log">NGA-2026/      持ち主：経理部　　　　　次世代会計基盤プロジェクト</pre>`, keys: "経理部 会計 議事録 要件定義" },
+              { html: `<pre class="log">LOGI-AI/       持ち主：物流本部　　　　物流最適化AIプロジェクト</pre>`, keys: "物流 AI 配送 倉庫" },
+              { html: `<pre class="log">DX-HUB/        持ち主：情報システム部　社内DX推進プロジェクト</pre>`, keys: "情報システム部 情シス DX ペーパーレス アンケート" },
+            ],
+            notes: [
+              { when: ["議事録", "見積", "請求", "設計", "写真", "提案"], say: ["[師匠] ふつうの資料ばかりだな。"] },
+            ],
+            empty: "該当するフォルダ・ファイルはありません。",
+          },
           actions: {
-            scan: {
-              script: [
-                { scan: { total: 12408, cats: [["議事録", 3120], ["見積・請求", 2871], ["設計書", 1904], ["写真", 1288], ["そのほか", 3224]], found: "??????/ ── 名前がない。暗号化されている" } },
-                "[師匠] ……1つだけ、仕分けられないのがあるな。",
-              ],
-            },
             // 名前のないフォルダ：cd でも open でも、ここに来る（一度だけ。そのあとの cd は、ふつうに中を見る）
+            //   search で見つけるまで（secretDir）は、打っても何も起きない
             "open ??????": {
               alias: ["cd ??????"],
+              need: "secretDir",
               script: [
                 { locked: "??????/ ── 暗号化されています" },
                 "[師匠] ……頑張ってみるか。",
@@ -1901,7 +1922,6 @@ help　　　　── 手札を確かめる
                 { photo: { name: "IMG_0412.jpg", caption: "/home/ceo/private ── 出張先にて。社長と、秘書" } },
                 "[師匠] 社内のPCに保存とか、いい趣味してるねぇ……。",
                 { wait: 600 },
-                "[師匠] ……持ち主の欄だけは読めた。「特別プロジェクト室」だ。",
                 { clue: "名前のないフォルダ：特別プロジェクト室のもの。開かない" },
                 "[師匠] 正面からは無理だな。……別の入口を探すしかない。",
               ],
@@ -2063,7 +2083,7 @@ help　　　　── 手札を確かめる
           bgm: 2,   // 曲：メロディが入る
           entry: [
             { trail: { head: "EXIT ── 社内ネットワークの外へ", hops: [
-              { name: "hr.teiwa.local", sub: "帝和HD 社内ネットワーク", note: "0ms" },
+              { name: "portal.teiwa.local", sub: "帝和HD 社内ネットワーク", note: "0ms" },
               { name: "fw-edge.teiwa.local", sub: "社外への出口（ファイアウォール）", tag: "BYPASS", note: "3ms" },
               { name: "exit node jp-07", sub: "Tor の出口　大阪", tag: "TOR", note: "11ms" },
               { name: "seek.jp", sub: "外の検索サイト", tag: "ONLINE", note: "19ms" },
@@ -2115,7 +2135,10 @@ help　　　　── 手札を確かめる
   経理部              ¥  312,480,000
   営業本部            ¥1,904,220,000
   特別プロジェクト室  ¥1,330,584,300
-  情報システム部      ¥   88,140,000</pre>`,
+  情報システム部      ¥   88,140,000</pre>
+<ul class="links">
+  <li><a data-go="bank" data-need="srg">caymantrust.ky　── 海外の銀行（口座「SRG」）</a></li>
+</ul>`,
           tools: [
             { cmd: "stat", usage: "stat <伝票番号>", desc: "伝票の変更履歴を見る", miss: "伝票 #{arg} ── 作成のあと、変更はありません。" },
             { cmd: "trace --money", usage: "trace --money <伝票番号>", desc: "支払ったお金の行き先を追う", miss: "伝票 #{arg} ── 支払先は、伝票の相手先のとおりです。" },

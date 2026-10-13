@@ -52,7 +52,7 @@ function printMenu(force = false) {
   if (CH.compact) {
     if (!force) return true;
     const names = [
-      ...(node.dir || []).map(
+      ...dirHere(node).map(
         d => `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span>`,
       ),
       ...state.links.map(
@@ -63,7 +63,7 @@ function printMenu(force = false) {
       print(`<div class="menu compact reveal">${names.join(`<span class="dim"> · </span>`)}</div>`);
     return names.length > 0;
   }
-  for (const d of node.dir || []) {
+  for (const d of dirHere(node)) {
     rows.push(
       `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`,
     );

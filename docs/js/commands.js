@@ -173,7 +173,7 @@ const COMMANDS = {
     if (!node.dir) return COMMANDS.ssh(arg);
     if (!arg) return print("使い方：cd &lt;フォルダ名&gt;", "dim");
     const a = NZ.norm(arg);
-    const byAlias = node.dir.find(d => d.go && (d.alias || []).some(x => NZ.norm(x) === a));
+    const byAlias = dirHere(node).find(d => d.go && (d.alias || []).some(x => NZ.norm(x) === a));
     if (byAlias) {
       addLog(`cd ${arg}`);
       SFX.granted();
@@ -181,7 +181,7 @@ const COMMANDS = {
       await wait(1500);
       return connect(byAlias.go);
     }
-    const d = node.dir.find(d => NZ.norm(d.name) === a);
+    const d = dirHere(node).find(d => NZ.norm(d.name) === a);
     if (!d) return print(`cd: ${esc(arg)}: そのようなフォルダはありません。`, "alert");
     // フォルダの場所を見出しに、中身は左の線で囲んだ一覧に（空のときは黄色）
     const files = (d.text || "ファイルがありません。").split("\n").map(esc);
@@ -394,9 +394,12 @@ async function run(raw) {
   //   別の打ち方で、もう済んだ演出に当たったときは、ふつうのコマンドとして動かす（cd ならフォルダに入る）
   const acts = here()?.actions;
   const same = (a, b) => cmdKey(a) === cmdKey(b);
+  //   need … その flag が立つまでは使えない（任務2：名前のないフォルダを search で見つけるまで、open ?????? は効かない）
   const act =
     acts &&
-    Object.entries(acts).find(([k, a]) => [k, ...(a.alias || [])].some(x => same(x, raw)));
+    Object.entries(acts).find(
+      ([k, a]) => (!a.need || state.flags[a.need]) && [k, ...(a.alias || [])].some(x => same(x, raw)),
+    );
   const actDone = act && state.said.has(`act:${state.current}:${act[0]}`);
   if (act && !(actDone && !same(act[0], raw))) return runAction(act[0], act[1]);
   // コマンド名は、全角で打っても大文字でも通す
@@ -467,7 +470,7 @@ function complete() {
   let pool, prefix, head;
   if (m && /^ssh$/i.test(m[1])) pool = state.links.map(l => l.name);
   else if (m && /^cd$/i.test(m[1]))
-    pool = node.dir ? node.dir.map(d => d.name) : state.links.map(l => l.name);
+    pool = node.dir ? dirHere(node).map(d => d.name) : state.links.map(l => l.name);
   else if (!m && /^\s*\S*$/.test(v))
     pool = [
       "ssh",

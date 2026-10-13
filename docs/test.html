@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>BLIND//SPOT テスト用</title>
+    <!-- テスト用の入口：好きな任務から、すぐ始める（オープニングと呼び名の入力は飛ばす）
+         押すと、index.html?line=回線コード に移動する。呼び名がまだなければ nitoka にしておく -->
+    <style>
+      :root {
+        --bg: #070a0a;
+        --fg: #d7e4e0;
+        --dim: #7d8f8a;
+        --line: #1f3b36;
+        --accent: #8fc8ff;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "BIZ UDGothic", "Hiragino Sans", system-ui, sans-serif;
+        display: flex;
+        justify-content: center;
+      }
+      main {
+        width: min(420px, 100%);
+        padding: 40px 16px;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 18px;
+        letter-spacing: 0.2em;
+        margin: 0 0 6px;
+      }
+      p {
+        color: var(--dim);
+        font-size: 13px;
+        line-height: 1.8;
+        margin: 0 0 24px;
+      }
+      a {
+        display: block;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--fg);
+        text-decoration: none;
+        font-size: 16px;
+      }
+      a b {
+        color: var(--accent);
+        font-weight: normal;
+        margin-right: 10px;
+      }
+      a span {
+        display: block;
+        color: var(--dim);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      a:active {
+        background: #0e1817;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>BLIND//SPOT</h1>
+      <p>テスト用の入口です。押した任務から、すぐ始まります。<br />オープニングと呼び名の入力は飛ばします。</p>
+      <a href="#" data-line="SQUINT"><b>任務2</b>プロジェクト室<span>二部の最初（ポータル）から</span></a>
+      <a href="#" data-line="TEIWA"><b>任務1</b>社員名簿<span>一部の最初から</span></a>
+      <a href="#" data-line="TRAINING"><b>練習</b>師匠のサーバー<span>チュートリアルと RPG</span></a>
+      <a href="#" data-line="" data-opening="1"><b>最初から</b>オープニング<span>汐里が来る場面から見直す</span></a>
+    </main>
+    <script>
+      document.querySelectorAll("a[data-line]").forEach(a =>
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          try {
+            if (a.dataset.opening) localStorage.removeItem("uzu-opening");
+            else {
+              localStorage.setItem("uzu-opening", "1");
+              if (!localStorage.getItem("uzu-handle")) localStorage.setItem("uzu-handle", "nitoka");
+            }
+          } catch {}
+          const line = a.dataset.line;
+          // v … 古い画面が出ないように、毎回ちがう URL にする
+          location.href = "index.html?" + (line ? "line=" + line + "&" : "") + "v=" + Date.now();
+        }),
+      );
+    </script>
+  </body>
+</html>
