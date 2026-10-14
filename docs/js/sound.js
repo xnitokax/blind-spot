@@ -487,10 +487,14 @@ const SFX = (() => {
       runLevel = Math.max(runLevel, n);
       if (bgm) bgm.want = runLevel;
     },
-    // コマンドを実行した瞬間の「ビシュッ」：ボーナスタイムの曲に合わせて、次の16分ちょうどに鳴る
+    // コマンドを実行した瞬間の音：曲のリズムに合わせて、次の16分ちょうどに鳴る
+    //   run（爽快版）… 「ビシュッ」／watch（任務2）… 心臓が「ドクン、ドクン」と脈打つ（画面も一緒に脈打つ：onPulse）
     beat() {
       if (bgm && track === "run") bgm.zap = true;
+      if (bgm && track === "watch") bgm.pulse = true;
     },
+    // 心臓が鳴る瞬間に呼ばれる（画面の演出用。effects.js で設定する）
+    onPulse: null,
     get bgmOn() {
       return bgmOn;
     },
@@ -545,10 +549,8 @@ const SFX = (() => {
     castle: { bpm: 116, gain: 1.6, play: (n, t) => playChip(CHIP.castle, n, t) },
     dungeon: { bpm: 84, gain: 1.8, play: (n, t) => playChip(CHIP.dungeon, n, t) },
     boss: { bpm: 152, gain: 1.5, play: (n, t) => playChip(CHIP.boss, n, t) },
-    // 任務2（謎解き）の曲の候補：nazo（時計のように刻むマレット）／watch（心臓の音と、見られている気配）／think（エレピと歩くベース）
-    nazo: { bpm: 84, gain: 1.8, play: (n, t) => playNazo(n, t) },
+    // watch … 任務2（謎解き）。心臓の音と秒針、見られている気配。コマンドを打つと、心臓が強く脈打つ
     watch: { bpm: 70, gain: 1.6, play: (n, t) => playWatch(n, t) },
-    think: { bpm: 96, gain: 2.2, play: (n, t) => playThink(n, t) },
   };
   let track = "calm",
     runLevel = 0;
@@ -608,6 +610,7 @@ const SFX = (() => {
       level: runLevel,
       want: runLevel,
       zap: false,
+      pulse: false,
       chorusStart: null,
     };
     bgm.timer = setInterval(scheduleBgm, 25);
@@ -671,6 +674,12 @@ const SFX = (() => {
       if (bgm.zap) {
         bgm.zap = false;
         zap(bgm.bus, bgm.next);
+      }
+      if (bgm.pulse) {
+        bgm.pulse = false;
+        heart(bgm.bus, bgm.next);
+        const ms = Math.max(0, (bgm.next - ctx.currentTime) * 1000);
+        setTimeout(() => api.onPulse?.(), ms);
       }
       if (bgm.step % 128 === 0) bgm.level = bgm.want;
       bgm.T.play(bgm.step, bgm.next);
@@ -1815,68 +1824,8 @@ const SFX = (() => {
   }
 
 
-  // ---------------- 任務2（謎解き）の曲の候補：nazo / watch / think ----------------
-  // マレット：木琴のような、短く柔らかい「ポン」（正弦波に、叩いた瞬間だけ高い倍音）
-  function mallet(bus, t, freq, v = 1) {
-    const g = voice(
-      bus,
-      t,
-      0.45,
-      0.04 * v,
-      g => {
-        const o = ctx.createOscillator();
-        o.frequency.value = freq;
-        o.connect(g);
-        const o2 = ctx.createOscillator();
-        o2.frequency.value = freq * 4;
-        const g2 = ctx.createGain();
-        g2.gain.setValueAtTime(0.18, t);
-        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-        o2.connect(g2).connect(g);
-        o.start(t);
-        o2.start(t);
-        o.stop(t + 0.5);
-        o2.stop(t + 0.5);
-      },
-      0.004,
-    );
-    send(g, 0.3);
-  }
-  // A「nazo」：時計のように刻み続けるマレットの音型。D マイナー、和音は Dm9 → B♭maj7 → Gm9 → A7♭9 を2小節ずつ
-  //   最初は音型と和音だけ → ベース → リムとシェイカー。32 小節ごとに、ベースの抜ける静かな区間
-  const NAZO = [
-    { root: 73.42, pad: [174.61, 220.0, 261.63, 329.63], ped: 440.0, hi: [587.33, 698.46, 659.25] }, // Dm9
-    { root: 58.27, pad: [233.08, 293.66, 349.23, 440.0], ped: 349.23, hi: [587.33, 698.46, 659.25] }, // B♭maj7（E が #11）
-    { root: 98.0, pad: [233.08, 293.66, 349.23, 440.0], ped: 466.16, hi: [587.33, 698.46, 783.99] }, // Gm9
-    { root: 55.0, pad: [196.0, 277.18, 329.63, 466.16], ped: 440.0, hi: [554.37, 659.25, 698.46] }, // A7♭9
-  ];
-  const NAZO_PAT = [
-    [0, -1, 1, -1, 2, -1, 1, -1],
-    [0, -1, 1, -1, 2, 1, 0, -1],
-  ]; // 8分ごとの音（hi の何番目か。-1 は ped）
-  function playNazo(n, t) {
-    const ST = bgm.stepLen,
-      s = n % 16,
-      bar = Math.floor(n / 16),
-      bus = bgm.bus;
-    const ch = NAZO[Math.floor(bar / 2) % 4],
-      sec = bar % 32,
-      quiet = sec >= 28; // 静かな区間
-    if (s === 0 && bar % 2 === 0) pad(bus, t, ch.pad, ST * 32, 700);
-    if (s % 2 === 0) {
-      const k = NAZO_PAT[bar % 2][s / 2];
-      mallet(bus, t, k < 0 ? ch.ped : ch.hi[k], k < 0 ? 0.55 : 0.9);
-    }
-    if (bar >= 2 && !quiet) {
-      if (s === 0 || s === 8) roundBass(bus, t, ch.root * 2, ST * 6);
-      if (s === 14 && bar % 2 === 1) roundBass(bus, t, ch.root * 2, ST * 2);
-    }
-    if (bar >= 6 && !quiet) {
-      if (s === 12) rim(bus, t);
-      shaker(bus, t, s % 4 === 2 ? 0.9 : 0.4);
-    }
-  }
-  // B「watch」：見られている気配。テンポ 70。心臓の音（ドクン）と、時計の秒針、ときどき冷たいピアノ
+  // ---------------- 任務2（謎解き）の曲：watch ----------------
+  // watch：見られている気配。テンポ 70。心臓の音（ドクン）と、時計の秒針、ときどき冷たいピアノ
   //   和音は4小節ずつ：Cm9 → A♭maj7♯11 → Fm9 → G7♭9（上の音はあまり動かさず、下だけ沈んでいく）
   const WATCH = [
     { root: 65.41, pad: [261.63, 311.13, 392.0, 587.33] }, // Cm9
@@ -1909,40 +1858,28 @@ const SFX = (() => {
       bgm.rest = 3; // 鳴ったら、しばらく黙る
     }
   }
-  // C「think」：考えごと。テンポ 96、少しハネる。エレピの和音と、歩くベース、ブラシ。後半4小節にビブラフォンの短いフレーズ
-  //   和音は1小節ずつ：Am9 → Fmaj7♯11 → Dm9 → E7♭9
-  const THINK = [
-    { root: 110.0, ep: [261.63, 329.63, 392.0, 493.88] }, // Am9
-    { root: 87.31, ep: [220.0, 261.63, 329.63, 493.88] }, // Fmaj7♯11
-    { root: 73.42, ep: [174.61, 220.0, 261.63, 329.63] }, // Dm9
-    { root: 82.41, ep: [207.65, 293.66, 349.23, 493.88] }, // E7♭9
-  ];
-  const THINK_MEL = [
-    [0, 0, 659.25], [0, 4, 523.25], [0, 8, 440.0],
-    [1, 0, 493.88], [1, 6, 523.25], [1, 10, 659.25],
-    [2, 0, 698.46], [2, 4, 659.25], [2, 8, 587.33], [2, 12, 523.25],
-    [3, 0, 493.88], [3, 4, 415.3], [3, 8, 349.23], [3, 12, 415.3],
-  ]; // [何小節目（0〜3）, 16分の位置, 周波数]
-  function playThink(n, t) {
-    const ST = bgm.stepLen,
-      s = n % 16,
-      bar = Math.floor(n / 16),
-      bus = bgm.bus;
-    const ch = THINK[bar % 4],
-      nx = THINK[(bar + 1) % 4];
-    const sw = s % 4 === 2 ? t + ST * 0.5 : t; // 裏の8分を少し遅らせる
-    if (s === 0) ep(bus, t, ch.ep, ST * 10, 0.9);
-    if (s === 11) ep(bus, t, ch.ep, ST * 4, 0.45);
-    // 歩くベース：根音 → 短3度 → 5度 → 次の根音の半音上
-    const walk = [ch.root, ch.root * 1.189, ch.root * 1.498, nx.root * 1.0595];
-    if (bar >= 1 && s % 4 === 0) roundBass(bus, t, walk[s / 4], ST * 3.2);
-    if (bar >= 2) {
-      if (s === 12) brush(bus, t);
-      if (s % 4 === 0) hat(bus, t, 0.45);
-      if (s % 4 === 2 && Math.random() < 0.5) hat(bus, sw, 0.25);
+  // 心臓の「ドクン、ドクン」（コマンドを打ったとき）：曲の心音より強く、低い。iPhone でも聞こえるよう、少し上の音も混ぜる
+  function heart(bus, t) {
+    for (const [at, v] of [[0, 1], [0.24, 0.6]]) {
+      const tt = t + at;
+      voice(bus, tt, 0.34, 0.7 * v, g => {
+        const o = ctx.createOscillator();
+        o.frequency.setValueAtTime(92, tt);
+        o.frequency.exponentialRampToValueAtTime(40, tt + 0.16);
+        o.connect(g);
+        const o2 = ctx.createOscillator();
+        o2.type = "triangle";
+        o2.frequency.setValueAtTime(190, tt);
+        o2.frequency.exponentialRampToValueAtTime(85, tt + 0.1);
+        const g2 = ctx.createGain();
+        g2.gain.value = 0.3;
+        o2.connect(g2).connect(g);
+        o.start(tt);
+        o2.start(tt);
+        o.stop(tt + 0.36);
+        o2.stop(tt + 0.36);
+      }, 0.006);
     }
-    if (bar % 8 >= 4)
-      for (const [mb, at, f] of THINK_MEL) if (mb === (bar % 8) - 4 && at === s) vibe(bus, t, f);
   }
   return api;
 })();

@@ -3994,3 +3994,32 @@ body[data-zone="rpg"] #eviCount {
 .file-code .f { color: #dcdcaa; }   /* 関数の名前 */
 .file-code .v { color: #9cdcfe; }   /* 変数・プロパティ */
 .file-code .t { color: #4ec9b0; }   /* String / console など */
+/* 心臓の脈（任務2の曲で、コマンドを打ったとき）：ふちが暗い赤に「ドクン、ドクン」と沈み、画面がかすかにふくらむ */
+#heartFx {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 48%, rgba(70, 0, 0, 0.6) 100%);
+}
+#heartFx.beat {
+  animation: heartFx 0.8s ease-out;
+}
+@keyframes heartFx {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  24% { opacity: 0.25; }
+  33% { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+#wrap.throb {
+  animation: throb 0.8s ease-out;
+}
+@keyframes throb {
+  0% { transform: scale(1); }
+  8% { transform: scale(1.006); }
+  24% { transform: scale(1); }
+  33% { transform: scale(1.003); }
+  60% { transform: scale(1); }
+}

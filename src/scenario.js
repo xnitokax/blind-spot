@@ -133,7 +133,7 @@
 //            { news: ["見出し", { meta, text }] } … ニュースが1件ずつ流れる
 //            { corrupt: ミリ秒 } … 画面の文字がどんどん崩れていく
 //            { sound: "boom" など } … 効果音（docs/js/sound.js の SFX を参照）
-//            { music: true / "run" / false } … 師匠の BGM を流す（true は落ち着いた曲、"run" はボーナスタイムの曲）・止める
+//            { music: true / "watch" / "run" / false } … 師匠の BGM を流す（true は落ち着いた曲、"watch" は任務2の謎解きの曲、"run" はボーナスタイムの曲）・止める
 //            ※ mode: "red" で BGM はテープのように止まり、mode: "blue" で戻ってくる
 //            ── 任務2の見せ場（たっぷり時間をかけて、派手に見せる）──
 //            { flood: 行数, kind: "file" | "log" | "ledger" } … ファイル・ログ・伝票が画面にあふれ出す
@@ -2109,7 +2109,7 @@ help　　　　── 手札を確かめる
       intro: [
         "[師匠] まずはお疲れさん。最初の仕事にしちゃ、やるじゃないか。",
         "[師匠] 今夜は「特別プロジェクト室」を洗う。何をしている部屋なのか、正体を暴け。",
-        { music: "run" },
+        { music: "watch" },   // 曲：心臓の音と秒針（謎解き）。コマンドを打つと、心臓が脈打つ
         { wait: 1500 },
         "[師匠] 社内のシステムは、俺が一通りこじ開けておいた。",
         "[師匠] どこから手をつけるかは、お前に任せる。",
@@ -2194,7 +2194,6 @@ help　　　　── 手札を確かめる
         // ── 日報：「特別プロジェクト室」でも「鷲尾」でも 0件 → 割り出した部署コード（dept:1770）で探すと、室長の日報が1,826件 → AIで1件 ──
         nippo: {
           ...NIPPO_NODE,
-          bgm: 1,   // 曲：「ポッ」のフレーズとアルペジオが入る
           search: {
             label: "日報",
             records: 1284550,
@@ -2257,7 +2256,6 @@ help　　　　── 手札を確かめる
         seek: {
           host: "seek.jp",
           zone: "seek",
-          bgm: 2,   // 曲：メロディが入る
           entry: [
             { breach: { host: "seek.jp", steps: ["leave intranet via exit node jp-07", "spoof user agent", "connect seek.jp"] } },
           ],
@@ -2441,7 +2439,6 @@ help　　　　── 手札を確かめる
         bank: {
           host: "caymantrust.ky/vault",
           zone: "bank",
-          bgm: 3,   // 曲：サビ（ループの終わりの「ため」のあと「ドーン」と入る）
           need: "srg",   // 口座「SRG」が分かるまでは、行き先に出ない
           title: "第一信託銀行　ケイマン支店",
           body: `

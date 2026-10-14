@@ -1697,3 +1697,17 @@ async function fxWatched(withEye = true) {
   await noiseBurst(520);
   eye.remove();
 }
+
+// 心臓の脈（任務2の曲 watch で、コマンドを打ったとき）：画面のふちが暗い赤に「ドクン、ドクン」と沈み、画面がかすかにふくらむ
+//   音と同じ瞬間に、sound.js から呼ばれる
+SFX.onPulse = () => {
+  if (REDUCED) return;
+  let el = document.getElementById("heartFx");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "heartFx";
+    document.body.appendChild(el);
+  }
+  pulse(el, "beat", 850);
+  pulse($("wrap"), "throb", 850);
+};
