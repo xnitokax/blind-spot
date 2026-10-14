@@ -45,7 +45,7 @@ async function talkTap() {
 // 依頼人などの「写真」：その場で描いた絵を、粗いドット絵にして出す（px … 一辺のドット数）
 //   shadow … 最初の逆光の影 ／ face … 近づいてきたときの顔（{ reveal } で、モザイクから浮かび上がる）
 const PORTRAITS = {
-  // 真壁 汐里：長い黒髪、黒いコート。夜の事務所で、左の窓の光が顔の半分に当たる。静かな美人で、幸の薄そうな顔（写実寄り。困り眉・目尻が少し下がる・白い肌・うっすら隈）
+  // 真壁 しおり：長い黒髪、黒いコート。夜の事務所で、左の窓の光が顔の半分に当たる。静かな美人で、幸の薄そうな顔（写実寄り。困り眉・目尻が少し下がる・白い肌・うっすら隈）
   //   img … nitoka が別の AI で描いた絵（img/shiori.jpg）。top … 正方形の写真に切り取る位置（顔が真ん中に来るように）
   //   読めないときだけ、下の SVG（影と顔）を使う
   shiori: {
@@ -440,7 +440,7 @@ function talkAdd(html, cls) {
 // 1行：[師匠] セリフ ／ [自分] 自分のセリフ ／ [*] システム ／ それ以外の [名前] は相手 ／ [] なしは情景（ナレーション）
 async function talkLine(s) {
   const m = fill(s).match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
-  // [汐里!] … 名前のあとの ! は「大事な話」の印（会う場面で、読む時間を少し長めにとる）
+  // [しおり!] … 名前のあとの ! は「大事な話」の印（会う場面で、読む時間を少し長めにとる）
   const important = !!m && m[1].length > 1 && m[1].endsWith("!");
   const spk = important ? m[1].slice(0, -1) : m?.[1],
     text = m ? m[2] : fill(s);
@@ -534,6 +534,11 @@ async function runTalk(steps) {
     else if (s.chat) talkMode("chat", s.chat === true ? {} : s.chat);
     else if (s.meet) talkMode("meet", s.meet);
     else if (s.reveal) await revealFace();
+    // { who: "名前" } … 写真の下の名前を変える（依頼人が名乗ったあと、名前にする）
+    else if (s.who) {
+      const cap = talkEl.querySelector(".tk-cap");
+      if (cap) cap.textContent = fill(s.who);
+    }
     else if (s.ask) await talkAsk(s.ask);
     else if (s.wait) await talkWait(s.wait);
     else if (s.music !== undefined) SFX.music(!!s.music, typeof s.music === "string" ? { track: s.music } : {});

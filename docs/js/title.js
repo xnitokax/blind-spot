@@ -24,7 +24,7 @@ async function titleCommand(raw) {
     return speak([
       "[師匠] まずは呼び名だ。handle と打って、その後ろに名前。例えば handle anonymous",
     ]);
-  // 物語の始まり（汐里が事務所に来る場面）を、もう一度見る
+  // 物語の始まり（しおりが事務所に来る場面）を、もう一度見る
   if (c === "opening" && S.opening) return runTalk(S.opening);
   // 続きから：最後に始めた任務から（物語の始まりの会話は飛ばす）
   if (c === "continue") {

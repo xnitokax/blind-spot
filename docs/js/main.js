@@ -99,7 +99,7 @@ async function boot(autoCode) {
       SFX.tick();
     }
     await wait(300);
-    // 物語の始まり（opening）：初めて開いたとき、呼び名を決める前に流れる（汐里が事務所に来る。雰囲気をつかんでから名前を決める）
+    // 物語の始まり（opening）：初めて開いたとき、呼び名を決める前に流れる（しおりが事務所に来る。雰囲気をつかんでから名前を決める）
     let opened = false;
     if (S.opening && !openingSeen()) {
       await runTalk(S.opening);
