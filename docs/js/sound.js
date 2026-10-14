@@ -333,15 +333,101 @@ const SFX = (() => {
     beep: (dur = 0.7) => {
       tone(1000, dur, { vol: 0.06, attack: 0.004 });
     },
-    // 赤い目が開く：腹に響く、低い「ドゥン」
-    eyeOpen: () => {
-      tone(42, 1.4, { vol: 0.42, slide: 28, attack: 0.02 });
-      hiss(0.9, { vol: 0.08, filter: "lowpass", freq: 500, sweep: 120 });
+    // 黒いノイズ（砂嵐の前）：電気が漏れるような「じじじじじ」が、だんだん大きくなる。dur … 秒
+    //   iPhone のスピーカーでも聞こえるよう、低すぎる音は使わない
+    jiji: (dur = 0.8) => {
+      if (muted) return;
+      const c = ac();
+      if (!c || !canPlay(c)) return;
+      const t = c.currentTime;
+      // ジー：のこぎり波を高い方だけ通す
+      const osc = c.createOscillator(),
+        hp = c.createBiquadFilter();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(95, t);
+      osc.frequency.linearRampToValueAtTime(120, t + dur);
+      hp.type = "highpass";
+      hp.frequency.value = 700;
+      // ザリザリ：ノイズを重ねる
+      const src = c.createBufferSource(),
+        bp = c.createBiquadFilter(),
+        ng = c.createGain();
+      src.buffer = noiseBuf;
+      bp.type = "bandpass";
+      bp.frequency.value = 2600;
+      bp.Q.value = 0.8;
+      ng.gain.value = 0.9;
+      // じ・じ・じ：音を細かく途切れさせる（だんだん速く）
+      const gate = c.createGain(),
+        lfo = c.createOscillator(),
+        depth = c.createGain();
+      gate.gain.value = 0.5;
+      lfo.type = "square";
+      lfo.frequency.setValueAtTime(11, t);
+      lfo.frequency.linearRampToValueAtTime(19, t + dur);
+      depth.gain.value = 0.5;
+      lfo.connect(depth).connect(gate.gain);
+      // だんだん大きく → 砂嵐に切り替わるところで、すっと消える
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.012, t + dur * 0.25);
+      g.gain.exponentialRampToValueAtTime(0.11, t + dur);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.04);
+      osc.connect(hp).connect(gate);
+      src.connect(bp).connect(ng).connect(gate);
+      gate.connect(g);
+      route(g, {});
+      [osc, src, lfo].forEach(n => {
+        n.start(t);
+        n.stop(t + dur + 0.08);
+      });
     },
-    // 黒いノイズ（砂嵐の前）：低いうなりが、少しずつ近づいてくる。dur … 秒
-    darkHum: (dur = 0.7) => {
-      tone(48, dur + 0.2, { vol: 0.16, slide: 62, attack: dur * 0.8 });
-      hiss(dur, { vol: 0.05, filter: "lowpass", freq: 300, sweep: 900, attack: dur * 0.8 });
+    // 赤い目：「グワン、グワン、グワン」と、空間ごと歪むような、おどろおどろしいうねり。dur … 秒
+    gwan: (dur = 2.2) => {
+      if (muted) return;
+      const c = ac();
+      if (!c || !canPlay(c)) return;
+      const t = c.currentTime;
+      // ずらした低めの音を重ねて、気持ちの悪い濁りを作る
+      const lp = c.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.Q.value = 7; // 「ワン」の癖を強く
+      lp.frequency.value = 650;
+      // フィルターと音量を、ゆっくり大きく揺らす（約 0.7 秒で一回「グワン」）
+      const lfo = c.createOscillator(),
+        fDepth = c.createGain(),
+        amp = c.createGain(),
+        aDepth = c.createGain();
+      lfo.frequency.value = 1.4;
+      fDepth.gain.value = 480;
+      amp.gain.value = 0.6;
+      aDepth.gain.value = 0.4;
+      lfo.connect(fDepth).connect(lp.frequency);
+      lfo.connect(aDepth).connect(amp.gain);
+      const oscs = [
+        [110, "sawtooth"],
+        [113.5, "sawtooth"],
+        [164, "triangle"],
+        [55, "sawtooth"],
+      ].map(([f, type]) => {
+        const o = c.createOscillator();
+        o.type = type;
+        o.frequency.setValueAtTime(f, t);
+        o.frequency.exponentialRampToValueAtTime(f * 0.82, t + dur); // 少しずつ沈んでいく
+        o.connect(lp);
+        return o;
+      });
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.13, t + 0.08);
+      g.gain.setValueAtTime(0.13, t + dur - 0.25);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      lp.connect(amp).connect(g);
+      route(g, { echo: 0.35 });
+      [...oscs, lfo].forEach(n => {
+        n.start(t);
+        n.stop(t + dur + 0.05);
+      });
     },
     // 警報：こもったうねり
     siren(on) {

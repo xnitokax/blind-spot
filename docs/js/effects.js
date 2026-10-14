@@ -1607,7 +1607,7 @@ async function noiseBurst(ms = 500) {
   }
   cv.remove();
 }
-// 黒いノイズ：砂嵐の前に、画面が暗いざらつきで、じわっと沈んでいく（急に始まって驚かないように）
+// 黒いノイズ：砂嵐の前に、画面が暗いざらつきで、じわっと沈んでいく（急に始まって驚かないように）。音は「じじじじ」
 async function darkNoise(ms = 700) {
   const cv = document.createElement("canvas");
   cv.className = "fx-dark";
@@ -1619,7 +1619,7 @@ async function darkNoise(ms = 700) {
   const c = cv.getContext("2d"),
     img = c.createImageData(w, h),
     d = img.data;
-  SFX.darkHum?.(ms / 1000);
+  SFX.jiji?.(ms / 1000);
   const t0 = performance.now();
   while (performance.now() - t0 < ms) {
     // だんだん暗く、ざらつきも強くなる
@@ -1638,8 +1638,8 @@ async function darkNoise(ms = 700) {
 }
 async function fxWatched(withEye = true) {
   if (REDUCED) return;
-  // 黒いノイズで沈む → 砂嵐（ザーッ）→ ブルースクリーン（ピー）
-  const dark = await darkNoise(withEye ? 750 : 550);
+  // 黒いノイズで沈む（じじじじ）→ 砂嵐（ザーッ）→ ブルースクリーン（ピー）
+  const dark = await darkNoise(withEye ? 1000 : 700);
   await noiseBurst(withEye ? 560 : 420);
   dark.remove();
   const bs = document.createElement("div");
@@ -1659,7 +1659,7 @@ async function fxWatched(withEye = true) {
   eye.className = "fx-eye";
   eye.innerHTML = WATCH_EYE;
   document.body.appendChild(eye);
-  SFX.eyeOpen?.();
+  SFX.gwan?.(2.18); // グワングワングワン（砂嵐で戻るところまで）
   await sleep(20);
   eye.classList.add("on");
   await sleep(360);

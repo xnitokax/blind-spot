@@ -550,7 +550,7 @@ function recordEnding(id) {
 }
 
 // 禁止ワードで検索したとき：検索は弾かれ、監査に記録されて、逆探知（TRACE）が上がる
-//   ban … { words: [...], trace: 上がる量, first: [初めてのときの台本], again: [2回目の台本] }（3回目からは、警告と TRACE だけ）
+//   ban … { words: [...], trace: 初めてのときに上がる量, traceAgain: 2回目から上がる量,first: [初めてのときの台本], again: [2回目の台本] }（3回目からは、警告と TRACE だけ）
 async function bannedSearch(ban, q) {
   state.minutes += 1;
   updateClock();
@@ -568,7 +568,7 @@ async function bannedSearch(ban, q) {
     // 怖い演出：ノイズ → ブルースクリーン（初めてのときだけ、赤い目がこちらを向く）→ ノイズ
     await fxWatched(n === 1);
     print("[!] この検索は、監査ログに記録されました", "alert");
-    addTrace(ban.trace ?? 15);
+    addTrace(n === 1 ? (ban.trace ?? 40) : (ban.traceAgain ?? 10));
     await wait(BEAT.small);
     if (state.over) return;
     const script = n === 1 ? ban.first : n === 2 ? ban.again : null;
