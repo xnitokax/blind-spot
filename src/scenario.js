@@ -2133,12 +2133,17 @@ help　　　　── 手札を確かめる
           zone: "files",
           breach: ["scan SMB shares", "mount //files/projects"],
           title: "ファイルサーバー",
-          body: FILES_BODY + `<p class="dim">＞ search で、フォルダを名前・持ち主（部署コード）で探せる。</p>`,
+          body: `
+<p class="sys">＞ 各プロジェクトの資料が保管されている。</p>
+<div class="doc">
+<p class="meta">ファイルサーバー</p>
+<p>各部署のプロジェクト資料を保管しています。<br>ファイル名・持ち主の部署コードで検索できます。</p>
+</div>`,
           // 名前のないフォルダ（??????）は、search で見つけるまで一覧に出ない（need: secretDir）
           //   いちばん上には、AAA のファイル（open で開く。小ネタ）
           dir: [...AAA_FILES, { name: "??????", desc: "※ 名前が登録されていない", text: "（暗号化されています）", need: "secretDir" }],
           tools: [
-            { cmd: "open", usage: "open <ファイル名>", desc: "ファイルを開く（鍵のかかったフォルダも）", pages: AAA_PAGES, miss: "open: {arg} ── そのようなファイルはありません。（フォルダは cd で入れます）" },
+            { cmd: "open", usage: "open <ファイル名>", desc: "ファイルを開く", pages: AAA_PAGES, miss: "open: {arg} ── そのようなファイルはありません。" },
             { cmd: "cat", usage: "cat <ファイル名>", desc: "ファイルの中身を見る", pages: AAA_PAGES, miss: "cat: {arg} ── そのようなファイルはありません。" },
           ],
           search: {
@@ -2256,8 +2261,12 @@ help　　　　── 手札を確かめる
           entry: [
             { breach: { host: "seek.jp", steps: ["leave intranet via exit node jp-07", "spoof user agent", "connect seek.jp"] } },
           ],
-          title: "Seek ── 検索サイト（社外）",
-          body: `<p class="dim">＞ 社外のサイト。ニュースや公開情報を検索できる。</p>`,
+          title: "Seek",
+          body: `
+<div class="doc">
+<p class="meta">Seek</p>
+<p>ニュース・公開情報を、まとめて検索。</p>
+</div>`,
           search: {
             label: "Seek",
             records: 3402118,
@@ -2303,7 +2312,11 @@ help　　　　── 手札を確かめる
           host: "keiri.teiwa.local/ledger",
           zone: "keiri",
           title: "財務会計システム",
-          body: `<p class="dim">＞ 伝票を、部署コード・部署名・科目・摘要・金額で検索できる。</p>
+          body: `
+<div class="doc">
+<p class="meta">財務会計システム</p>
+<p>伝票は、部署コード・部署名・科目・摘要・金額で検索できます。</p>
+</div>
 <pre class="log">2026年度 上期　部署別の支出（速報）
   部署コード  部署名            支出
   1081        経理部            ¥  312,480,000
@@ -2431,7 +2444,11 @@ help　　　　── 手札を確かめる
           bgm: 3,   // 曲：サビ（ループの終わりの「ため」のあと「ドーン」と入る）
           need: "srg",   // 口座「SRG」が分かるまでは、行き先に出ない
           title: "第一信託銀行　ケイマン支店",
-          body: `<p class="dim">＞ 海外の銀行。口座の中身と、取引の履歴が見られる。</p>`,
+          body: `
+<div class="doc">
+<p class="meta">オンライン・バンキング</p>
+<p>口座の残高と、お取引の履歴をご確認いただけます。</p>
+</div>`,
           entry: [
             "[師匠] 回線を、海の向こうまで引っぱる。しっかり掴まってろ。",
             { breach: { host: "caymantrust.ky", steps: ["bypass offshore firewall", "spoof SWIFT terminal", "hook HSM key exchange", "mount account ledger"] } },
@@ -2472,7 +2489,11 @@ help　　　　── 手札を確かめる
           zone: "jyoshi",
           breach: ["inject log reader", "grant read /var/log/changes", "hide own session"],
           title: "情報システム部　変更ログ",
-          body: `<p class="dim">＞ 社内システムの変更履歴。日付・時刻・システム名で検索できる。</p>`,
+          body: `
+<div class="doc">
+<p class="meta">変更ログ</p>
+<p>社内システムの変更履歴です。<br>日付・時刻・システム名で検索できます。</p>
+</div>`,
           search: {
             label: "変更ログ",
             stream: true, // 検索中にログが高速で流れる
@@ -2550,7 +2571,11 @@ help　　　　── 手札を確かめる
           zone: "bms",
           breach: ["bypass building network", "read BMS controller", "mount floor plans"],
           title: "ビル管理システム",
-          body: `<p class="dim">＞ 本社ビルの設備の管理。フロア図・電力・入館ゲート・監視カメラを見られる。</p>`,
+          body: `
+<div class="doc">
+<p class="meta">ビル管理システム</p>
+<p>本社ビルのフロア図・電力・入館ゲート・監視カメラを管理しています。</p>
+</div>`,
           tools: [
             {
               cmd: "map",
