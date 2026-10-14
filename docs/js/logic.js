@@ -392,6 +392,10 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   // （1〜2件しか見つからないときは、その件数のまま。「上位3件を表示」なのに1件しか出ない、を避ける）
   else if (conf.fakeTotals && !exact && (hits.length === 0 || hits.length >= limit))
     total = Math.max(hits.length, plausibleTotal(conf, joined));
+  // 広すぎる言葉（任務の broad）：「特別」「プロジェクト」だけで探すと、何万件も出る（社内のシステムだけ）
+  const broad =
+    CH.broad && !conf.outside && CH.broad.words.some(w => fold(w).replace(/\s+/g, "") === joined);
+  if (broad) total = Math.max(total, Math.round((conf.records ?? 10000) * (CH.broad.share ?? 0.05)));
   // 何件かはあるが、目ぼしいものは1件もない（一覧は出さず、師匠がひとこと）
   const nothing = !hits.length && total > 0;
   // 見出し：「何を探したか」を大きく、件数は小さく横に
@@ -466,6 +470,11 @@ async function showResults(conf, q, terms, hits, shown, limit) {
         if (n.script) noteScripts.push(n.script);
       }
     });
+  }
+  // 広すぎる言葉のときは、師匠が「これを1から読むのか？」（その場所で、言葉ごとに一度だけ）
+  if (broad && !state.said.has(`broad:${state.current}:${joined}`)) {
+    state.said.add(`broad:${state.current}:${joined}`);
+    lines.push(...(CH.broad.say || []));
   }
   if (nothing && !lines.length) lines.push("[師匠] この中に必要そうなものはなさそうだな。");
   // 任務（tap）：検索結果が出たら、読み終えてタップしてから、師匠が話す
@@ -550,6 +559,8 @@ async function bannedSearch(ban, q) {
     }
     SFX.denied?.();
     print(`[!] 「${esc(q)}」は、検索が禁止されているキーワードです`, "alert");
+    // 怖い演出：一瞬ブルースクリーンが混じり、赤い目がこちらを見る（最初の2回はしっかり、あとは短く）
+    await fxWatched(n <= 2);
     print("[!] この検索は、監査ログに記録されました", "alert");
     addTrace(ban.trace ?? 15);
     await wait(BEAT.small);

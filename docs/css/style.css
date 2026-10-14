@@ -3872,3 +3872,70 @@ body[data-zone="rpg"] #eviCount {
   color: var(--dim);
   margin-bottom: 4px;
 }
+
+/* 監視の目（任務2：検索禁止の言葉）：一瞬混じるブルースクリーンと、赤い目 */
+.fx-bsod {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: none;
+  background: #0b3fa8;
+  color: #fff;
+  padding: 18vh 10vw 0;
+  font-family: system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+}
+.fx-bsod.on {
+  display: block;
+}
+.fx-bsod .bs-face {
+  font-size: 96px;
+  line-height: 1;
+  margin-bottom: 28px;
+}
+.fx-bsod .bs-small {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-top: 12px;
+}
+.fx-eye {
+  position: fixed;
+  inset: 0;
+  z-index: 299;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(circle, rgba(70, 0, 0, 0.45), rgba(0, 0, 0, 0.75));
+}
+.fx-eye.on {
+  opacity: 1;
+}
+.fx-eye svg {
+  width: min(72vw, 440px);
+  filter: drop-shadow(0 0 22px rgba(255, 20, 20, 0.75));
+  animation: weOpen 1.5s ease-in-out both;
+}
+/* まぶたが開いて、じっと見て、まばたき */
+@keyframes weOpen {
+  0% { transform: scaleY(0.05); }
+  16% { transform: scaleY(1); }
+  74% { transform: scaleY(1); }
+  82% { transform: scaleY(0.06); }
+  90% { transform: scaleY(1); }
+  100% { transform: scaleY(1); }
+}
+/* 瞳が、こちらを探すように少し動く */
+.fx-eye .we-iris,
+.fx-eye .we-pupil {
+  animation: weLook 1.5s ease-in-out both;
+}
+@keyframes weLook {
+  0%, 20% { transform: translateX(0); }
+  38% { transform: translateX(-14px); }
+  55% { transform: translateX(10px); }
+  70%, 100% { transform: translateX(0); }
+}
