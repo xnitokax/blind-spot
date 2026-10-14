@@ -3825,3 +3825,50 @@ body[data-zone="rpg"] #eviCount {
   55% { transform: translate(-2px, 0) scale(1.02, 0.98); }
   100% { transform: translate(0, 0) scale(1); }
 }
+
+/* ビル管理システムのフロア図（任務2）：部屋を箱で並べる。名前のない区画は、斜線と点線 */
+.fmap {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: minmax(46px, auto);
+  gap: 3px;
+  max-width: 520px;
+  margin: 8px 0 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.fm-room {
+  border: 1px solid rgba(143, 200, 255, 0.45);
+  background: rgba(143, 200, 255, 0.05);
+  padding: 4px 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fm-id {
+  display: block;
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+}
+.fm-cam {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #ffb4b4;
+}
+.fm-cam::before {
+  content: "◉ ";
+}
+.fm-hall {
+  border-style: dotted;
+  background: transparent;
+}
+.fm-blank {
+  border-style: dashed;
+  background: repeating-linear-gradient(45deg, transparent 0 6px, rgba(255, 255, 255, 0.04) 6px 12px);
+}
+.fm-cap {
+  font-size: 11px;
+  color: var(--dim);
+  margin-bottom: 4px;
+}

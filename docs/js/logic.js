@@ -15,6 +15,8 @@ function countClues(ch) {
     for (const a of Object.values(node.actions || {})) for (const x of a.script || []) if (x?.clue) set.add(x.clue);
     // 検索の notes の台本の中で渡す手がかり（任務2：「特別プロジェクト室」がどこにも出てこない）
     for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) set.add(x.clue);
+    // 道具の画面（tools の pages）で渡す手がかり（任務2：電力・入館ゲート）
+    for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) set.add(p.clue);
   }
   return set.size;
 }

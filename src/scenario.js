@@ -327,6 +327,9 @@ const MAKABE_NOTE = {
 
 // 任務2：「特別プロジェクト室」で探しても、社内のどこにも出てこない（名前を使わずに動いている部屋）
 //   日報・財務会計・変更ログ・外の検索で、最初にそれに気づいたとき、手がかりになる（2回目からは、ひとことだけ）
+// 任務2：場所と人の手がかり（ビル管理システムの電力・入館ゲート）
+const POWER_CLUE = "12階の、名前のない区画 12-E が、夜も電気を使っている";
+const GATE_CLUE = "12-E の扉を通れるのは、兄（m.makabe）と k.washio の2人だけ";
 const TRI_CLUE = "部署コードは、できた順に三角数（1から順に足していった数）";
 const NAMELESS_CLUE = "特別プロジェクト室：社内の記録に、名前がほとんど出てこない";
 const NAMELESS_NOTES = [
@@ -551,6 +554,7 @@ const hrEntries = (m, goal) => [
         "※ この社員の詳細を閲覧する権限がありません",
       ],
     }),
+    keys: "washio k.washio", // 入館ゲートの ID（k.washio）で探しても出る
     // 任務2：「特別プロジェクト室」で出てくる、もう1人。経歴も部署コードも、伏せられている
     clue: m === 2 ? "室長・鷲尾恭介：経歴も部署コードも伏せられている" : m === "rush" && "室長の人事記録：「室長」以外は空欄",
     // 爽快版（rush）：保護された記録を、師匠が無理やりこじ開ける（それでも中身は空っぽ）
@@ -1844,26 +1848,33 @@ help　　　　── 手札を確かめる
       //   光るボタン（next）は出さない。師匠は、間違えたときに少しだけ口を出す
       //   「今は早い」で止めない。どこから調べても、知っていることが増えるほど先へ進める
       //
-      // 謎の筋（2026-10-13 作り直し）
-      //   1. 「特別プロジェクト室」で探しても、どこにも出てこない（名前を使わずに動いている部屋）
-      //      → 人事DB にだけ、兄と室長・鷲尾の記録がある。鷲尾の記録は、経歴も部署コードも伏せられている
-      //   2. 部署コードを割り出す：日報の見出しや財務会計に、ほかの部署のコードが出ている。部署ができた年は、日報などに散らばっている
+      // 謎の筋（2026-10-14 フロア図で作り直し）
+      //   1. 場所：「特別プロジェクト室」で探しても、どこにも出てこない（名前を使わずに動いている部屋）
+      //      → ビル管理システムのフロア図に、名前の書いていない区画 12-E。夜の電力も 12-E だけ 18kW
+      //   2. 人：入館ゲートで 12-E の扉を見ると、通れるのは兄（m.makabe）と k.washio だけ
+      //      → 人事DB で鷲尾の記録（経歴も部署コードも伏せられている）
+      //   3. 鷲尾の正体：部署コードを割り出す：日報の見出しや財務会計に、ほかの部署のコードが出ている。部署ができた年は、日報などに散らばっている
       //      できた順に並べると 1035, 1081, 1128 …… → 外の検索サイトで数字を調べると「三角数」
       //      特別プロジェクト室（2021年）は、海外事業部（2019年・1711）と AI推進室（2024年・1830）のあいだ → 1770
       //      → 日報で dept:1770 → 室長の1,826件の日報。1文だけ違う
       //      鷲尾の経歴は社内に何もない → 外の検索サイトで「鷲尾」→ 国家治安庁の次期長官候補
-      //   3. 財務会計の、名前もコードもない部署 → 1770 で探すと4件なのに3件しか見えない → 差額の12億 → 金の行き先（SRG）→ 海外の銀行
-      //   4. 12億の伝票の最終更新 02:47 → 変更ログで、消えかけた兄の書き込みを復元
-      //      入館ログで、兄の最後の足取り（01:26 非常口B）→ その後の30分の録画を、カメラごとに抜き出して並び替える
-      //      → 1台だけ録画がない → 映像を見ると、非常階段B
+      //   4. 財務会計の、名前もコードもない部署 → 1770 で探すと4件なのに3件しか見えない → 差額の12億 → 金の行き先（SRG）→ 海外の銀行
+      //   5. 12億の伝票の最終更新 02:47 → 変更ログで、消えかけた兄の書き込みを復元
+      //      入館ゲートで、兄の最後の足取り（01:24 12-E を出る → 01:26 非常口B）→ その後の30分の録画を、カメラごとに抜き出して並び替える
+      //      → cam.a11 だけ録画がない → フロア図で cam.a11 は非常階段B（12-E のすぐ隣）→ 映像を見ると、花が置いてある
       objectives: [
         {
-          text: "特別プロジェクト室の痕跡を探す",
-          clues: [NAMELESS_CLUE, "室長・鷲尾恭介：経歴も部署コードも伏せられている"],
+          text: "特別プロジェクト室の場所を探す",
+          clues: [NAMELESS_CLUE, POWER_CLUE],
           until: { all: true },
         },
         {
-          text: "室長・鷲尾を追う",
+          text: "12-E にいる人間を探す",
+          clues: [GATE_CLUE, "室長・鷲尾恭介：経歴も部署コードも伏せられている"],
+          until: { all: true },
+        },
+        {
+          text: "室長・鷲尾の正体を突き止める",
           clues: [TRI_CLUE, "室長の日報：「妨げになるものは取り除く」", "鷲尾は国家治安庁の次期長官候補"],
           until: { all: true },
         },
@@ -1890,7 +1901,8 @@ help　　　　── 手札を確かめる
             ],
             save: true,
             tag: "MISSION 2 COMPLETE",
-            report: `特別プロジェクト室は、社内のどこにも名前を残さず、伏せられた部署コード 1770 で動いていた。
+            report: `特別プロジェクト室は、本社12階の、図面に名前のない区画 12-E にあった。
+社内のどこにも名前を残さず、伏せられた部署コード 1770 で動いていた。
 室長の鷲尾は、次期長官と目される国家治安庁の官僚だった。
 
 兄は、12億円の裏金の行に、プロジェクト名と政府からの文言を書き込んでいた。
@@ -1902,7 +1914,7 @@ help　　　　── 手札を確かめる
 12億は、海外の口座「SRG」へ流れていた。
 同じ口座には、カメラや通信の会社からも金が入り、届出の住所は霞が関だった。
 
-兄は 01:26 に、12階の非常口Bを通った。
+兄は 01:24 に 12-E を出て、01:26 に非常口Bを通った。
 その直後の30分、非常階段のカメラだけが止められていた。`,
             todo: "uzu に戻って、師匠に報告してください。",
           },
@@ -1931,7 +1943,8 @@ help　　　　── 手札を確かめる
   <li><a data-go="nippo">nippo.teiwa.local　── 日報共有システム</a></li>
   <li><a data-go="hr">hr.teiwa.local　── 人事データベース</a></li>
   <li><a data-go="keiri">keiri.teiwa.local　── 財務会計システム</a></li>
-  <li><a data-go="jyoshi">jyoshi.teiwa.local　── 情報システム部（変更ログ・入館ログ）</a></li>
+  <li><a data-go="jyoshi">jyoshi.teiwa.local　── 情報システム部（変更ログ）</a></li>
+  <li><a data-go="bms">bms.teiwa.local　── ビル管理システム（フロア図・電力・入館ゲート・監視カメラ）</a></li>
   <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト（社外）</a></li>`),
 
         // ── ファイルサーバー：一覧には、ふつうのフォルダだけ。search でフォルダを名前・持ち主（部署コード）で探せる
@@ -2062,12 +2075,6 @@ help　　　　── 手札を確かめる
           zone: "seek",
           bgm: 2,   // 曲：メロディが入る
           entry: [
-            { trail: { head: "EXIT ── 社内ネットワークの外へ", hops: [
-              { name: "portal.teiwa.local", sub: "帝和HD 社内ネットワーク", note: "0ms" },
-              { name: "fw-edge.teiwa.local", sub: "社外への出口（ファイアウォール）", tag: "BYPASS", note: "3ms" },
-              { name: "exit node jp-07", sub: "Tor の出口　大阪", tag: "TOR", note: "11ms" },
-              { name: "seek.jp", sub: "外の検索サイト", tag: "ONLINE", note: "19ms" },
-            ] } },
             { breach: { host: "seek.jp", steps: ["leave intranet via exit node jp-07", "spoof user agent", "connect seek.jp"] } },
           ],
           title: "Seek ── 検索サイト（社外）",
@@ -2117,7 +2124,6 @@ help　　　　── 手札を確かめる
           host: "keiri.teiwa.local/ledger",
           zone: "keiri",
           title: "財務会計システム",
-          entry: [{ vault: { code: "4471-0912", label: "ledger.teiwa.local" } }],
           body: `<p class="dim">＞ 伝票を、部署コード・部署名・科目・摘要・金額で検索できる。</p>
 <pre class="log">2026年度 上期　部署別の支出（速報）
   部署コード  部署名            支出
@@ -2237,14 +2243,6 @@ help　　　　── 手札を確かめる
           body: `<p class="dim">＞ 海外の銀行。口座の中身と、取引の履歴が見られる。</p>`,
           entry: [
             "[師匠] 回線を、海の向こうまで引っぱる。しっかり掴まってろ。",
-            // 回線が世界をまたいで、ケイマンの銀行まで走る
-            { worldmap: { head: "ROUTE ── 海の向こうへ", ms: 700, nodes: [
-              { name: "東京（自分）", x: 0.888, y: 0.302, tag: "YOU", lp: "nw" },
-              { name: "大阪 jp-07", x: 0.876, y: 0.307, tag: "TOR", lp: "sw" },
-              { name: "フランクフルト", x: 0.524, y: 0.221, lp: "ne" },
-              { name: "パナマ", x: 0.279, y: 0.45, lp: "se" },
-              { name: "ケイマン", x: 0.274, y: 0.393, tag: "BANK", lp: "nw" },
-            ] } },
             { breach: { host: "caymantrust.ky", steps: ["bypass offshore firewall", "spoof SWIFT terminal", "hook HSM key exchange", "mount account ledger"] } },
           ],
           say: ["[師匠] ……海の向こうの銀行だ。ここなら、日本の手も届きにくい。", "[師匠] だからこそ、隠したいものは、こういう場所に置く。"],
@@ -2277,51 +2275,13 @@ help　　　　── 手札を確かめる
         },
 
 
-        // ── 変更ログ・入館ログ：
-        //    伝票の最終更新（02:47）や伝票番号で探す → 消えかけた差分を復元する（兄の書き込み）
-        //    兄の名前で探す → 入館ログに、最後の足取り（01:26 12F 非常口B）
-        //    → cam --rec で、その後の時間の録画をカメラごとに抜き出す → --sort で並び替える → 1台だけ録画がない
-        //    → cam --live でその映像を見る → 非常階段B
-        //    隠し：lights --floor all off（本社ビルの照明を全部落とす）──
+        // ── 変更ログ：伝票の最終更新（02:47）や伝票番号で探す → 消えかけた差分を復元する（兄の書き込み）──
         jyoshi: {
           host: "jyoshi.teiwa.local/changelog",
           zone: "jyoshi",
           breach: ["inject log reader", "grant read /var/log/changes", "hide own session"],
-          title: "情報システム部　変更ログ・入館ログ",
-          body: `<p class="dim">＞ 社内システムの変更履歴と入館の記録。日付・時刻・システム名・社員IDで検索できる。<br>＞ 監視カメラの録画も、ここから見られる。</p>`,
-          tools: [
-            {
-              cmd: "cam --rec",
-              usage: "cam --rec <開始>-<終了> [--sort]",
-              desc: "決めた時間のあいだの、カメラごとの録画の残りを出す（--sort で短い順に並べる）",
-              // 監視カメラ 16 台。番号だけで、どこのカメラかは書いていない。cam.a11（非常階段B）だけ、01:30〜02:00 が丸ごと抜けている
-              rec: {
-                date: "2026/09/12",
-                max: 60,
-                target: "cam.a11",
-                cams: [
-                  { id: "cam.a01" },
-                  { id: "cam.a02", gaps: [["01:52:10", "01:52:40"]] },
-                  { id: "cam.a03", gaps: [["01:12:40", "01:13:05"]] },
-                  { id: "cam.a04" },
-                  { id: "cam.a05", gaps: [["00:58:00", "01:04:00"]] },
-                  { id: "cam.a06" },
-                  { id: "cam.a07", gaps: [["01:47:10", "01:47:52"]] },
-                  { id: "cam.a08" },
-                  { id: "cam.a09", gaps: [["02:05:00", "02:09:30"]] },
-                  { id: "cam.a10" },
-                  { id: "cam.a11", gaps: [["01:30:00", "02:00:00"]] },
-                  { id: "cam.a12", gaps: [["01:38:20", "01:39:50"]] },
-                  { id: "cam.a13" },
-                  { id: "cam.a14", gaps: [["01:33:00", "01:34:30"]] },
-                  { id: "cam.a15" },
-                  { id: "cam.a16", gaps: [["01:20:00", "01:21:10"]] },
-                ],
-                found: ["[師匠] ……cam.a11。こいつだけ、録画がごっそり抜けてる。", "[師匠] どこのカメラだ？"],
-              },
-            },
-            { cmd: "cam --live", usage: "cam --live <カメラ番号>", desc: "監視カメラの、今の映像を見る", miss: "{arg} ── 夜の社内が映っている。異常はない。" },
-          ],
+          title: "情報システム部　変更ログ",
+          body: `<p class="dim">＞ 社内システムの変更履歴。日付・時刻・システム名で検索できる。</p>`,
           search: {
             label: "変更ログ",
             stream: true, // 検索中にログが高速で流れる
@@ -2333,12 +2293,6 @@ help　　　　── 手札を確かめる
               { html: `<pre class="log">2026/09/12 00:10:00  backup.daily      定期バックアップ  完了</pre>`, say: ["[師匠] 一日分でこの量か。", "[師匠] もっと絞らないと、日が暮れるぞ。"] },
               { html: `<pre class="log">2026/09/12 01:05:31  gate.log          入館ログのローテーション</pre>` },
               { html: `<pre class="log">2026/09/12 09:00:02  ad.accounts       アカウント停止  m.makabe</pre>`, keys: "真壁 湊 makabe" },
-              // 兄の最後の足取り（兄の名前・社員IDで探すと出る）
-              {
-                html: `<pre class="log">2026/09/12 01:26:08  gate.log          12F 非常口B を通過  m.makabe（この日の最後の記録）</pre>`,
-                keys: "真壁 湊 makabe 入館 非常口 非常階段",
-                say: ["[師匠] 01:26、12階の非常口B。……兄貴の、最後の足取りだ。", "[師匠] この先は、非常階段だな。"],
-              },
               {
                 html: `<pre class="log">2026/09/11 23:59:58  （非公開ホスト）  プロセス追加  mm_zero（登録者不明）</pre>`,
                 clue: "謎のプロセス mm_zero（兄が死ぬ前日）",
@@ -2385,6 +2339,189 @@ help　　　　── 手札を確かめる
             notes: NAMELESS_NOTES,
             empty: "該当するログはありません。",
           },
+        },
+
+        // ── ビル管理システム：フロア図・電力・入館ゲート・監視カメラ
+        //    map … フロア図。12階に、名前の書いていない区画 12-E がある
+        //    power … 夜の電力。12階だけ高い → 区画ごとに見ると、12-E だけ夜中も 18kW（ここが特別プロジェクト室）
+        //    gate … 扉の記録。12-E を通れるのは、兄（m.makabe）と k.washio だけ。兄は 01:24 に 12-E を出て、01:26 に非常口B
+        //    cam --rec → その後の30分の録画を抜き出して、--sort で並び替える → cam.a11 だけ抜けている
+        //    → フロア図で cam.a11 は非常階段B → cam --live cam.a11 で、花が置いてある非常階段
+        //    隠し：lights --floor all off（本社ビルの照明を全部落とす）──
+        bms: {
+          host: "bms.teiwa.local",
+          zone: "bms",
+          breach: ["bypass building network", "read BMS controller", "mount floor plans"],
+          title: "ビル管理システム",
+          body: `<p class="dim">＞ 本社ビルの設備の管理。フロア図・電力・入館ゲート・監視カメラを見られる。</p>`,
+          tools: [
+            {
+              cmd: "map",
+              usage: "map <階>",
+              desc: "その階のフロア図を見る（map だけで、フロア案内）",
+              index: `<p class="fm-cap">帝和HD 本社ビル　フロア案内</p><pre class="log">12F  社長室・秘書室・会議室A・経営企画部
+11F  営業本部
+10F  経理部・法務部
+ 9F  人事部・総務部
+ 8F  情報システム部・AI推進室
+ 7F  研究開発部
+ 6F  品質保証部・購買部
+ 5F  海外事業部・広報部
+ 4F  製造部・物流部
+ 3F  会議室・研修室
+ 2F  食堂・診療室
+ 1F  ロビー・受付・警備室
+ B1  サーバー室・駐車場・搬入口</pre>`,
+              miss: "map {arg} ── 執務フロア。図面に、変わったところはない。",
+              pages: [
+                {
+                  keys: ["12"],
+                  html: `<p class="fm-cap">12F　フロア図（総務部 2026/04 改訂）</p>
+<div class="fmap" style="grid-template-areas: 'a a b c e e' 'd d d d e e' 'd d d d e e' 'v h h h x s'">
+  <div class="fm-room" style="grid-area: a"><span class="fm-id">12-A</span>社長室<span class="fm-cam">cam.a09</span></div>
+  <div class="fm-room" style="grid-area: b"><span class="fm-id">12-B</span>秘書室</div>
+  <div class="fm-room" style="grid-area: c"><span class="fm-id">12-C</span>会議室A</div>
+  <div class="fm-room" style="grid-area: d"><span class="fm-id">12-D</span>経営企画部<span class="fm-cam">cam.a12</span></div>
+  <div class="fm-room fm-blank" style="grid-area: e"><span class="fm-id">12-E</span></div>
+  <div class="fm-room fm-hall" style="grid-area: v">EV</div>
+  <div class="fm-room fm-hall" style="grid-area: h">廊下<span class="fm-cam">cam.a10</span></div>
+  <div class="fm-room" style="grid-area: x">非常口B</div>
+  <div class="fm-room" style="grid-area: s">非常階段B<span class="fm-cam">cam.a11</span></div>
+</div>`,
+                  say: ["[師匠] ……12-E。名前の書いてない区画があるな。"],
+                },
+                {
+                  keys: ["1"],
+                  html: `<p class="fm-cap">1F　フロア図</p>
+<div class="fmap" style="grid-template-areas: 'g g r r w w' 'l l l l w w' 'v l l l t t'">
+  <div class="fm-room" style="grid-area: g">正面玄関<span class="fm-cam">cam.a01</span></div>
+  <div class="fm-room" style="grid-area: r">受付<span class="fm-cam">cam.a02</span></div>
+  <div class="fm-room" style="grid-area: w">警備室</div>
+  <div class="fm-room fm-hall" style="grid-area: l">ロビー<span class="fm-cam">cam.a04</span></div>
+  <div class="fm-room fm-hall" style="grid-area: v">EV</div>
+  <div class="fm-room" style="grid-area: t">通用口<span class="fm-cam">cam.a03</span></div>
+</div>`,
+                },
+                {
+                  keys: ["b1", "地下1", "地下"],
+                  html: `<p class="fm-cap">B1　フロア図</p>
+<div class="fmap" style="grid-template-areas: 's s s p p p' 's s s p p p' 'v k k p p p'">
+  <div class="fm-room" style="grid-area: s">サーバー室<span class="fm-cam">cam.a05</span></div>
+  <div class="fm-room fm-hall" style="grid-area: p">駐車場<span class="fm-cam">cam.a06</span></div>
+  <div class="fm-room fm-hall" style="grid-area: v">EV</div>
+  <div class="fm-room" style="grid-area: k">搬入口<span class="fm-cam">cam.a07</span></div>
+</div>`,
+                },
+              ],
+            },
+            {
+              cmd: "power",
+              usage: "power <階>",
+              desc: "夜の電力を見る（power だけで、ビル全体）",
+              index: `<pre class="log">本社ビル　夜間の電力（2026/09 平均・22時〜6時）
+12F   19.6 kW
+11F    2.4 kW
+10F    2.1 kW
+ 9F    1.9 kW
+ 8F    3.1 kW
+ 7F    2.7 kW
+ 6F    1.8 kW
+ 5F    1.6 kW
+ 4F    2.2 kW
+ 3F    0.9 kW
+ 2F    1.4 kW
+ 1F    3.0 kW
+ B1   26.4 kW　※ サーバー室</pre>`,
+              miss: "power {arg} ── 夜間の電力は、ふつう（2〜3 kW）。",
+              pages: [
+                {
+                  keys: ["12"],
+                  html: `<pre class="log">12F　区画ごとの夜間の電力（2026/09 平均）
+12-A  社長室          0.6 kW
+12-B  秘書室          0.1 kW
+12-C  会議室A         0.1 kW
+12-D  経営企画部      0.4 kW
+12-E  ――――         18.4 kW</pre>`,
+                  clue: POWER_CLUE,
+                  say: ["[師匠] ……12-E。名前のない区画だけ、夜中も 18kW 食ってやがる。", "[師匠] 機械でも回してなきゃ、こうはならない。……ここだな。"],
+                },
+                {
+                  keys: ["b1", "地下1", "地下"],
+                  html: `<pre class="log">B1　区画ごとの夜間の電力（2026/09 平均）
+サーバー室     24.9 kW
+駐車場          1.2 kW
+搬入口          0.3 kW</pre>`,
+                },
+              ],
+            },
+            {
+              cmd: "gate",
+              usage: "gate <扉>",
+              desc: "扉の入退室の記録を見る（gate だけで、扉の一覧）",
+              index: `<pre class="log">入館ゲート・社員証で開く扉
+1F   正面玄関 ／ 通用口
+12F  12-E ／ 非常口B
+B1   サーバー室 ／ 搬入口
+（ほかの階は、各フロアの入口）</pre>`,
+              miss: "扉 {arg} ── ふつうの出入りの記録。変わったところはない。",
+              pages: [
+                {
+                  keys: ["12-E", "12E"],
+                  html: `<pre class="log">扉 12-E（12F）　入退室の記録（直近）
+2026/09/25 21:58  k.washio   入室
+2026/09/25 23:41  k.washio   退室
+2026/09/22 20:30  k.washio   入室
+2026/09/22 22:12  k.washio   退室
+2026/09/12 00:41  m.makabe   入室
+2026/09/12 01:24  m.makabe   退室
+2026/09/11 19:02  m.makabe   入室
+2026/09/11 22:47  m.makabe   退室
+※ この扉を通れる ID：2</pre>`,
+                  clue: GATE_CLUE,
+                  say: ["[師匠] この扉を通れるのは、2人だけ。兄貴と……k.washio。", "[師匠] 兄貴は、あの夜 01:24 に、この部屋を出てる。"],
+                },
+                {
+                  keys: ["非常口B", "非常口", "非常口b"],
+                  html: `<pre class="log">扉 非常口B（12F → 非常階段B）　通過の記録（2026/09/12）
+00:12  s.kimura   通過（警備の巡回）
+01:26  m.makabe   通過
+※ m.makabe：この日の最後の記録</pre>`,
+                  say: ["[師匠] 01:24 に部屋を出て、01:26 に非常口B。……兄貴の、最後の足取りだ。", "[師匠] この先は、非常階段だな。"],
+                },
+              ],
+            },
+            {
+              cmd: "cam --rec",
+              usage: "cam --rec <開始>-<終了> [--sort]",
+              desc: "決めた時間のあいだの、カメラごとの録画の残りを出す（--sort で短い順に並べる）",
+              // 監視カメラ 16 台。番号だけで、どこのカメラかはフロア図で分かる。cam.a11（非常階段B）だけ、01:30〜02:00 が丸ごと抜けている
+              rec: {
+                date: "2026/09/12",
+                max: 60,
+                target: "cam.a11",
+                cams: [
+                  { id: "cam.a01" },
+                  { id: "cam.a02", gaps: [["01:52:10", "01:52:40"]] },
+                  { id: "cam.a03", gaps: [["01:12:40", "01:13:05"]] },
+                  { id: "cam.a04" },
+                  { id: "cam.a05", gaps: [["00:58:00", "01:04:00"]] },
+                  { id: "cam.a06" },
+                  { id: "cam.a07", gaps: [["01:47:10", "01:47:52"]] },
+                  { id: "cam.a08" },
+                  { id: "cam.a09", gaps: [["02:05:00", "02:09:30"]] },
+                  { id: "cam.a10" },
+                  { id: "cam.a11", gaps: [["01:30:00", "02:00:00"]] },
+                  { id: "cam.a12", gaps: [["01:38:20", "01:39:50"]] },
+                  { id: "cam.a13" },
+                  { id: "cam.a14", gaps: [["01:33:00", "01:34:30"]] },
+                  { id: "cam.a15" },
+                  { id: "cam.a16", gaps: [["01:20:00", "01:21:10"]] },
+                ],
+                found: ["[師匠] ……cam.a11。こいつだけ、録画がごっそり抜けてる。", "[師匠] どこのカメラだ？"],
+              },
+            },
+            { cmd: "cam --live", usage: "cam --live <カメラ番号>", desc: "監視カメラの、今の映像を見る", miss: "{arg} ── 夜の社内が映っている。異常はない。" },
+          ],
           actions: {
             // 録画が抜けていたカメラの、今の映像を見る → 非常階段B（兄が見つかった場所。花が置いてある）
             "cam --live cam.a11": {
@@ -2393,7 +2530,7 @@ help　　　　── 手札を確かめる
                 { cctv: {
                   feeds: [
                     { id: "cam.a04", name: "1F ロビー", art: CAM_LOBBY },
-                    { id: "cam.a07", name: "B1 サーバー室", art: CAM_SERVER, blink: ":.'" },
+                    { id: "cam.a05", name: "B1 サーバー室", art: CAM_SERVER, blink: ":.'" },
                     { id: "cam.a09", name: "12F 社長室", art: CAM_CEO },
                     { id: "cam.a11", name: "非常階段B", art: CAM_STAIRS },
                   ],

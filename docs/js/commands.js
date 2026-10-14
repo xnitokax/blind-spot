@@ -442,6 +442,8 @@ const cmdKey = s => fold(s).replace(/\s+/g, "").replace(/[?？]+/g, "?");
 //   say  … そのときの師匠のひとこと（一度だけ。間違えたときの誘導）
 async function useTool(tool, raw) {
   const arg = raw.trim().split(/\s+/).slice(tool.cmd.split(/\s+/).length).join(" ");
+  // pages … 引数ごとに、決まった画面を出す道具（任務2：map 12、power 12、gate 12-E など。何度でも見られる）
+  if (tool.pages) return toolPage(tool, arg);
   if (!arg) return print(`使い方：${esc(tool.usage || tool.cmd)}`, "dim");
   // rec … 監視カメラの録画を、時間を区切って抜き出す道具（任務2）
   if (tool.rec) return camRec(tool.rec, arg);
@@ -537,4 +539,42 @@ async function camRec(rec, arg) {
   // 並び替えて、止められていたカメラがいちばん上に来たら、師匠がひとこと（一度だけ）
   if (sorted && rows[0]?.id === rec.target && rows[0].kept < to - from && rec.found)
     await oops(`camrec:${state.current}`, rec.found);
+}
+
+// 道具の画面（tools の pages）：map 12 ／ power 12 ／ gate 12-E のように、引数ごとに決まった画面を出す（何度でも見られる）
+//   tool.index … 引数なしで打ったときに出す画面（一覧）
+//   tool.pages … [{ keys: ["12", "12f"], html, say, clue, flag }]（say と clue は、その画面を初めて見たときだけ）
+//   tool.miss … 当てはまる画面がないときの返事（{arg} が打った言葉になる）
+const pageKey = s =>
+  String(s)
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\s　]+/g, "")
+    .replace(/^(b?\d+)(f|階)$/, "$1");
+async function toolPage(tool, arg) {
+  const page = arg
+    ? tool.pages.find(p => [].concat(p.keys).some(k => pageKey(k) === pageKey(arg)))
+    : tool.index && { html: tool.index, keys: [] };
+  if (!page) {
+    if (!arg) return print(`使い方：${esc(tool.usage || tool.cmd)}`, "dim");
+    return print(esc(fill(String(tool.miss || "{arg}: 見つかりません。").replaceAll("{arg}", arg))), "dim");
+  }
+  const key = `page:${state.current}:${tool.cmd}:${[].concat(page.keys)[0] ?? ""}`;
+  const first = !state.said.has(key);
+  state.said.add(key);
+  await busy(async () => {
+    SFX.tick();
+    await wait(BEAT.small);
+    print(`<div class="doc tool-page">${fill(page.html)}</div>`, "node result reveal");
+    scrollDown();
+    await wait(450);
+    if (!first) return;
+    if (page.flag) state.flags[page.flag] = true;
+    if (page.clue) await addClue(page.clue);
+    if (page.say?.length) {
+      await tapWait();
+      await speak(page.say, BEAT.react);
+    }
+  });
+  if (first && (page.clue || page.flag)) await checkObjectives();
 }
