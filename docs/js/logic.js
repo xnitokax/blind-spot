@@ -393,9 +393,15 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   else if (conf.fakeTotals && !exact && (hits.length === 0 || hits.length >= limit))
     total = Math.max(hits.length, plausibleTotal(conf, joined));
   // 広すぎる言葉（任務の broad）：「特別」「プロジェクト」だけで探すと、何万件も出る（社内のシステムだけ）
-  const broad =
-    CH.broad && !conf.outside && CH.broad.words.some(w => fold(w).replace(/\s+/g, "") === joined);
-  if (broad) total = Math.max(total, Math.round((conf.records ?? 10000) * (CH.broad.share ?? 0.05)));
+  //   share … 記録のうち何割が出るか。{ "言葉": 割合 } で、言葉ごとに変えられる
+  const broadWord =
+    CH.broad && !conf.outside && CH.broad.words.find(w => fold(w).replace(/\s+/g, "") === joined);
+  const broad = !!broadWord;
+  if (broad) {
+    const sh = CH.broad.share;
+    const share = (typeof sh === "object" ? sh[broadWord] : sh) ?? 0.05;
+    total = Math.max(total, Math.round((conf.records ?? 10000) * share));
+  }
   // 何件かはあるが、目ぼしいものは1件もない（一覧は出さず、師匠がひとこと）
   const nothing = !hits.length && total > 0;
   // 見出し：「何を探したか」を大きく、件数は小さく横に
