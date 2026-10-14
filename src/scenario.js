@@ -1431,7 +1431,7 @@ const SCENARIO = {
 <div class="doc"><p class="meta">立て札</p><p>『迷ったら、back。<br>……迷う者に、魔王は　倒せぬ。』</p></div>
 <ul class="links">
   <li><a data-go="east">east.b1　── 東の道</a></li>
-  <li><a data-go="b2">west.b1　── 西の道（下り階段）</a></li>
+  <li><a data-go="b2">west.b1　── 西の道</a></li>
 </ul>`,
         },
 
@@ -1462,7 +1462,7 @@ const SCENARIO = {
 <p>奥に　大きな　扉。横の　壁に、小さな　部屋の　入り口が　ある。</p>
 <ul class="links">
   <li><a data-go="memo" data-need="slimeDone">memo.b2　── 小さな部屋</a></li>
-  <li><a data-go="b3" data-need="slimeDone">door.b2　── 大きな扉（地下3階へ）</a></li>
+  <li><a data-go="b3" data-need="slimeDone">door.b2　── 大きな扉</a></li>
 </ul>`,
           scene: [
             { sprite: "slime" },
@@ -1846,7 +1846,7 @@ help　　　　── 手札を確かめる
       nodes: {
         portal: {
           ...portal(`
-  <li><a data-go="hr">hr.teiwa.local　── 人事データベース（社員名簿）</a></li>
+  <li><a data-go="hr">hr.teiwa.local　── 人事データベース</a></li>
   <li><a data-go="nippo">nippo.teiwa.local　── 日報共有システム</a></li>`),
           // 移動のチュートリアル（最初に着いたときだけ）
           say: [
@@ -2117,13 +2117,13 @@ help　　　　── 手札を確かめる
       start: "portal",
       nodes: {
         portal: portal(`
-  <li><a data-go="files">files.teiwa.local　── ファイルサーバー（プロジェクト資料）</a></li>
+  <li><a data-go="files">files.teiwa.local　── ファイルサーバー</a></li>
   <li><a data-go="nippo">nippo.teiwa.local　── 日報共有システム</a></li>
   <li><a data-go="hr">hr.teiwa.local　── 人事データベース</a></li>
   <li><a data-go="keiri">keiri.teiwa.local　── 財務会計システム</a></li>
-  <li><a data-go="jyoshi">jyoshi.teiwa.local　── 情報システム部（変更ログ）</a></li>
-  <li><a data-go="bms">bms.teiwa.local　── ビル管理システム（フロア図・電力・入館ゲート・監視カメラ）</a></li>
-  <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト（社外）</a></li>`),
+  <li><a data-go="jyoshi">jyoshi.teiwa.local　── 変更ログ</a></li>
+  <li><a data-go="bms">bms.teiwa.local　── ビル管理システム</a></li>
+  <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト</a></li>`),
 
         // ── ファイルサーバー：一覧には、ふつうのフォルダだけ。search でフォルダを名前・持ち主（部署コード）で探せる
         //    「特別プロジェクト室」では 0件。割り出した 1770 で探すと、一覧に出ない名前のないフォルダが見つかる → 開かない（任務3で開く）──
@@ -2135,7 +2135,7 @@ help　　　　── 手札を確かめる
           body: FILES_BODY + `<p class="dim">＞ search で、フォルダを名前・持ち主（部署コード）で探せる。</p>`,
           // 名前のないフォルダ（??????）は、search で見つけるまで一覧に出ない（need: secretDir）
           //   いちばん上には、AAA のファイル（open で開く。小ネタ）
-          dir: [...AAA_FILES, ...filesDir({ desc: "※ 名前が登録されていない", text: "（暗号化されています）", need: "secretDir" })],
+          dir: [...AAA_FILES, { name: "??????", desc: "※ 名前が登録されていない", text: "（暗号化されています）", need: "secretDir" }],
           tools: [
             { cmd: "open", usage: "open <ファイル名>", desc: "ファイルを開く（鍵のかかったフォルダも）", pages: AAA_PAGES, miss: "open: {arg} ── そのようなファイルはありません。（フォルダは cd で入れます）" },
             { cmd: "cat", usage: "cat <ファイル名>", desc: "ファイルの中身を見る", pages: AAA_PAGES, miss: "cat: {arg} ── そのようなファイルはありません。" },
@@ -2147,9 +2147,10 @@ help　　　　── 手札を確かめる
             exact: ["特別プロジェクト室", "プロジェクト室"],
             aliases: SEARCH_ALIASES,
             entries: [
-              { html: `<pre class="log">NGA-2026/      持ち主：dept:1081 経理部　　　　　次世代会計基盤プロジェクト</pre>`, keys: "会計 議事録 要件定義 移行計画" },
-              { html: `<pre class="log">LOGI-AI/       持ち主：dept:1431 物流部　　　　　物流最適化AIプロジェクト</pre>`, keys: "AI 配送 倉庫 ルート" },
-              { html: `<pre class="log">DX-HUB/        持ち主：dept:1596 情報システム部　社内DX推進プロジェクト</pre>`, keys: "情シス DX ペーパーレス アンケート" },
+              // ↓ 「プロジェクト」（広すぎる言葉）で出る、事件と関係のないファイル
+              { html: `<pre class="log">プロジェクト一覧_2026.xlsx　　持ち主：dept:1653 経営企画部</pre>` },
+              { html: `<pre class="log">物流プロジェクト_倉庫配置案.pptx　　持ち主：dept:1431 物流部</pre>` },
+              { html: `<pre class="log">プロジェクト管理ツール_手順書.pdf　　持ち主：dept:1596 情報システム部</pre>` },
               // ↓ 「特別」（広すぎる言葉）で出る、事件と関係のないファイル
               { html: `<pre class="log">社内報_特別号_秋.pdf　　　持ち主：dept:1540 広報部</pre>` },
               { html: `<pre class="log">特別休暇_申請様式.xlsx　　持ち主：dept:1035 総務部</pre>` },
@@ -2309,7 +2310,7 @@ help　　　　── 手札を確かめる
   ■■■■    （名称なし）      ¥1,330,584,300
   1596        情報システム部    ¥   88,140,000</pre>
 <ul class="links">
-  <li><a data-go="bank" data-need="srg">caymantrust.ky　── 海外の銀行（口座「SRG」）</a></li>
+  <li><a data-go="bank" data-need="srg">caymantrust.ky　── 海外の銀行</a></li>
 </ul>`,
           tools: [
             { cmd: "stat", usage: "stat <伝票番号>", desc: "伝票の変更履歴を見る", miss: "伝票 #{arg} ── 作成のあと、変更はありません。" },
@@ -2813,12 +2814,12 @@ B1   サーバー室 ／ 搬入口
       start: "portal",
       nodes: {
         portal: portal(`
-  <li><a data-go="files">files.teiwa.local　── ファイルサーバー（プロジェクト資料）</a></li>
+  <li><a data-go="files">files.teiwa.local　── ファイルサーバー</a></li>
   <li><a data-go="nippo">nippo.teiwa.local　── 日報共有システム</a></li>
   <li><a data-go="hr">hr.teiwa.local　── 人事データベース</a></li>
   <li><a data-go="keiri">keiri.teiwa.local　── 財務会計システム</a></li>
-  <li><a data-go="jyoshi">jyoshi.teiwa.local　── 情報システム部（変更ログ）</a></li>
-  <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト（社外）</a></li>`),
+  <li><a data-go="jyoshi">jyoshi.teiwa.local　── 変更ログ</a></li>
+  <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト</a></li>`),
 
         // ── ファイルサーバー：ファイルがあふれ出す → AIで仕分け → 1つだけ開かないフォルダ → 攻防に負ける → 社長の写真 ──
         files: {
@@ -3430,7 +3431,7 @@ B1   サーバー室 ／ 搬入口
 </div>
 <p class="dim">＞ 犯人が分かったら、照合システムでその人物の記録を開く。</p>
 <ul class="links">
-  <li><a data-go="core">core.senrigan　── 照合システム（対象者IDを指定）</a></li>
+  <li><a data-go="core">core.senrigan　── 照合システム</a></li>
 </ul>`,
           search: {
             label: "名簿",
@@ -3523,7 +3524,7 @@ action    予測データの送信をすべて遮断（送信エラーを返す�
 <p class="meta">―― 真壁 湊</p>
 </div>
 <ul class="links">
-  <li><a data-go="you" data-name="you.log" data-oneway>you.log　── 最後の予測（対象：このメッセージを読む人）</a></li>
+  <li><a data-go="you" data-name="you.log" data-oneway>you.log　── 最後の予測</a></li>
 </ul>`,
         },
 
