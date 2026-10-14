@@ -338,11 +338,10 @@ const SFX = (() => {
       tone(42, 1.4, { vol: 0.42, slide: 28, attack: 0.02 });
       hiss(0.9, { vol: 0.08, filter: "lowpass", freq: 500, sweep: 120 });
     },
-    // 目が、サッとこちらを向く：鋭い「シュッ」と、耳に残る細い音
-    gaze: () => {
-      hiss(0.12, { vol: 0.2, filter: "highpass", freq: 2600, sweep: 9000, attack: 0.002 });
-      tone(1250, 0.6, { vol: 0.045, slide: 700, echo: 0.55, attack: 0.003 });
-      tone(62, 0.35, { vol: 0.22, slide: 40 });
+    // 黒いノイズ（砂嵐の前）：低いうなりが、少しずつ近づいてくる。dur … 秒
+    darkHum: (dur = 0.7) => {
+      tone(48, dur + 0.2, { vol: 0.16, slide: 62, attack: dur * 0.8 });
+      hiss(dur, { vol: 0.05, filter: "lowpass", freq: 300, sweep: 900, attack: dur * 0.8 });
     },
     // 警報：こもったうねり
     siren(on) {

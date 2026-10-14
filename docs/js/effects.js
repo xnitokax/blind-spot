@@ -1569,8 +1569,8 @@ async function crackScreen() {
 }
 
 // 監視の目（任務2：検索禁止の言葉を打ったとき）
-//   初めて：砂嵐（ザーッ）→ ブルースクリーン（ピー）→ 赤い目（まばたきはしない。左下を見ている → サッと正面を向く）→ 砂嵐で戻る
-//   2回目から：砂嵐 → ブルースクリーン → 砂嵐で戻る（目は出ない）
+//   初めて：黒いノイズで沈む → 砂嵐（ザーッ）→ ブルースクリーン（ピー）→ 赤い目（まばたきもせず、まっすぐこちらを見ている）→ 砂嵐で戻る
+//   2回目から：黒いノイズ → 砂嵐 → ブルースクリーン → 砂嵐で戻る（目は出ない）
 // 目玉（虹彩と瞳）は、白目の輪郭の内側だけに見える（clipPath。左下を見ても、輪郭からはみ出ない）
 const WATCH_EYE = `<svg viewBox="0 0 200 100" aria-hidden="true">
   <defs>
@@ -1607,10 +1607,41 @@ async function noiseBurst(ms = 500) {
   }
   cv.remove();
 }
+// 黒いノイズ：砂嵐の前に、画面が暗いざらつきで、じわっと沈んでいく（急に始まって驚かないように）
+async function darkNoise(ms = 700) {
+  const cv = document.createElement("canvas");
+  cv.className = "fx-dark";
+  const w = 160,
+    h = Math.max(90, Math.round((160 * innerHeight) / Math.max(1, innerWidth)));
+  cv.width = w;
+  cv.height = h;
+  document.body.appendChild(cv);
+  const c = cv.getContext("2d"),
+    img = c.createImageData(w, h),
+    d = img.data;
+  SFX.darkHum?.(ms / 1000);
+  const t0 = performance.now();
+  while (performance.now() - t0 < ms) {
+    // だんだん暗く、ざらつきも強くなる
+    const p = (performance.now() - t0) / ms;
+    cv.style.opacity = String(Math.min(1, p * 1.15));
+    for (let i = 0; i < d.length; i += 4) {
+      const v = (Math.random() * (25 + 45 * p)) | 0;
+      d[i] = d[i + 1] = d[i + 2] = v;
+      d[i + 3] = 255;
+    }
+    c.putImageData(img, 0, 0);
+    if (Math.random() < 0.25) tear(80, 0.3 + p * 0.5);
+    await sleep(45);
+  }
+  return cv; // 呼んだ側で、砂嵐のあとに消す
+}
 async function fxWatched(withEye = true) {
   if (REDUCED) return;
-  // 砂嵐（ザーッ）→ ブルースクリーン（ピー）
+  // 黒いノイズで沈む → 砂嵐（ザーッ）→ ブルースクリーン（ピー）
+  const dark = await darkNoise(withEye ? 750 : 550);
   await noiseBurst(withEye ? 560 : 420);
+  dark.remove();
   const bs = document.createElement("div");
   bs.className = "fx-bsod on";
   bs.innerHTML = `<div class="bs-face">:(</div><div>SESSION FLAGGED</div><div class="bs-small">この端末は、監視対象として記録されました。<br>0x000000ED　WATCHED_BY_UNKNOWN</div>`;
@@ -1623,7 +1654,7 @@ async function fxWatched(withEye = true) {
     bs.remove();
     return;
   }
-  // 赤い目：左下を見ている（まばたきはしない）→ 1秒後に、サッとこちらを向く → 砂嵐で戻る
+  // 赤い目：まばたきもせず、最初からまっすぐこちらを見ている → 砂嵐で戻る
   const eye = document.createElement("div");
   eye.className = "fx-eye";
   eye.innerHTML = WATCH_EYE;
@@ -1633,9 +1664,7 @@ async function fxWatched(withEye = true) {
   eye.classList.add("on");
   await sleep(360);
   bs.remove();
-  await sleep(640);
-  SFX.gaze?.();
-  await sleep(1300);
+  await sleep(1800);
   await noiseBurst(520);
   eye.remove();
 }

@@ -3918,16 +3918,16 @@ body[data-zone="rpg"] #eviCount {
   width: min(72vw, 440px);
   filter: drop-shadow(0 0 22px rgba(255, 20, 20, 0.75));
 }
-/* 瞳：まばたきはしない。はじめは左下を見ていて、ゆっくりこちらを向く */
-.fx-eye .we-ball {
-  transform: translate(-26px, 13px);
-}
-.fx-eye.on .we-ball {
-  animation: weGaze 0.14s cubic-bezier(0.2, 0.9, 0.2, 1) 1s forwards;   /* 1秒、左下を見て → サッとこちらを向く */
-}
-@keyframes weGaze {
-  0% { transform: translate(-26px, 13px); }
-  100% { transform: translate(0, 0); }
+/* 黒いノイズ（砂嵐の前）：暗いざらつきで、画面がじわっと沈む */
+.fx-dark {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 318;
+  pointer-events: none;
+  image-rendering: pixelated;
+  opacity: 0;
 }
 /* 砂嵐（監視の目のノイズ）：小さな canvas に白黒のざらざらを描いて、画面いっぱいに引きのばす */
 .fx-snow {
