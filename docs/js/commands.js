@@ -525,7 +525,7 @@ async function camRec(rec, arg) {
     SFX.tick();
     await wait(BEAT.small);
     const box = print(
-      `<pre class="log">${esc(rec.date || "")} ${span}　録画の残り時間（${sorted ? "短い順" : "カメラ番号順"}）\n</pre>`,
+      `<pre class="log">${esc(rec.date || "")} ${span}\n録画の残り時間（${sorted ? "短い順" : "カメラ番号順"}）\n</pre>`,
     ).querySelector("pre");
     for (const r of rows) {
       box.insertAdjacentHTML(
