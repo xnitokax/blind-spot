@@ -78,6 +78,9 @@ function printMenu(force = false) {
       `<span class="n pick" data-fill="search ">search 〇〇</span><span>${esc(node.search.label)}から「〇〇」を探す</span>`,
     );
   }
+  for (const t of menuTools(node)) {
+    rows.push(`<span class="n pick" data-fill="${esc(t.fill)}">${esc(t.label)}</span><span>${esc(t.desc)}</span>`);
+  }
   for (const name of itemsHere()) {
     rows.push(
       `<span class="n pick" data-fill="pick ${esc(name)}">pick ${esc(name)}</span><span>${esc(node.items[name].desc || "落ちている")}</span>`,

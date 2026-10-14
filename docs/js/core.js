@@ -175,6 +175,16 @@ const nodeOf = id => state.opened.get(id) || CH.nodes[id];
 const here = () => nodeOf(state.current);
 // 今いる場所のフォルダ（need の付いたフォルダは、その flag が立つまで隠す。任務2の名前のないフォルダなど）
 const dirHere = (node = here()) => (node?.dir || []).filter(d => !d.need || state.flags[d.need]);
+// その場所の道具（tools）のうち、menu: true のもの：場所の一覧と NEXT 欄に出す
+//   label … usage の <…> を「〇〇」に、[…]（付けても付けなくてもいいもの）は消す ／ fill … 押すと入力欄に入る文字
+//   desc … 説明から（…）の補足を消したもの
+const menuTools = (node = here()) =>
+  (node?.tools || [])
+    .filter(t => t.menu)
+    .map(t => {
+      const label = (t.usage || t.cmd).replace(/\s*\[[^\]]*\]/g, "").replace(/<[^>]*>/g, "〇〇");
+      return { label, fill: label.replace(/〇〇.*$/, ""), desc: (t.desc || "").replace(/（[^）]*）/g, "") };
+    });
 
 // ---------------- 入力のロック ----------------
 // 演出の途中はコマンドを受け付けない（入れ子で呼んでもよい）

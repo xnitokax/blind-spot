@@ -81,6 +81,7 @@ function updateNext() {
       if (why) $("why").innerHTML = `<span class="why-mark">▸</span><span>${esc(fill(why))}</span>`;
     }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
+    for (const t of menuTools(node)) chips.push(chip(t.fill, t.label, "go"));
     for (const d of dirHere(node)) chips.push(chip(d.file ? `open ${d.name}` : `cd ${d.name}`));
     // ゲームの世界：落ちているものと、その場所でできること（まだやっていないもの）
     for (const name of itemsHere()) chips.push(chip(`pick ${name}`, `pick ${name}`, "go"));
