@@ -3918,8 +3918,8 @@ body[data-zone="rpg"] #eviCount {
   width: min(72vw, 440px);
   filter: drop-shadow(0 0 22px rgba(255, 20, 20, 0.75));
 }
-/* 黒いノイズ（砂嵐の前）：暗いざらつきで、画面がじわっと沈む */
-.fx-dark {
+/* 横線のノイズ（砂嵐の前）：いつもの画面の上を、細い黒い線や薄いざらつきが、ばらばらに走る */
+.fx-lines {
   position: fixed;
   inset: 0;
   width: 100%;
@@ -3927,7 +3927,6 @@ body[data-zone="rpg"] #eviCount {
   z-index: 318;
   pointer-events: none;
   image-rendering: pixelated;
-  opacity: 0;
 }
 /* 砂嵐（監視の目のノイズ）：小さな canvas に白黒のざらざらを描いて、画面いっぱいに引きのばす */
 .fx-snow {

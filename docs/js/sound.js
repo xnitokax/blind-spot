@@ -337,7 +337,7 @@ const SFX = (() => {
       // 最後まで同じ大きさで鳴り続ける（前は出てすぐ減っていって、埋もれていた）
       tone(1000, dur, { vol: 0.13, attack: 0.01, hold: dur - 0.04 });
     },
-    // 黒いノイズ（砂嵐の前）：電気が漏れるような「じじじじじ」が、だんだん大きくなる。dur … 秒
+    // 横線のノイズ（砂嵐の前）：電気が漏れるような「じじじじじ」が、だんだん大きくなる。dur … 秒
     //   iPhone のスピーカーでも聞こえるよう、低すぎる音は使わない
     jiji: (dur = 0.8) => {
       if (muted) return;
@@ -390,39 +390,29 @@ const SFX = (() => {
         n.stop(t + dur + 0.08);
       });
     },
-    // 赤い目：「グワン、グワン、グワン」と、空間ごと歪むような、おどろおどろしいうねり。dur … 秒
-    //   iPhone のスピーカーは低い音がほとんど鳴らないので、ぶつかり合う音（不協和音）は、はっきり聞こえる中くらいの高さに置く
+    // 赤い目：うねらない、まっすぐな不協和音が鳴り続け、砂嵐で戻ったあとも少し残る。dur … 秒（ここから消え始める）
+    //   iPhone のスピーカーは低い音がほとんど鳴らないので、ぶつかり合う音は、はっきり聞こえる中くらいの高さに置く
     gwan: (dur = 2.2) => {
       if (muted) return;
       const c = ac();
       if (!c || !canPlay(c)) return;
-      const t = c.currentTime;
-      // うねり：約 0.7 秒で一回「グワン」。全体の音量と、低い層のこもり具合を揺らす
-      const lfo = c.createOscillator(),
-        amp = c.createGain(),
-        aDepth = c.createGain();
-      lfo.frequency.value = 1.4;
-      amp.gain.value = 0.6;
-      aDepth.gain.value = 0.4;
-      lfo.connect(aDepth).connect(amp.gain);
-      // 低い層「グワン」：半音でぶつかる２音を、揺れるフィルターに通す
+      const t = c.currentTime,
+        tail = 0.9;
+      // 低い層：半音でぶつかる２音（こもらせて、土台にする）
       const lp = c.createBiquadFilter(),
-        fDepth = c.createGain(),
         low = c.createGain();
       lp.type = "lowpass";
-      lp.Q.value = 4;
-      lp.frequency.value = 700;
-      fDepth.gain.value = 450;
-      lfo.connect(fDepth).connect(lp.frequency);
-      low.gain.value = 0.55;
-      lp.connect(low).connect(amp);
-      // 上の層：不協和音。ラ・シ♭（半音）・ミ♭（増4度＝悪魔の音程）・高いシ♭（短9度）を同時に鳴らす
+      lp.frequency.value = 900;
+      low.gain.value = 0.5;
+      // 上の層：ラ・シ♭（半音）・ミ♭（増4度＝悪魔の音程）・高いシ♭（短9度）を同時に鳴らす
       const soft = c.createBiquadFilter(),
         high = c.createGain();
       soft.type = "lowpass";
       soft.frequency.value = 2600;
-      high.gain.value = 0.5;
-      soft.connect(high).connect(amp);
+      high.gain.value = 0.45;
+      const g = c.createGain();
+      lp.connect(low).connect(g);
+      soft.connect(high).connect(g);
       const oscs = [
         [110, "sawtooth", lp],
         [116.54, "sawtooth", lp],
@@ -437,16 +427,14 @@ const SFX = (() => {
         o.connect(to);
         return o;
       });
-      const g = c.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.13, t + 0.08);
-      g.gain.setValueAtTime(0.13, t + dur - 0.25);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      amp.connect(g);
+      g.gain.exponentialRampToValueAtTime(0.12, t + 0.06);
+      g.gain.setValueAtTime(0.12, t + dur);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur + tail);
       route(g, { echo: 0.35 });
-      [...oscs, lfo].forEach(n => {
+      oscs.forEach(n => {
         n.start(t);
-        n.stop(t + dur + 0.05);
+        n.stop(t + dur + tail + 0.05);
       });
     },
     // 警報：こもったうねり

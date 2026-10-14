@@ -1569,8 +1569,8 @@ async function crackScreen() {
 }
 
 // 監視の目（任務2：検索禁止の言葉を打ったとき）
-//   初めて：黒いノイズで沈む → 砂嵐（ザーッ）→ ブルースクリーン（ピー）→ 赤い目（まばたきもせず、まっすぐこちらを見ている）→ 砂嵐で戻る
-//   2回目から：黒いノイズ → 砂嵐 → ブルースクリーン → 砂嵐で戻る（目は出ない）
+//   初めて：横線のノイズ → 砂嵐（ザーッ）→ ブルースクリーン（ピー）→ 赤い目（まばたきもせず、まっすぐこちらを見ている）→ 砂嵐で戻る
+//   2回目から：横線のノイズ → 砂嵐 → ブルースクリーン → 砂嵐で戻る（目は出ない）
 // 目玉（虹彩と瞳）は、白目の輪郭の内側だけに見える（clipPath。左下を見ても、輪郭からはみ出ない）
 const WATCH_EYE = `<svg viewBox="0 0 200 100" aria-hidden="true">
   <defs>
@@ -1607,41 +1607,70 @@ async function noiseBurst(ms = 500) {
   }
   cv.remove();
 }
-// 黒いノイズ：砂嵐の前に、画面が暗いざらつきで、じわっと沈んでいく（急に始まって驚かないように）。音は「じじじじ」
-async function darkNoise(ms = 700) {
+// 横線のノイズ：砂嵐の前に、いつもの画面の上を、細い黒い線や薄いざらつきが、横にちらちら走る（急に始まって驚かないように）
+//   きれいに暗くなっていくのではなく、静かになったり急に増えたり、ばらばらに乱れる。音は「じじじじ」
+async function lineNoise(ms = 900) {
   const cv = document.createElement("canvas");
-  cv.className = "fx-dark";
-  const w = 160,
-    h = Math.max(90, Math.round((160 * innerHeight) / Math.max(1, innerWidth)));
+  cv.className = "fx-lines";
+  const w = 180,
+    h = Math.max(200, Math.round(innerHeight / 2)); // 1 行が、画面の 2px くらい
   cv.width = w;
   cv.height = h;
   document.body.appendChild(cv);
-  const c = cv.getContext("2d"),
-    img = c.createImageData(w, h),
-    d = img.data;
+  const c = cv.getContext("2d");
   SFX.jiji?.(ms / 1000);
+  let lines = []; // 何コマか残る線（少しずつ上下にずれる）
   const t0 = performance.now();
   while (performance.now() - t0 < ms) {
-    // だんだん暗く、ざらつきも強くなる
     const p = (performance.now() - t0) / ms;
-    cv.style.opacity = String(Math.min(1, p * 1.15));
-    for (let i = 0; i < d.length; i += 4) {
-      const v = (Math.random() * (25 + 45 * p)) | 0;
-      d[i] = d[i + 1] = d[i + 2] = v;
-      d[i + 3] = 255;
+    // 増え方は、ばらばら：ふっと消えるコマ、急に増えるコマを混ぜる
+    const r = Math.random();
+    let add = r < 0.22 ? 0 : Math.round(1 + p * 5 + Math.random() * 2);
+    if (r > 0.88) add *= 3;
+    if (r < 0.1) lines = []; // 一瞬、何もなかったように戻る
+    for (let i = 0; i < add; i++) {
+      const x = Math.random() < 0.6 ? 0 : (Math.random() * w * 0.7) | 0;
+      lines.push({
+        y: (Math.random() * h) | 0,
+        hgt: Math.random() < 0.8 ? 1 : 2 + ((Math.random() * 3) | 0),
+        x,
+        len: x === 0 && Math.random() < 0.7 ? w : 20 + ((Math.random() * (w - x)) | 0),
+        grain: Math.random() < 0.4, // 薄い灰色のざらつき（それ以外は、黒い線）
+        a: 0.35 + Math.random() * 0.5,
+        life: 1 + ((Math.random() * 4) | 0),
+        dy: Math.random() < 0.3 ? (Math.random() < 0.5 ? -1 : 1) : 0,
+      });
     }
-    c.putImageData(img, 0, 0);
-    if (Math.random() < 0.25) tear(80, 0.3 + p * 0.5);
-    await sleep(45);
+    c.clearRect(0, 0, w, h);
+    for (const l of lines) {
+      if (l.grain) {
+        const img = c.createImageData(l.len, l.hgt),
+          d = img.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const v = 90 + ((Math.random() * 120) | 0);
+          d[i] = d[i + 1] = d[i + 2] = v;
+          d[i + 3] = Math.random() < 0.55 ? (l.a * 110) | 0 : 0;
+        }
+        c.putImageData(img, l.x, l.y);
+      } else {
+        c.fillStyle = `rgba(0,0,0,${l.a.toFixed(2)})`;
+        c.fillRect(l.x, l.y, l.len, l.hgt);
+      }
+      l.y += l.dy;
+      l.life--;
+    }
+    lines = lines.filter(l => l.life > 0);
+    if (Math.random() < 0.18 + p * 0.2) tear(70 + Math.random() * 90, 0.2 + p * 0.5);
+    await sleep(30 + Math.random() * 60); // コマの間隔も、ばらばら
   }
   return cv; // 呼んだ側で、砂嵐のあとに消す
 }
 async function fxWatched(withEye = true) {
   if (REDUCED) return;
-  // 黒いノイズで沈む（じじじじ）→ 砂嵐（ザーッ）→ ブルースクリーン（ピー）
-  const dark = await darkNoise(withEye ? 1000 : 700);
+  // 横線のノイズ（じじじじ）→ 砂嵐（ザーッ）→ ブルースクリーン（ピー）
+  const lines = await lineNoise(withEye ? 1000 : 700);
   await noiseBurst(withEye ? 560 : 420);
-  dark.remove();
+  lines.remove();
   const bs = document.createElement("div");
   bs.className = "fx-bsod on";
   bs.innerHTML = `<div class="bs-face">:(</div><div>SESSION FLAGGED</div><div class="bs-small">この端末は、監視対象として記録されました。<br>0x000000ED　WATCHED_BY_UNKNOWN</div>`;
@@ -1659,7 +1688,7 @@ async function fxWatched(withEye = true) {
   eye.className = "fx-eye";
   eye.innerHTML = WATCH_EYE;
   document.body.appendChild(eye);
-  SFX.gwan?.(2.18); // グワングワングワン（砂嵐で戻るところまで）
+  SFX.gwan?.(2.18); // まっすぐな不協和音（砂嵐で戻ったあとも、少し残る）
   await sleep(20);
   eye.classList.add("on");
   await sleep(360);
