@@ -323,6 +323,29 @@ const SFX = (() => {
       tone(120, 0.32, { vol: 0.2, slide: 52, at: 0.015 });
       tone(78, 0.22, { vol: 0.1, slide: 60, at: 0.12 });
     },
+    // ── 監視の目（任務2：検索禁止の言葉）──
+    // ノイズ：ざらついた砂嵐が、ぶつぶつと途切れる
+    watchNoise: () => {
+      hiss(0.42, { vol: 0.16, filter: "bandpass", freq: 2200, sweep: 500, q: 0.5 });
+      for (let i = 0; i < 5; i++)
+        tone(80 + Math.random() * 300, 0.04, { type: "square", filter: 1200, vol: 0.05, at: Math.random() * 0.35 });
+    },
+    // ブルースクリーン：低く濁ったうなりと、短い警告音
+    bsod: () => {
+      tone(55, 0.7, { type: "sawtooth", filter: 260, vol: 0.14 });
+      tone(880, 0.1, { vol: 0.045, at: 0.05 });
+    },
+    // 赤い目が開く：腹に響く、低い「ドゥン」
+    eyeOpen: () => {
+      tone(42, 1.4, { vol: 0.42, slide: 28, attack: 0.02 });
+      hiss(0.9, { vol: 0.08, filter: "lowpass", freq: 500, sweep: 120 });
+    },
+    // 目が、サッとこちらを向く：鋭い「シュッ」と、耳に残る細い音
+    gaze: () => {
+      hiss(0.12, { vol: 0.2, filter: "highpass", freq: 2600, sweep: 9000, attack: 0.002 });
+      tone(1250, 0.6, { vol: 0.045, slide: 700, echo: 0.55, attack: 0.003 });
+      tone(62, 0.35, { vol: 0.22, slide: 40 });
+    },
     // 警報：こもったうねり
     siren(on) {
       if (siren) {

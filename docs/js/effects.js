@@ -1577,9 +1577,9 @@ const WATCH_EYE = `<svg viewBox="0 0 200 100" aria-hidden="true">
   <g class="we-ball"><circle cx="100" cy="50" r="30" fill="url(#weIris)"/><ellipse cx="100" cy="50" rx="5" ry="23" fill="#000"/></g>
 </svg>`;
 // 画面全体に、一瞬ノイズを走らせる（ブルースクリーンや目の上にもかかるように、いちばん上にかぶせる）
-async function noiseBurst(ms = 300) {
-  tear(ms, 1.4);
-  SFX.glitch?.();
+async function noiseBurst(ms = 450) {
+  tear(ms, 1.8);
+  SFX.watchNoise?.();
   const nz = document.createElement("div");
   nz.className = "fx-noise";
   document.body.appendChild(nz);
@@ -1588,29 +1588,31 @@ async function noiseBurst(ms = 300) {
 }
 async function fxWatched(withEye = true) {
   if (REDUCED) return;
-  await noiseBurst(320);
+  await noiseBurst(withEye ? 480 : 360);
   const bs = document.createElement("div");
   bs.className = "fx-bsod on";
   bs.innerHTML = `<div class="bs-face">:(</div><div>SESSION FLAGGED</div><div class="bs-small">この端末は、監視対象として記録されました。<br>0x000000ED　WATCHED_BY_UNKNOWN</div>`;
   document.body.appendChild(bs);
-  SFX.static?.();
-  await sleep(withEye ? 700 : 520);
+  SFX.bsod?.();
+  await sleep(withEye ? 700 : 560);
   if (!withEye) {
-    await noiseBurst(260);
+    await noiseBurst(320);
     bs.remove();
     return;
   }
-  // 赤い目：左下を見ている → ゆっくり、こちらを向く（まばたきはしない）
+  // 赤い目：左下を見ている（まばたきはしない）→ 1秒後に、サッとこちらを向く
   const eye = document.createElement("div");
   eye.className = "fx-eye";
   eye.innerHTML = WATCH_EYE;
   document.body.appendChild(eye);
-  SFX.clunk?.();
+  SFX.eyeOpen?.();
   await sleep(20);
   eye.classList.add("on");
   await sleep(360);
   bs.remove();
-  await sleep(2600);
-  await noiseBurst(340);
+  await sleep(640);
+  SFX.gaze?.();
+  await sleep(1300);
+  await noiseBurst(480);
   eye.remove();
 }

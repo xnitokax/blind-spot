@@ -3923,7 +3923,7 @@ body[data-zone="rpg"] #eviCount {
   transform: translate(-26px, 13px);
 }
 .fx-eye.on .we-ball {
-  animation: weGaze 2.4s ease-in-out 0.5s forwards;
+  animation: weGaze 0.14s cubic-bezier(0.2, 0.9, 0.2, 1) 1s forwards;   /* 1秒、左下を見て → サッとこちらを向く */
 }
 @keyframes weGaze {
   0% { transform: translate(-26px, 13px); }
@@ -3938,7 +3938,7 @@ body[data-zone="rpg"] #eviCount {
   background:
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 3px),
     repeating-linear-gradient(90deg, rgba(255, 0, 60, 0.12) 0 2px, transparent 2px 7px),
-    rgba(10, 10, 14, 0.35);
+    rgba(10, 10, 14, 0.5);
   mix-blend-mode: screen;
   animation: fxNoise 0.09s steps(2) infinite;
 }
