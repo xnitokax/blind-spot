@@ -1646,7 +1646,7 @@ async function fxWatched(withEye = true) {
   bs.className = "fx-bsod on";
   bs.innerHTML = `<div class="bs-face">:(</div><div>SESSION FLAGGED</div><div class="bs-small">この端末は、監視対象として記録されました。<br>0x000000ED　WATCHED_BY_UNKNOWN</div>`;
   document.body.appendChild(bs);
-  const show = withEye ? 800 : 600;
+  const show = withEye ? 1600 : 1200; // ブルースクリーンを見せる長さ
   SFX.beep?.(show / 1000);
   await sleep(show);
   if (!withEye) {

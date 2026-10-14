@@ -391,39 +391,50 @@ const SFX = (() => {
       });
     },
     // 赤い目：「グワン、グワン、グワン」と、空間ごと歪むような、おどろおどろしいうねり。dur … 秒
+    //   iPhone のスピーカーは低い音がほとんど鳴らないので、ぶつかり合う音（不協和音）は、はっきり聞こえる中くらいの高さに置く
     gwan: (dur = 2.2) => {
       if (muted) return;
       const c = ac();
       if (!c || !canPlay(c)) return;
       const t = c.currentTime;
-      // ずらした低めの音を重ねて、気持ちの悪い濁りを作る
-      const lp = c.createBiquadFilter();
-      lp.type = "lowpass";
-      lp.Q.value = 7; // 「ワン」の癖を強く
-      lp.frequency.value = 650;
-      // フィルターと音量を、ゆっくり大きく揺らす（約 0.7 秒で一回「グワン」）
+      // うねり：約 0.7 秒で一回「グワン」。全体の音量と、低い層のこもり具合を揺らす
       const lfo = c.createOscillator(),
-        fDepth = c.createGain(),
         amp = c.createGain(),
         aDepth = c.createGain();
       lfo.frequency.value = 1.4;
-      fDepth.gain.value = 480;
       amp.gain.value = 0.6;
       aDepth.gain.value = 0.4;
-      lfo.connect(fDepth).connect(lp.frequency);
       lfo.connect(aDepth).connect(amp.gain);
-      // 不協和音：ラ・シ♭（半音でぶつかる）・ミ♭（増4度＝悪魔の音程）・ソ♯（長7度）。音程は動かさない
+      // 低い層「グワン」：半音でぶつかる２音を、揺れるフィルターに通す
+      const lp = c.createBiquadFilter(),
+        fDepth = c.createGain(),
+        low = c.createGain();
+      lp.type = "lowpass";
+      lp.Q.value = 4;
+      lp.frequency.value = 700;
+      fDepth.gain.value = 450;
+      lfo.connect(fDepth).connect(lp.frequency);
+      low.gain.value = 0.55;
+      lp.connect(low).connect(amp);
+      // 上の層：不協和音。ラ・シ♭（半音）・ミ♭（増4度＝悪魔の音程）・高いシ♭（短9度）を同時に鳴らす
+      const soft = c.createBiquadFilter(),
+        high = c.createGain();
+      soft.type = "lowpass";
+      soft.frequency.value = 2600;
+      high.gain.value = 0.5;
+      soft.connect(high).connect(amp);
       const oscs = [
-        [55, "sawtooth"],
-        [110, "sawtooth"],
-        [116.54, "sawtooth"],
-        [155.56, "triangle"],
-        [207.65, "triangle"],
-      ].map(([f, type]) => {
+        [110, "sawtooth", lp],
+        [116.54, "sawtooth", lp],
+        [440, "triangle", soft],
+        [466.16, "triangle", soft],
+        [622.25, "triangle", soft],
+        [932.33, "sine", soft],
+      ].map(([f, type, to]) => {
         const o = c.createOscillator();
         o.type = type;
         o.frequency.value = f;
-        o.connect(lp);
+        o.connect(to);
         return o;
       });
       const g = c.createGain();
@@ -431,7 +442,7 @@ const SFX = (() => {
       g.gain.exponentialRampToValueAtTime(0.13, t + 0.08);
       g.gain.setValueAtTime(0.13, t + dur - 0.25);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      lp.connect(amp).connect(g);
+      amp.connect(g);
       route(g, { echo: 0.35 });
       [...oscs, lfo].forEach(n => {
         n.start(t);
