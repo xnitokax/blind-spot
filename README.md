@@ -137,4 +137,5 @@ powershell -ExecutionPolicy Bypass -File tools/serve.ps1
 - ゲーム：http://localhost:8766/docs/
 - ビルドせずに確認する（回線コードの一覧も出る）：http://localhost:8766/docs/?dev
 - ビルド：http://localhost:8766/tools/build.html を開いて「ビルド」を押す → `docs/scenario.data.js` と `docs/scenario.more.js` が更新される（接続先の書き間違いや、回線コードの重複もチェックします）
+  - `docs/index.html` が読み込む js・css にも、版の番号（`?v=年月日時分`）を付け直す。iPhone の Safari が古いファイルを使い回さないように、**js・css だけを直したときも、公開の前にビルドする**
   - 「体験版」にチェックが入っていると、公開データには `demo: true` の章（練習と任務1）だけが入り、ほかの章は `scenario.more.js` に分かれる。チェックを外すと、すべての章が公開データに入る（製品版）

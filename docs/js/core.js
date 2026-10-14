@@ -122,7 +122,9 @@ try {
 } catch {}
 async function loadMore() {
   if (!S.demo || S.moreLoaded) return false;
-  await loadScript("scenario.more.js");
+  // index.html と同じ版の番号を付ける（古いファイルが使い回されないように）
+  const v = document.querySelector('meta[name="build"]')?.content;
+  await loadScript("scenario.more.js" + (v ? `?v=${v}` : ""));
   S.chapters.push(...(window.SCENARIO_MORE || []));
   S.moreLoaded = true;
   return true;

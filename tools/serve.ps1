@@ -2,6 +2,7 @@
 #   powershell -ExecutionPolicy Bypass -File tools/serve.ps1
 #   → http://localhost:8766/
 # PUT /__build でビルド結果を docs/scenario.data.js に書き込む（build.html から使用）
+# PUT /__build/index で docs/index.html を書き直す（読み込むファイルに版の番号 ?v= を付ける。古いファイルが使い回されないように）
 
 $root = Split-Path $PSScriptRoot -Parent
 $port = 8766
@@ -23,8 +24,8 @@ while ($l.IsListening) {
     $p = [Uri]::UnescapeDataString($req.Url.AbsolutePath.TrimStart("/"))
 
     # PUT /__build -> docs/scenario.data.js,  PUT /__build/more -> docs/scenario.more.js
-    if ($req.HttpMethod -eq "PUT" -and ($p -eq "__build" -or $p -eq "__build/more")) {
-      $name = if ($p -eq "__build") { "scenario.data.js" } else { "scenario.more.js" }
+    if ($req.HttpMethod -eq "PUT" -and ($p -eq "__build" -or $p -eq "__build/more" -or $p -eq "__build/index")) {
+      $name = if ($p -eq "__build") { "scenario.data.js" } elseif ($p -eq "__build/more") { "scenario.more.js" } else { "index.html" }
       $body = (New-Object IO.StreamReader($req.InputStream, [Text.Encoding]::UTF8)).ReadToEnd()
       [IO.File]::WriteAllText((Join-Path $root "docs\$name"), $body, (New-Object Text.UTF8Encoding($false)))
       Write-Host "built docs/$name ($($body.Length) chars)"

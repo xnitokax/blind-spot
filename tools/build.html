@@ -342,6 +342,21 @@
             : "製品版：すべての章を公開データに入れました",
           "ok",
         );
+        await stampIndex();
+      }
+
+      // index.html が読み込むファイル（js・css・データ）に、版の番号 ?v=年月日時分 を付け直す
+      //   ブラウザ（とくに iPhone の Safari）が古いファイルを使い回して、直したのに変わらない、とならないように
+      async function stampIndex() {
+        const html = await (await fetch("/docs/index.html", { cache: "no-store" })).text();
+        const d = new Date(),
+          p = n => String(n).padStart(2, "0");
+        const v = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}`;
+        const out = html
+          .replace(/((?:src|href)="(?:js\/[^"?]+|css\/[^"?]+|nz-crypto\.js|scenario\.data\.js))(?:\?v=\d+)?"/g, `$1?v=${v}"`)
+          .replace(/(<meta name="build" content=")\d*(")/, `$1${v}$2`);
+        await write("/__build/index", "docs/index.html", out);
+        log(`版の番号：${v}`, "ok");
       }
 
       async function write(url, name, js) {
