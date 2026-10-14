@@ -808,6 +808,117 @@ const FILES_BODY = `
 <p class="sys">＞ 各プロジェクトの資料が保管されている。</p>
 <p class="dim">＞ cd &lt;フォルダ名&gt; でフォルダに移動する。</p>`;
 
+// ─────────────────────────────────────────
+//  任務2：ファイルサーバーのいちばん上にある、AAA のファイル（open で開く。事件とは関係ない小ネタ）
+//  経営企画部の中島が、共有フォルダの一番上を取ろうとして、名前の頭に A を足し続けた
+//    AAAAAAAA.txt … 一番上を取った喜びの日記 ／ AAA_launcher.js … 海外チームに「R U idiot?」と送ってしまうコード
+//    AAA_計画書.txt … 真面目な AAA 計画（トリプルエー計画）
+// ─────────────────────────────────────────
+const AAA_FILES = [
+  { name: "AAAAAAAA.txt", desc: "テキスト　経営企画部 中島　2026/09/18", file: true },
+  { name: "AAA_launcher.js", desc: "スクリプト　経営企画部 中島", file: true },
+  { name: "AAA_計画書.txt", desc: "テキスト　経営企画部", file: true },
+];
+const AAA_HEAD = name => `<p class="file-head">files.teiwa.local/projects/${name}　── 持ち主：dept:1653 経営企画部</p>`;
+const AAA_PAGES = [
+  {
+    keys: ["AAA_計画書.txt", "AAA_計画書"],
+    html: AAA_HEAD("AAA_計画書.txt") + `<div class="file-txt">AAA計画（トリプルエー計画）　基本計画書　第3版
+作成：経営企画部　2026/06/01
+
+1. 目的
+　全社の業務を「Always・Ahead・Again」の3つのAで見直し、
+　2028年度までに、間接業務の工数を30%削減する。
+
+2. 3つのA
+　Always … いつでも、どこでも、同じ品質で働ける環境をつくる
+　Ahead　… 前例にとらわれず、先回りして課題を解決する
+　Again　… 失敗から学び、何度でも挑戦する文化を育てる
+
+3. 主な取り組み
+　(1) 稟議の電子化（紙の稟議を、2027年3月までにゼロにする）
+　(2) 会議の削減（定例会議を半分に。資料は5枚まで）
+　(3) 海外拠点との週次レポートの自動化
+
+4. スケジュール
+　2026年度　準備・試行（経営企画部・情報システム部）
+　2027年度　全社展開
+　2028年度　効果測定
+
+5. 予算
+　3年間で、4億2,000万円（うち、システム費 2億8,000万円）
+
+6. 体制
+　責任者：経営企画部長
+　事務局：経営企画部　中島 亮
+　※ ご意見は、事務局まで。</div>`,
+    say: ["[師匠] ……これを、1から読んでいくのか？", "[師匠] 正気か？ 名前で一番上に来てるだけの、ただの社内の計画書だ。"],
+  },
+  {
+    keys: ["AAA_launcher.js", "AAA_launcher"],
+    // VS Code（Dark+）のような色分け。実行すると、あいさつのつもりの greeting() が「R U idiot?」になる（文字コードで書いてある）
+    html: AAA_HEAD("AAA_launcher.js") + `<div class="file-code">` + [
+      '<span class="c">// AAA_launcher.js</span>',
+      '<span class="c">// 海外拠点への週次レポートを、自動で送る（AAA計画 (3)）</span>',
+      '<span class="c">// 作成：中島（経営企画部）　※ 動いたので、もう触らない</span>',
+      '',
+      '<span class="k">const</span> <span class="v">TEAMS</span> = [<span class="s">"Singapore"</span>, <span class="s">"Austin"</span>, <span class="s">"Berlin"</span>];',
+      '<span class="k">const</span> <span class="v">STATUS</span> = { <span class="v">schedule</span>: <span class="s">"delayed"</span>, <span class="v">budget</span>: <span class="s">"over"</span>, <span class="v">morale</span>: <span class="s">"low"</span> };',
+      '',
+      '<span class="k">function</span> <span class="f">greeting</span>() {',
+      '  <span class="k">const</span> <span class="v">codes</span> = [<span class="n">82</span>, <span class="n">32</span>, <span class="n">85</span>, <span class="n">32</span>, <span class="n">105</span>, <span class="n">100</span>, <span class="n">105</span>, <span class="n">111</span>, <span class="n">116</span>, <span class="n">63</span>];',
+      '  <span class="kc">return</span> <span class="t">String</span>.<span class="f">fromCharCode</span>(...<span class="v">codes</span>);',
+      '}',
+      '',
+      '<span class="k">function</span> <span class="f">weeklyReport</span>(<span class="v">team</span>) {',
+      '  <span class="k">const</span> <span class="v">lines</span> = [',
+      '    <span class="s">`Hi </span><span class="k">${</span><span class="v">team</span><span class="k">}</span><span class="s"> team,`</span>,',
+      '    <span class="f">greeting</span>(),',
+      '    <span class="s">`Schedule: </span><span class="k">${</span><span class="v">STATUS</span>.<span class="v">schedule</span><span class="k">}</span><span class="s"> / Budget: </span><span class="k">${</span><span class="v">STATUS</span>.<span class="v">budget</span><span class="k">}</span><span class="s">`</span>,',
+      '    <span class="s">"Best regards, AAA Office"</span>,',
+      '  ];',
+      '  <span class="kc">return</span> <span class="v">lines</span>.<span class="f">join</span>(<span class="s">"\\n"</span>);',
+      '}',
+      '',
+      '<span class="kc">for</span> (<span class="k">const</span> <span class="v">team</span> <span class="kc">of</span> <span class="v">TEAMS</span>) {',
+      '  <span class="t">console</span>.<span class="f">log</span>(<span class="f">weeklyReport</span>(<span class="v">team</span>));',
+      '}',
+      '<span class="c">// TODO: 英語のあいさつは、あとで先輩に見てもらう</span>',
+    ].map(l => `<span class="ln">${l || " "}</span>`).join("") + `</div>`,
+    say: ["[師匠] コードは教えたよな。読めるよな。", "[師匠] ……読めるよな？"],
+  },
+  {
+    keys: ["AAAAAAAA.txt", "AAAAAAAA"],
+    html: AAA_HEAD("AAAAAAAA.txt") + `<div class="file-txt">2026/09/18（金）　しごと日記
+
+やった。ついに、やった。
+共有フォルダの、一番上を取った。
+
+最初は「A_議事録.txt」だった。
+次の日、誰かが「AA_メモ.txt」を置いた。
+負けじと「AAA_計画書.txt」にした。AAA計画だから、正当な名前だ。
+そしたら「AAAA.xlsx」が現れた。中身は空だった。悪意しかない。
+
+この二週間、昼休みのたびに、Aを一つずつ足してきた。
+上司には、整理整頓だと言ってある。
+
+そして今日。
+「AAAAAAAA.txt」。八つ。
+これより上に来るには、九つ打つしかない。
+九つ打つやつは、もう人間じゃない。
+
+フォルダを開くたびに、いちばん上に、俺がいる。
+いや、俺じゃない。Aだ。でも、俺のAだ。
+
+うれしい。うれしすぎて、ウレションしそうだ。
+帰りに、ちょっといいビールを買った。
+明日の朝も、いちばんに確認する。
+
+※ このファイルの中身は、たぶん誰も読まない。</div>`,
+    say: ["[師匠] ……おい。日記だぞ、これ。", "[師匠] これも1から読むのか？ ……正気か？"],
+  },
+];
+
 const filesDir = (secret) => [
   { name: "NGA-2026", desc: "次世代会計基盤プロジェクト", text: "要件定義書_v12.docx\n移行計画_最新_最終_本当に最終.xlsx\n議事録（42件）" },
   { name: "LOGI-AI", desc: "物流最適化AIプロジェクト", text: "配送ルート最適化_検証結果.pdf\n倉庫レイアウト案.pptx" },
@@ -2015,9 +2126,11 @@ help　　　　── 手札を確かめる
           title: "ファイルサーバー",
           body: FILES_BODY + `<p class="dim">＞ search で、フォルダを名前・持ち主（部署コード）で探せる。</p>`,
           // 名前のないフォルダ（??????）は、search で見つけるまで一覧に出ない（need: secretDir）
-          dir: filesDir({ desc: "※ 名前が登録されていない", text: "（暗号化されています）", need: "secretDir" }),
+          //   いちばん上には、AAA のファイル（open で開く。小ネタ）
+          dir: [...AAA_FILES, ...filesDir({ desc: "※ 名前が登録されていない", text: "（暗号化されています）", need: "secretDir" })],
           tools: [
-            { cmd: "open", usage: "open <フォルダ名>", desc: "フォルダを開ける", miss: "open: {arg} ── 鍵のかかったフォルダは、見つかりません。（ふつうのフォルダは cd で入れます）" },
+            { cmd: "open", usage: "open <ファイル名>", desc: "ファイルを開く（鍵のかかったフォルダも）", pages: AAA_PAGES, miss: "open: {arg} ── そのようなファイルはありません。（フォルダは cd で入れます）" },
+            { cmd: "cat", usage: "cat <ファイル名>", desc: "ファイルの中身を見る", pages: AAA_PAGES, miss: "cat: {arg} ── そのようなファイルはありません。" },
           ],
           search: {
             label: "ファイルサーバー",

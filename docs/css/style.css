@@ -3939,3 +3939,58 @@ body[data-zone="rpg"] #eviCount {
   55% { transform: translateX(10px); }
   70%, 100% { transform: translateX(0); }
 }
+
+/* ファイルの中身（任務2：ファイルサーバーの AAA のファイル）
+   txt … メモ帳のような白っぽい紙 ／ code … VS Code（Dark+）のような色分け。行番号つき */
+.file-head {
+  font-size: 11px;
+  color: var(--dim);
+  margin-bottom: 4px;
+}
+.file-txt {
+  white-space: pre-wrap;
+  background: #f4f1e8;
+  color: #2b2b2b;
+  border-radius: 3px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.75;
+  max-width: 560px;
+}
+.file-code {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 3px;
+  padding: 8px 0;
+  font-family: Consolas, "Cascadia Code", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 600px;
+  overflow-x: auto;
+  counter-reset: ln;
+}
+/* 長い行は折り返す（スマホで横にはみ出さないように）。折り返した行は、行番号の右にそろえる */
+.file-code .ln {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 0 12px 0 calc(2.6em + 12px);
+  text-indent: calc(-2.6em - 12px);
+}
+.file-code .ln::before {
+  counter-increment: ln;
+  content: counter(ln);
+  display: inline-block;
+  width: 2.6em;
+  margin-right: 12px;
+  text-align: right;
+  color: #6e7681;
+}
+.file-code .c { color: #6a9955; }   /* コメント */
+.file-code .k { color: #569cd6; }   /* const / function / return */
+.file-code .kc { color: #c586c0; }  /* for / of（制御） */
+.file-code .s { color: #ce9178; }   /* 文字列 */
+.file-code .n { color: #b5cea8; }   /* 数 */
+.file-code .f { color: #dcdcaa; }   /* 関数の名前 */
+.file-code .v { color: #9cdcfe; }   /* 変数・プロパティ */
+.file-code .t { color: #4ec9b0; }   /* String / console など */

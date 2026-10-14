@@ -183,6 +183,7 @@ const COMMANDS = {
     }
     const d = dirHere(node).find(d => NZ.norm(d.name) === a);
     if (!d) return print(`cd: ${esc(arg)}: そのようなフォルダはありません。`, "alert");
+    if (d.file) return print(`cd: ${esc(d.name)}: フォルダではありません（open ${esc(d.name)} で開けます）`, "alert");
     // フォルダの場所を見出しに、中身は左の線で囲んだ一覧に（空のときは黄色）
     const files = (d.text || "ファイルがありません。").split("\n").map(esc);
     const empty = !d.text || /ファイルがありません/.test(d.text);

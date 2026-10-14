@@ -52,8 +52,10 @@ function printMenu(force = false) {
   if (CH.compact) {
     if (!force) return true;
     const names = [
-      ...dirHere(node).map(
-        d => `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span>`,
+      ...dirHere(node).map(d =>
+        d.file
+          ? `<span class="n pick" data-fill="open ${esc(d.name)}">${esc(d.name)}</span>`
+          : `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span>`,
       ),
       ...state.links.map(
         l => `<span class="n pick" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span>`,
@@ -63,9 +65,12 @@ function printMenu(force = false) {
       print(`<div class="menu compact reveal">${names.join(`<span class="dim"> · </span>`)}</div>`);
     return names.length > 0;
   }
+  // フォルダは cd で入る。file: true のものはファイル（open で開く。名前のあとに / を付けない）
   for (const d of dirHere(node)) {
     rows.push(
-      `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`,
+      d.file
+        ? `<span class="n pick" data-fill="open ${esc(d.name)}">${esc(d.name)}</span><span>${esc(d.desc || "")}</span>`
+        : `<span class="n pick" data-fill="cd ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`,
     );
   }
   if (node.search) {
