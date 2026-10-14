@@ -569,7 +569,8 @@ const SFX = (() => {
     const c = ac();
     if (!c) return;
     const t = c.currentTime;
-    const T = TRACKS[track],
+    // 知らない曲名のときは、落ち着いた曲にする（古いファイルが残っていても止まらないように）
+    const T = TRACKS[track] || TRACKS.calm,
       STEP = 60 / T.bpm / 4; // 16分音符1つの長さ（曲ごとのテンポ）
     // ラジオのつまみを回したように、こもった音から開いていく
     const bus = c.createGain(),
