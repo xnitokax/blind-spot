@@ -2121,7 +2121,7 @@ help　　　　── 手札を確かめる
   <li><a data-go="nippo">nippo.teiwa.local　── 日報共有システム</a></li>
   <li><a data-go="hr">hr.teiwa.local　── 人事データベース</a></li>
   <li><a data-go="keiri">keiri.teiwa.local　── 財務会計システム</a></li>
-  <li><a data-go="jyoshi">jyoshi.teiwa.local　── 変更ログ</a></li>
+  <li><a data-go="jyoshi">jyosisu.teiwa.local　── 変更ログ</a></li>
   <li><a data-go="bms">bms.teiwa.local　── ビル管理システム</a></li>
   <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト</a></li>`),
 
@@ -2467,7 +2467,7 @@ help　　　　── 手札を確かめる
 
         // ── 変更ログ：伝票の最終更新（02:47）や伝票番号で探す → 消えかけた差分を復元する（兄の書き込み）──
         jyoshi: {
-          host: "jyoshi.teiwa.local/changelog",
+          host: "jyosisu.teiwa.local/changelog",
           zone: "jyoshi",
           breach: ["inject log reader", "grant read /var/log/changes", "hide own session"],
           title: "情報システム部　変更ログ",
@@ -2818,7 +2818,7 @@ B1   サーバー室 ／ 搬入口
   <li><a data-go="nippo">nippo.teiwa.local　── 日報共有システム</a></li>
   <li><a data-go="hr">hr.teiwa.local　── 人事データベース</a></li>
   <li><a data-go="keiri">keiri.teiwa.local　── 財務会計システム</a></li>
-  <li><a data-go="jyoshi">jyoshi.teiwa.local　── 変更ログ</a></li>
+  <li><a data-go="jyoshi">jyosisu.teiwa.local　── 変更ログ</a></li>
   <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト</a></li>`),
 
         // ── ファイルサーバー：ファイルがあふれ出す → AIで仕分け → 1つだけ開かないフォルダ → 攻防に負ける → 社長の写真 ──
@@ -3240,7 +3240,7 @@ B1   サーバー室 ／ 搬入口
         // ── 変更ログ：ログの雨 → 事件の夜のカメラ → 社内の監視カメラを乗っ取り、非常階段の「今」を見る
         //    → 02:47 の差分を、上書きされる前に復元。隠し：lights --floor all off（本社ビルの照明を全部落とす）──
         jyoshi: {
-          host: "jyoshi.teiwa.local/changelog",
+          host: "jyosisu.teiwa.local/changelog",
           zone: "jyoshi",
           breach: ["inject log reader", "grant read /var/log/changes", "hide own session"],
           title: "情報システム部　変更ログ",
