@@ -68,9 +68,11 @@ const SFX = (() => {
     if (ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
     return ctx;
   }
-  function env(g, t, vol, dur, attack = 0.004) {
+  // hold … 音量を保つ（秒）。0 なら、出てすぐ減っていく
+  function env(g, t, vol, dur, attack = 0.004, hold = 0) {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + attack);
+    if (hold > 0) g.gain.setValueAtTime(vol, t + Math.min(hold, dur - 0.02));
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   }
   function route(node, o) {
@@ -92,7 +94,7 @@ const SFX = (() => {
     osc.type = o.type || "sine";
     osc.frequency.setValueAtTime(freq, t);
     if (o.slide) osc.frequency.exponentialRampToValueAtTime(o.slide, t + dur);
-    env(g, t, o.vol ?? 0.1, dur, o.attack);
+    env(g, t, o.vol ?? 0.1, dur, o.attack, o.hold);
     let last = osc;
     if (o.filter) {
       const f = c.createBiquadFilter();
@@ -119,7 +121,7 @@ const SFX = (() => {
     f.Q.value = o.q ?? 1;
     if (o.sweep) f.frequency.exponentialRampToValueAtTime(o.sweep, t + dur);
     const g = c.createGain();
-    env(g, t, o.vol ?? 0.1, dur, o.attack);
+    env(g, t, o.vol ?? 0.1, dur, o.attack, o.hold);
     src.connect(f).connect(g);
     route(g, o);
     src.start(t, Math.random());
@@ -326,12 +328,14 @@ const SFX = (() => {
     // ── 監視の目（任務2：検索禁止の言葉）──
     // 砂嵐：テレビの「ザーッ」（広い帯域のノイズ）。dur … 秒
     snow: (dur = 0.5) => {
-      hiss(dur, { vol: 0.2, filter: "highpass", freq: 250, q: 0.3, attack: 0.01 });
-      hiss(dur, { vol: 0.07, filter: "lowpass", freq: 900, attack: 0.01 });
+      // 鳴り始めの角を少し丸め、最後まで同じ大きさで鳴らして、すっと切る
+      hiss(dur, { vol: 0.2, filter: "highpass", freq: 250, q: 0.3, attack: 0.03, hold: dur - 0.06 });
+      hiss(dur, { vol: 0.08, filter: "lowpass", freq: 900, attack: 0.03, hold: dur - 0.06 });
     },
     // ブルースクリーン：テレビの放送終了のような「ピー」（高い、まっすぐな音）。dur … 秒
     beep: (dur = 0.7) => {
-      tone(1000, dur, { vol: 0.06, attack: 0.004 });
+      // 最後まで同じ大きさで鳴り続ける（前は出てすぐ減っていって、埋もれていた）
+      tone(1000, dur, { vol: 0.13, attack: 0.01, hold: dur - 0.04 });
     },
     // 黒いノイズ（砂嵐の前）：電気が漏れるような「じじじじじ」が、だんだん大きくなる。dur … 秒
     //   iPhone のスピーカーでも聞こえるよう、低すぎる音は使わない
@@ -366,7 +370,11 @@ const SFX = (() => {
       lfo.frequency.setValueAtTime(11, t);
       lfo.frequency.linearRampToValueAtTime(19, t + dur);
       depth.gain.value = 0.5;
-      lfo.connect(depth).connect(gate.gain);
+      // 切り替わりの角を丸める（角が立つと「ピシッ」と鋭く聞こえる）
+      const round = c.createBiquadFilter();
+      round.type = "lowpass";
+      round.frequency.value = 90;
+      lfo.connect(round).connect(depth).connect(gate.gain);
       // だんだん大きく → 砂嵐に切り替わるところで、すっと消える
       const g = c.createGain();
       g.gain.setValueAtTime(0.0001, t);
@@ -404,16 +412,17 @@ const SFX = (() => {
       aDepth.gain.value = 0.4;
       lfo.connect(fDepth).connect(lp.frequency);
       lfo.connect(aDepth).connect(amp.gain);
+      // 不協和音：ラ・シ♭（半音でぶつかる）・ミ♭（増4度＝悪魔の音程）・ソ♯（長7度）。音程は動かさない
       const oscs = [
-        [110, "sawtooth"],
-        [113.5, "sawtooth"],
-        [164, "triangle"],
         [55, "sawtooth"],
+        [110, "sawtooth"],
+        [116.54, "sawtooth"],
+        [155.56, "triangle"],
+        [207.65, "triangle"],
       ].map(([f, type]) => {
         const o = c.createOscillator();
         o.type = type;
-        o.frequency.setValueAtTime(f, t);
-        o.frequency.exponentialRampToValueAtTime(f * 0.82, t + dur); // 少しずつ沈んでいく
+        o.frequency.value = f;
         o.connect(lp);
         return o;
       });

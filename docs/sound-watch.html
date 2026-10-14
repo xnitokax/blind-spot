@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>BLIND//SPOT 音の確認</title>
+    <!-- 任務2で、検索禁止の言葉を打ったときに鳴る音を、1つずつ・通しで聞くページ（テスト用） -->
+    <style>
+      :root {
+        --bg: #070a0a;
+        --fg: #d7e4e0;
+        --dim: #7d8f8a;
+        --line: #1f3b36;
+        --accent: #ff5a5a;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "BIZ UDGothic", "Hiragino Sans", system-ui, sans-serif;
+        display: flex;
+        justify-content: center;
+      }
+      main {
+        width: min(420px, 100%);
+        padding: 32px 16px;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 18px;
+        letter-spacing: 0.15em;
+        margin: 0 0 6px;
+      }
+      p {
+        color: var(--dim);
+        font-size: 13px;
+        line-height: 1.8;
+        margin: 0 0 18px;
+      }
+      button {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        width: 100%;
+        margin: 0 0 8px;
+        padding: 13px 14px;
+        background: none;
+        color: var(--fg);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font: inherit;
+        font-size: 15px;
+        text-align: left;
+        cursor: pointer;
+      }
+      button small {
+        color: var(--dim);
+        font-size: 12px;
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      #all {
+        margin-top: 18px;
+        border-color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>音の確認</h1>
+      <p>任務2で、検索が禁止されている言葉を打ったときの音です。上から、鳴る順に並んでいます。マナーモードだと鳴らないので、解除してから押してください。</p>
+      <div id="list"></div>
+      <button id="all">▶ 通しで聞く<small>ゲームと同じ順番・間隔</small></button>
+    </main>
+    <script src="js/sound.js"></script>
+    <script>
+      // [名前, 説明, 鳴らす, 通しのときの長さ（ミリ秒）]
+      const STEPS = [
+        ["① 検索中", "チチチ（文字を探す音）", () => tick6(), 200],
+        ["② 弾かれた", "低いブー", () => SFX.denied(), 0],
+        ["③ 黒いノイズ", "じじじじじ", () => SFX.jiji(1.0), 1000],
+        ["④ 砂嵐", "ザーッ", () => SFX.snow(0.56), 560],
+        ["⑤ ブルスク", "ピー", () => SFX.beep(0.8), 800],
+        ["⑥ 赤い目", "グワングワン（不協和音）", () => SFX.gwan(2.18), 2180],
+        ["⑦ 砂嵐で戻る", "ザーッ", () => SFX.snow(0.52), 1400],
+        ["⑧ 師匠がしゃべる", "無線の音", () => SFX.radio(), 600],
+      ];
+      // ゲームで音を切っていても、このページでは鳴らす
+      function ready() {
+        SFX.wake();
+        if (SFX.muted) SFX.toggle();
+      }
+      async function tick6() {
+        for (let i = 0; i < 6; i++) {
+          SFX.tick();
+          await new Promise(r => setTimeout(r, 32));
+        }
+      }
+      const list = document.getElementById("list");
+      const btns = STEPS.map(([name, desc, fn]) => {
+        const b = document.createElement("button");
+        b.innerHTML = `${name}<small>${desc}</small>`;
+        b.onclick = () => {
+          ready();
+          fn();
+          flash(b, 400);
+        };
+        list.appendChild(b);
+        return b;
+      });
+      function flash(b, ms) {
+        b.classList.add("on");
+        setTimeout(() => b.classList.remove("on"), ms);
+      }
+      let playing = false;
+      document.getElementById("all").onclick = async () => {
+        if (playing) return;
+        playing = true;
+        ready();
+        for (let i = 0; i < STEPS.length; i++) {
+          const [, , fn, ms] = STEPS[i];
+          fn();
+          flash(btns[i], Math.max(300, ms));
+          await new Promise(r => setTimeout(r, ms));
+        }
+        playing = false;
+      };
+    </script>
+  </body>
+</html>
