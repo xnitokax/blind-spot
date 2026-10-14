@@ -3917,27 +3917,37 @@ body[data-zone="rpg"] #eviCount {
 .fx-eye svg {
   width: min(72vw, 440px);
   filter: drop-shadow(0 0 22px rgba(255, 20, 20, 0.75));
-  animation: weOpen 1.5s ease-in-out both;
 }
-/* まぶたが開いて、じっと見て、まばたき */
-@keyframes weOpen {
-  0% { transform: scaleY(0.05); }
-  16% { transform: scaleY(1); }
-  74% { transform: scaleY(1); }
-  82% { transform: scaleY(0.06); }
-  90% { transform: scaleY(1); }
-  100% { transform: scaleY(1); }
+/* 瞳：まばたきはしない。はじめは左下を見ていて、ゆっくりこちらを向く */
+.fx-eye .we-ball {
+  transform: translate(-26px, 13px);
 }
-/* 瞳が、こちらを探すように少し動く */
-.fx-eye .we-iris,
-.fx-eye .we-pupil {
-  animation: weLook 1.5s ease-in-out both;
+.fx-eye.on .we-ball {
+  animation: weGaze 2.4s ease-in-out 0.5s forwards;
 }
-@keyframes weLook {
-  0%, 20% { transform: translateX(0); }
-  38% { transform: translateX(-14px); }
-  55% { transform: translateX(10px); }
-  70%, 100% { transform: translateX(0); }
+@keyframes weGaze {
+  0% { transform: translate(-26px, 13px); }
+  100% { transform: translate(0, 0); }
+}
+/* 画面全体に走るノイズ（ブルースクリーンや目の上にも）：走査線と砂嵐が、がたがた揺れる */
+.fx-noise {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(255, 0, 60, 0.12) 0 2px, transparent 2px 7px),
+    rgba(10, 10, 14, 0.35);
+  mix-blend-mode: screen;
+  animation: fxNoise 0.09s steps(2) infinite;
+}
+@keyframes fxNoise {
+  0% { transform: translate(0, 0); opacity: 0.9; }
+  25% { transform: translate(-6px, 3px); opacity: 0.5; }
+  50% { transform: translate(5px, -4px); opacity: 1; }
+  75% { transform: translate(-3px, 6px); opacity: 0.6; }
+  100% { transform: translate(2px, -2px); opacity: 0.85; }
 }
 
 /* ファイルの中身（任務2：ファイルサーバーの AAA のファイル）

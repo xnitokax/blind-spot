@@ -1569,28 +1569,38 @@ async function crackScreen() {
 }
 
 // 監視の目（任務2：検索禁止の言葉を打ったとき）
-//   一瞬ブルースクリーンが混じり（数回ちらつく）、そのあと赤い目が開いて、こちらを見て、閉じる
-//   strong … 最初の2回はしっかり。3回目からは短く
+//   初めて：ノイズが走る → ブルースクリーン → 赤い目（まばたきはしない。左下を見ている → ゆっくり正面を向く）→ ノイズが走って戻る
+//   2回目から：ノイズが走る → ブルースクリーン → ノイズが走って戻る（目は出ない）
 const WATCH_EYE = `<svg viewBox="0 0 200 100" aria-hidden="true">
   <defs><radialGradient id="weIris"><stop offset="0" stop-color="#ff6a4a"/><stop offset="0.65" stop-color="#b3000f"/><stop offset="1" stop-color="#3a0004"/></radialGradient></defs>
   <path d="M6 50 Q100 -12 194 50 Q100 112 6 50 Z" fill="#070000" stroke="#ff2a2a" stroke-width="2.5"/>
-  <circle class="we-iris" cx="100" cy="50" r="30" fill="url(#weIris)"/>
-  <ellipse class="we-pupil" cx="100" cy="50" rx="5" ry="23" fill="#000"/>
+  <g class="we-ball"><circle cx="100" cy="50" r="30" fill="url(#weIris)"/><ellipse cx="100" cy="50" rx="5" ry="23" fill="#000"/></g>
 </svg>`;
-async function fxWatched(strong = true) {
+// 画面全体に、一瞬ノイズを走らせる（ブルースクリーンや目の上にもかかるように、いちばん上にかぶせる）
+async function noiseBurst(ms = 300) {
+  tear(ms, 1.4);
+  SFX.glitch?.();
+  const nz = document.createElement("div");
+  nz.className = "fx-noise";
+  document.body.appendChild(nz);
+  await sleep(ms);
+  nz.remove();
+}
+async function fxWatched(withEye = true) {
   if (REDUCED) return;
+  await noiseBurst(320);
   const bs = document.createElement("div");
-  bs.className = "fx-bsod";
+  bs.className = "fx-bsod on";
   bs.innerHTML = `<div class="bs-face">:(</div><div>SESSION FLAGGED</div><div class="bs-small">この端末は、監視対象として記録されました。<br>0x000000ED　WATCHED_BY_UNKNOWN</div>`;
   document.body.appendChild(bs);
   SFX.static?.();
-  for (const ms of strong ? [70, 40, 130] : [60]) {
-    bs.classList.add("on");
-    await sleep(ms);
-    bs.classList.remove("on");
-    await sleep(55);
+  await sleep(withEye ? 700 : 520);
+  if (!withEye) {
+    await noiseBurst(260);
+    bs.remove();
+    return;
   }
-  bs.remove();
+  // 赤い目：左下を見ている → ゆっくり、こちらを向く（まばたきはしない）
   const eye = document.createElement("div");
   eye.className = "fx-eye";
   eye.innerHTML = WATCH_EYE;
@@ -1598,8 +1608,9 @@ async function fxWatched(strong = true) {
   SFX.clunk?.();
   await sleep(20);
   eye.classList.add("on");
-  await sleep(strong ? 1500 : 700);
-  eye.classList.remove("on");
-  await sleep(450);
+  await sleep(360);
+  bs.remove();
+  await sleep(2600);
+  await noiseBurst(340);
   eye.remove();
 }

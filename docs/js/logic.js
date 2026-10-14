@@ -565,8 +565,8 @@ async function bannedSearch(ban, q) {
     }
     SFX.denied?.();
     print(`[!] 「${esc(q)}」は、検索が禁止されているキーワードです`, "alert");
-    // 怖い演出：一瞬ブルースクリーンが混じり、赤い目がこちらを見る（最初の2回はしっかり、あとは短く）
-    await fxWatched(n <= 2);
+    // 怖い演出：ノイズ → ブルースクリーン（初めてのときだけ、赤い目がこちらを向く）→ ノイズ
+    await fxWatched(n === 1);
     print("[!] この検索は、監査ログに記録されました", "alert");
     addTrace(ban.trace ?? 15);
     await wait(BEAT.small);
