@@ -18,6 +18,8 @@ function countClues(ch) {
     // 道具の画面（tools の pages）で渡す手がかり（任務2：電力・入館ゲート）
     for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) set.add(p.clue);
   }
+  // 禁止ワードで検索したときの台本で渡す手がかり（任務2：「特別プロジェクト室」は検索が禁じられている）
+  for (const x of ch.banned?.first || []) if (x?.clue) set.add(x.clue);
   return set.size;
 }
 // ---------------- 目標（objectives） ----------------
@@ -309,6 +311,12 @@ async function search(arg) {
   if (!terms.length)
     return print("使い方：search &lt;言葉&gt;（スペースで区切ると条件を重ねられます）", "dim");
 
+  // 禁止ワード（任務の banned）：社内のシステムでは、その言葉で検索すること自体が禁じられている
+  //   打つたびに逆探知（TRACE）が上がる。外のサイト（outside）では効かない
+  const ban = CH.banned;
+  if (ban && !conf.outside && terms.some(t => ban.words.some(w => t.includes(fold(w).replace(/\s+/g, "")))))
+    return bannedSearch(ban, q);
+
   // need … その flag が立っているときだけ見つかる結果（任務2：権限を上げたあとにだけ見える、隠されたデータ）
   const hits = conf.entries.filter(
     e => (!e.need || state.flags[e.need]) && terms.every(t => searchText(e).includes(t)),
@@ -524,4 +532,33 @@ function recordEnding(id) {
     localStorage.setItem("uzu-endings", JSON.stringify(seen));
   } catch {}
   return seen;
+}
+
+// 禁止ワードで検索したとき：検索は弾かれ、監査に記録されて、逆探知（TRACE）が上がる
+//   ban … { words: [...], trace: 上がる量, first: [初めてのときの台本], again: [2回目の台本] }（3回目からは、警告と TRACE だけ）
+async function bannedSearch(ban, q) {
+  state.minutes += 1;
+  updateClock();
+  addLog(`QUERY "${q}" @${shortHost(here().host)} ── BLOCKED`);
+  const n = (state.banHits = (state.banHits || 0) + 1);
+  await busy(async () => {
+    const line = print("", "dim scan");
+    for (let f = 1; f <= 6; f++) {
+      line.textContent = `scanning [${"▮".repeat(f)}${"·".repeat(14 - f)}]`;
+      SFX.tick();
+      await wait(32);
+    }
+    SFX.denied?.();
+    print(`[!] 「${esc(q)}」は、検索が禁止されているキーワードです`, "alert");
+    print("[!] この検索は、監査ログに記録されました", "alert");
+    addTrace(ban.trace ?? 15);
+    await wait(BEAT.small);
+    if (state.over) return;
+    const script = n === 1 ? ban.first : n === 2 ? ban.again : null;
+    if (script?.length) {
+      await tapWait();
+      await play(script);
+    }
+  });
+  await checkObjectives();
 }

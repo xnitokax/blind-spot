@@ -194,6 +194,7 @@
           for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) clues.add(x.clue);
           for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) clues.add(p.clue);
         }
+        for (const x of ch.banned?.first || []) if (x?.clue) clues.add(x.clue);
         for (const o of ch.objectives || []) {
           for (const c of o.clues || [])
             if (!clues.has(c)) ng(`目標「${o.text}」の手がかり「${c}」が、どこにもありません`);
@@ -281,6 +282,7 @@
             for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) clueSet.add(x.clue);
             for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) clueSet.add(p.clue);
           }
+          for (const x of ch.banned?.first || []) if (x?.clue) clueSet.add(x.clue);
           ch.clueTotal = clueSet.size;
           log(`■ ${cid}（${ch.label}）　手がかり ${ch.clueTotal} 個`);
           for (const [id, node] of Object.entries(ch.nodes)) {
