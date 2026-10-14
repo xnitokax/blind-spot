@@ -5,3 +5,7 @@
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# 手元だけのメモ・比較ページ
+*_指示文.md
+tools/bgm-samples.html
