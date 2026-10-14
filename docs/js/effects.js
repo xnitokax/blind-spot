@@ -1569,38 +1569,61 @@ async function crackScreen() {
 }
 
 // 監視の目（任務2：検索禁止の言葉を打ったとき）
-//   初めて：ノイズが走る → ブルースクリーン → 赤い目（まばたきはしない。左下を見ている → ゆっくり正面を向く）→ ノイズが走って戻る
-//   2回目から：ノイズが走る → ブルースクリーン → ノイズが走って戻る（目は出ない）
+//   初めて：砂嵐（ザーッ）→ ブルースクリーン（ピー）→ 赤い目（まばたきはしない。左下を見ている → サッと正面を向く）→ 砂嵐で戻る
+//   2回目から：砂嵐 → ブルースクリーン → 砂嵐で戻る（目は出ない）
+// 目玉（虹彩と瞳）は、白目の輪郭の内側だけに見える（clipPath。左下を見ても、輪郭からはみ出ない）
 const WATCH_EYE = `<svg viewBox="0 0 200 100" aria-hidden="true">
-  <defs><radialGradient id="weIris"><stop offset="0" stop-color="#ff6a4a"/><stop offset="0.65" stop-color="#b3000f"/><stop offset="1" stop-color="#3a0004"/></radialGradient></defs>
-  <path d="M6 50 Q100 -12 194 50 Q100 112 6 50 Z" fill="#070000" stroke="#ff2a2a" stroke-width="2.5"/>
-  <g class="we-ball"><circle cx="100" cy="50" r="30" fill="url(#weIris)"/><ellipse cx="100" cy="50" rx="5" ry="23" fill="#000"/></g>
+  <defs>
+    <radialGradient id="weIris"><stop offset="0" stop-color="#ff6a4a"/><stop offset="0.65" stop-color="#b3000f"/><stop offset="1" stop-color="#3a0004"/></radialGradient>
+    <clipPath id="weClip"><path d="M6 50 Q100 -12 194 50 Q100 112 6 50 Z"/></clipPath>
+  </defs>
+  <path d="M6 50 Q100 -12 194 50 Q100 112 6 50 Z" fill="#070000"/>
+  <g clip-path="url(#weClip)"><g class="we-ball"><circle cx="100" cy="50" r="30" fill="url(#weIris)"/><ellipse cx="100" cy="50" rx="5" ry="23" fill="#000"/></g></g>
+  <path d="M6 50 Q100 -12 194 50 Q100 112 6 50 Z" fill="none" stroke="#ff2a2a" stroke-width="2.5"/>
 </svg>`;
-// 画面全体に、一瞬ノイズを走らせる（ブルースクリーンや目の上にもかかるように、いちばん上にかぶせる）
-async function noiseBurst(ms = 450) {
-  tear(ms, 1.8);
-  SFX.watchNoise?.();
-  const nz = document.createElement("div");
-  nz.className = "fx-noise";
-  document.body.appendChild(nz);
-  await sleep(ms);
-  nz.remove();
+// 砂嵐：テレビのような白黒のざらざらが、画面いっぱいに動く（音は「ザーッ」）。ブルースクリーンや目の上にもかぶさる
+async function noiseBurst(ms = 500) {
+  tear(ms, 1.2);
+  SFX.snow?.(ms / 1000);
+  const cv = document.createElement("canvas");
+  cv.className = "fx-snow";
+  const w = 220,
+    h = Math.max(120, Math.round((220 * innerHeight) / Math.max(1, innerWidth)));
+  cv.width = w;
+  cv.height = h;
+  document.body.appendChild(cv);
+  const c = cv.getContext("2d"),
+    img = c.createImageData(w, h),
+    d = img.data;
+  const end = performance.now() + ms;
+  while (performance.now() < end) {
+    for (let i = 0; i < d.length; i += 4) {
+      const v = (Math.random() * 255) | 0;
+      d[i] = d[i + 1] = d[i + 2] = v;
+      d[i + 3] = 255;
+    }
+    c.putImageData(img, 0, 0);
+    await sleep(40);
+  }
+  cv.remove();
 }
 async function fxWatched(withEye = true) {
   if (REDUCED) return;
-  await noiseBurst(withEye ? 480 : 360);
+  // 砂嵐（ザーッ）→ ブルースクリーン（ピー）
+  await noiseBurst(withEye ? 560 : 420);
   const bs = document.createElement("div");
   bs.className = "fx-bsod on";
   bs.innerHTML = `<div class="bs-face">:(</div><div>SESSION FLAGGED</div><div class="bs-small">この端末は、監視対象として記録されました。<br>0x000000ED　WATCHED_BY_UNKNOWN</div>`;
   document.body.appendChild(bs);
-  SFX.bsod?.();
-  await sleep(withEye ? 700 : 560);
+  const show = withEye ? 800 : 600;
+  SFX.beep?.(show / 1000);
+  await sleep(show);
   if (!withEye) {
-    await noiseBurst(320);
+    await noiseBurst(360);
     bs.remove();
     return;
   }
-  // 赤い目：左下を見ている（まばたきはしない）→ 1秒後に、サッとこちらを向く
+  // 赤い目：左下を見ている（まばたきはしない）→ 1秒後に、サッとこちらを向く → 砂嵐で戻る
   const eye = document.createElement("div");
   eye.className = "fx-eye";
   eye.innerHTML = WATCH_EYE;
@@ -1613,6 +1636,6 @@ async function fxWatched(withEye = true) {
   await sleep(640);
   SFX.gaze?.();
   await sleep(1300);
-  await noiseBurst(480);
+  await noiseBurst(520);
   eye.remove();
 }

@@ -324,16 +324,14 @@ const SFX = (() => {
       tone(78, 0.22, { vol: 0.1, slide: 60, at: 0.12 });
     },
     // ── 監視の目（任務2：検索禁止の言葉）──
-    // ノイズ：ざらついた砂嵐が、ぶつぶつと途切れる
-    watchNoise: () => {
-      hiss(0.42, { vol: 0.16, filter: "bandpass", freq: 2200, sweep: 500, q: 0.5 });
-      for (let i = 0; i < 5; i++)
-        tone(80 + Math.random() * 300, 0.04, { type: "square", filter: 1200, vol: 0.05, at: Math.random() * 0.35 });
+    // 砂嵐：テレビの「ザーッ」（広い帯域のノイズ）。dur … 秒
+    snow: (dur = 0.5) => {
+      hiss(dur, { vol: 0.2, filter: "highpass", freq: 250, q: 0.3, attack: 0.01 });
+      hiss(dur, { vol: 0.07, filter: "lowpass", freq: 900, attack: 0.01 });
     },
-    // ブルースクリーン：低く濁ったうなりと、短い警告音
-    bsod: () => {
-      tone(55, 0.7, { type: "sawtooth", filter: 260, vol: 0.14 });
-      tone(880, 0.1, { vol: 0.045, at: 0.05 });
+    // ブルースクリーン：テレビの放送終了のような「ピー」（高い、まっすぐな音）。dur … 秒
+    beep: (dur = 0.7) => {
+      tone(1000, dur, { vol: 0.06, attack: 0.004 });
     },
     // 赤い目が開く：腹に響く、低い「ドゥン」
     eyeOpen: () => {
