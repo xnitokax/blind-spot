@@ -17,6 +17,7 @@ function countClues(ch) {
     for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) set.add(x.clue);
     // 道具の画面（tools の pages）で渡す手がかり（任務2：電力・入館ゲート）
     for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) set.add(p.clue);
+    for (const t of node.tools || []) if (t.indexClue) set.add(t.indexClue);
   }
   // 禁止ワードで検索したときの台本で渡す手がかり（任務2：「特別プロジェクト室」は検索が禁じられている）
   for (const x of ch.banned?.first || []) if (x?.clue) set.add(x.clue);

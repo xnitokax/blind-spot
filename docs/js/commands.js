@@ -555,7 +555,7 @@ const pageKey = s =>
 async function toolPage(tool, arg) {
   const page = arg
     ? tool.pages.find(p => [].concat(p.keys).some(k => pageKey(k) === pageKey(arg)))
-    : tool.index && { html: tool.index, keys: [] };
+    : tool.index && { html: tool.index, keys: [], clue: tool.indexClue, say: tool.indexSay }; // 引数なし（一覧）にも、手がかりと師匠のひとことを付けられる
   if (!page) {
     if (!arg) return print(`使い方：${esc(tool.usage || tool.cmd)}`, "dim");
     return print(esc(fill(String(tool.miss || "{arg}: 見つかりません。").replaceAll("{arg}", arg))), "dim");

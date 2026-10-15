@@ -193,6 +193,7 @@
             for (const x of a.script || []) if (x?.clue) clues.add(x.clue);
           for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) clues.add(x.clue);
           for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) clues.add(p.clue);
+          for (const t of node.tools || []) if (t.indexClue) clues.add(t.indexClue);
         }
         for (const x of ch.banned?.first || []) if (x?.clue) clues.add(x.clue);
         for (const o of ch.objectives || []) {
@@ -281,6 +282,7 @@
             for (const a of Object.values(node.actions || {})) for (const x of a.script || []) if (x?.clue) clueSet.add(x.clue);
             for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) clueSet.add(x.clue);
             for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) clueSet.add(p.clue);
+            for (const t of node.tools || []) if (t.indexClue) clueSet.add(t.indexClue);
           }
           for (const x of ch.banned?.first || []) if (x?.clue) clueSet.add(x.clue);
           ch.clueTotal = clueSet.size;
