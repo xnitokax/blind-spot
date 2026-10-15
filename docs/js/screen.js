@@ -66,7 +66,9 @@ function updateNext() {
     chips = mode.options.map(o => chip(o.cmd, o.label ? `${o.cmd}　${o.label}` : o.cmd, "go"));
   } else if (state.current) {
     const node = here();
-    // 調べ終わったら、どこにいても一番左に return を出しておく
+    // 戻る（back）は、いつも一番左に（毎回右まで探しに行かなくていいように）
+    if (state.history.length || state.door) chips.push(chip("back"));
+    // 調べ終わったら、どこにいても back のすぐ右に return を出しておく
     if (state.saveReady) chips.push(chip("return", "return", "save"));
     // 師匠が言った「次の一手」：押すと入力欄に入る（実行は Enter か ⏎ ボタン）
     const g = guideCmd();
@@ -96,7 +98,6 @@ function updateNext() {
           l.oneway ? "ow" : "",
         ),
       );
-    if (state.history.length || state.door) chips.push(chip("back"));
   }
   box.innerHTML = chips.length ? `<span class="next-label">NEXT</span>${chips.join("")}` : "";
   box.scrollLeft = 0; // スマホ（横にスクロールする1行）で、先頭の光るボタンが見えるように

@@ -429,7 +429,7 @@ const fakeFile = () =>
   `${pickOne(["/share", "/projects", "/home/sales", "/home/hr", "/archive"])}/${pickOne(FILE_WORDS)}_${2019 + Math.floor(Math.random() * 8)}${String(1 + Math.floor(Math.random() * 12)).padStart(2, "0")}${pickOne(FILE_EXT)}`;
 // 流れていく伝票の1行（見た目だけ）
 const fakeLedger = () =>
-  `伝票 #${80000 + Math.floor(Math.random() * 19999)}  2026/${String(1 + Math.floor(Math.random() * 9)).padStart(2, "0")}/${String(1 + Math.floor(Math.random() * 28)).padStart(2, "0")}  ${pickOne(["営業本部", "総務部", "人事部", "経理部", "情報システム部", "広報部"])}  ${pickOne(["交通費", "消耗品費", "会議費", "外注費", "保守費", "広告費"])}  ¥${(Math.floor(Math.random() * 9e6) + 1000).toLocaleString().padStart(11)}`;
+  `伝票 #${80000 + Math.floor(Math.random() * 19999)}  2026/${String(1 + Math.floor(Math.random() * 9)).padStart(2, "0")}/${String(1 + Math.floor(Math.random() * 28)).padStart(2, "0")}  ${pickOne(["営業本部", "総務部", "人事部", "経理部", "IT統括部", "広報部"])}  ${pickOne(["交通費", "消耗品費", "会議費", "外注費", "保守費", "広告費"])}  ¥${(Math.floor(Math.random() * 9e6) + 1000).toLocaleString().padStart(11)}`;
 let lastBuilding = null; // { building } で描いたビル（{ lights: "on" } で明かりを戻す）
 let lastMapNodes = null;
 // 点描の世界地図に使う、ざっくりした大陸の形（[経度, 緯度] の多角形）
