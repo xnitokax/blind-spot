@@ -75,6 +75,9 @@
       <p>任務2で、検索が禁止されている言葉を打ったときの音です。上から、鳴る順に並んでいます。マナーモードだと鳴らないので、解除してから押してください。</p>
       <div id="list"></div>
       <button id="all">▶ 通しで聞く<small>ゲームと同じ順番・間隔</small></button>
+      <h1 style="margin-top: 36px">赤い目の音の聞き比べ</h1>
+      <p>ブルスクの「ピー」→ 赤い目の不協和音 → 砂嵐で戻る、までを流します。不協和音の鳴り方だけが違います。</p>
+      <div id="cmp"></div>
     </main>
     <script src="js/sound.js"></script>
     <script>
@@ -116,6 +119,34 @@
         b.classList.add("on");
         setTimeout(() => b.classList.remove("on"), ms);
       }
+      // 赤い目の音の聞き比べ：[名前, 説明, gwan に渡す鳴り方]
+      const EYES = [
+        ["今の", "目が出た瞬間に、全部の音が一度に鳴る", {}],
+        ["A　間をあけて、ふくらむ", "ピーが切れて一瞬の無音 → ゆっくり大きくなる", { delay: 0.4, swell: 1.2 }],
+        ["B　1音ずつ重なる", "音が1つずつ増えて、だんだん濁っていく", { stagger: 0.22, swell: 0.4 }],
+        ["C　開いて、うなりが速くなる", "こもった音から開いていき、ワンワンという揺れがだんだん速くなる", { swell: 0.8, open: true, drift: true }],
+        ["D　全部", "A・B・C を全部まぜる", { delay: 0.35, stagger: 0.18, swell: 1.0, open: true, drift: true }],
+      ];
+      const cmpBtns = EYES.map(([name, desc, o]) => {
+        const b = document.createElement("button");
+        b.innerHTML = `${name}<small>${desc}</small>`;
+        b.onclick = async () => {
+          if (playing) return;
+          playing = true;
+          ready();
+          cmpBtns.forEach(x => x.classList.toggle("on", x === b));
+          SFX.beep(0.8);
+          await new Promise(r => setTimeout(r, 800));
+          SFX.gwan(2.18, o);
+          await new Promise(r => setTimeout(r, 2180));
+          SFX.snow(0.52);
+          await new Promise(r => setTimeout(r, 1400));
+          b.classList.remove("on");
+          playing = false;
+        };
+        document.getElementById("cmp").appendChild(b);
+        return b;
+      });
       let playing = false;
       document.getElementById("all").onclick = async () => {
         if (playing) return;

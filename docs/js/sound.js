@@ -390,14 +390,20 @@ const SFX = (() => {
         n.stop(t + dur + 0.08);
       });
     },
-    // 赤い目：うねらない、まっすぐな不協和音が鳴り続け、砂嵐で戻ったあとも少し残る。dur … 秒（ここから消え始める）
+    // 赤い目：まっすぐな不協和音が鳴り続け、砂嵐で戻ったあとも少し残る。dur … 秒（ここから消え始める）
     //   iPhone のスピーカーは低い音がほとんど鳴らないので、ぶつかり合う音は、はっきり聞こえる中くらいの高さに置く
-    gwan: (dur = 2.2) => {
+    //   o（聞き比べ用。何も渡さなければ、今の鳴り方）：
+    //     delay … 鳴り始めるまでの無音（秒） ／ swell … 大きくなるまでの時間（秒）
+    //     stagger … 音を1つずつ、この間隔（秒）で重ねていく ／ open … こもった音から、だんだん開いていく
+    //     drift … 半音でぶつかる2音を、少しずつ離して、うなり（ワンワンという揺れ）をだんだん速くする（音程はほぼ変わらない）
+    gwan: (dur = 2.2, o = {}) => {
       if (muted) return;
       const c = ac();
       if (!c || !canPlay(c)) return;
-      const t = c.currentTime,
-        tail = 0.9;
+      const t0 = c.currentTime,
+        t = t0 + (o.delay || 0),
+        tail = 0.9,
+        end = t0 + dur;
       // 低い層：半音でぶつかる２音（こもらせて、土台にする）
       const lp = c.createBiquadFilter(),
         low = c.createGain();
@@ -408,34 +414,40 @@ const SFX = (() => {
       const soft = c.createBiquadFilter(),
         high = c.createGain();
       soft.type = "lowpass";
-      soft.frequency.value = 2600;
+      soft.frequency.setValueAtTime(o.open ? 500 : 2600, t);
+      if (o.open) soft.frequency.exponentialRampToValueAtTime(3200, end);
       high.gain.value = 0.45;
       const g = c.createGain();
       lp.connect(low).connect(g);
       soft.connect(high).connect(g);
-      const oscs = [
-        [110, "sawtooth", lp],
-        [116.54, "sawtooth", lp],
+      const notes = [
         [440, "triangle", soft],
-        [466.16, "triangle", soft],
+        [466.16, "triangle", soft, 1.012],
         [622.25, "triangle", soft],
+        [110, "sawtooth", lp],
+        [116.54, "sawtooth", lp, 1.01],
         [932.33, "sine", soft],
-      ].map(([f, type, to]) => {
-        const o = c.createOscillator();
-        o.type = type;
-        o.frequency.value = f;
-        o.connect(to);
-        return o;
+      ];
+      const oscs = notes.map(([f, type, to, drift], i) => {
+        const osc = c.createOscillator();
+        osc.type = type;
+        osc.frequency.setValueAtTime(f, t);
+        if (o.drift && drift) osc.frequency.linearRampToValueAtTime(f * drift, end);
+        // 1つずつ重ねるときは、音ごとに少し遅れて、そっと入る
+        const at = t + (o.stagger ? i * o.stagger : 0);
+        const v = c.createGain();
+        v.gain.setValueAtTime(0.0001, at);
+        v.gain.exponentialRampToValueAtTime(1, at + (o.stagger ? 0.25 : 0.01));
+        osc.connect(v).connect(to);
+        osc.start(at);
+        return osc;
       });
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.12, t + 0.06);
-      g.gain.setValueAtTime(0.12, t + dur);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur + tail);
+      g.gain.exponentialRampToValueAtTime(0.12, t + (o.swell || 0.06));
+      g.gain.setValueAtTime(0.12, end);
+      g.gain.exponentialRampToValueAtTime(0.0001, end + tail);
       route(g, { echo: 0.35 });
-      oscs.forEach(n => {
-        n.start(t);
-        n.stop(t + dur + tail + 0.05);
-      });
+      oscs.forEach(n => n.stop(end + tail + 0.05));
     },
     // 警報：こもったうねり
     siren(on) {
