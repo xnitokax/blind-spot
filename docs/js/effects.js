@@ -1688,8 +1688,8 @@ async function fxWatched(withEye = true) {
   eye.className = "fx-eye";
   eye.innerHTML = WATCH_EYE;
   document.body.appendChild(eye);
-  // 不協和音：こもった音から開いていき、うなりがだんだん速くなる（砂嵐で戻ったあとも、少し残る）
-  SFX.gwan?.(2.18, { swell: 0.8, open: true, drift: true });
+  // 不協和音：ごく小さい音から盛り上がり、こもった音が開いて、うなりがだんだん速くなる → 砂嵐に変わる瞬間（絶頂）で消える
+  SFX.gwan?.(2.18, { open: true, drift: true, peak: true });
   await sleep(20);
   eye.classList.add("on");
   await sleep(360);

@@ -396,6 +396,7 @@ const SFX = (() => {
     //     delay … 鳴り始めるまでの無音（秒） ／ swell … 大きくなるまでの時間（秒）
     //     stagger … 音を1つずつ、この間隔（秒）で重ねていく ／ open … こもった音から、だんだん開いていく
     //     drift … 半音でぶつかる2音を、少しずつ離して、うなり（ワンワンという揺れ）をだんだん速くする（音程はほぼ変わらない）
+    //     peak … ごく小さい音から、終わり（dur）に向けて盛り上がり続け、いちばん大きいところで、ぷつっと消える（余韻なし）
     gwan: (dur = 2.2, o = {}) => {
       if (muted) return;
       const c = ac();
@@ -442,6 +443,15 @@ const SFX = (() => {
         osc.start(at);
         return osc;
       });
+      if (o.peak) {
+        // 下から盛り上がって、絶頂で消える
+        g.gain.setValueAtTime(0.002, t);
+        g.gain.exponentialRampToValueAtTime(0.17, end);
+        g.gain.linearRampToValueAtTime(0.0001, end + 0.03);
+        route(g, { echo: 0.12 });
+        oscs.forEach(n => n.stop(end + 0.06));
+        return;
+      }
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(0.12, t + (o.swell || 0.06));
       g.gain.setValueAtTime(0.12, end);
