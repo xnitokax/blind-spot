@@ -2183,7 +2183,7 @@ help　　　　── 手札を確かめる
   <li><a data-go="nippo">nippo.teiwa.local　── 日報共有システム</a></li>
   <li><a data-go="hr">hr.teiwa.local　── 人事データベース</a></li>
   <li><a data-go="keiri">keiri.teiwa.local　── 財務会計システム</a></li>
-  <li><a data-go="jyoshi">it.teiwa.local　── IT統括部</a></li>
+  <li><a data-go="jyoshi">it.teiwa.local　── IT管理システム</a></li>
   <li><a data-go="bms">bms.teiwa.local　── ビル管理システム</a></li>
   <li><a data-go="seek" data-name="seek">seek.jp　── 外の検索サイト</a></li>`),
 
@@ -2549,11 +2549,11 @@ help　　　　── 手札を確かめる
           host: "it.teiwa.local/changelog",
           zone: "jyoshi",
           breach: ["inject log reader", "grant read /var/log/changes", "hide own session"],
-          title: "IT統括部　管理システム",
+          title: "IT管理システム",
           body: `
 <div class="doc">
-<p class="meta">IT統括部　管理システム</p>
-<p>社内システムの変更ログは、日付・時刻・システム名で検索できます。</p>
+<p class="meta">IT管理システム</p>
+<p>IT統括部が管理しています。<br>社内システムの変更ログは、日付・時刻・システム名で検索できます。</p>
 </div>`,
           // 事件と関係のない道具（ブラフ）：問い合わせ・貸与機器・更新プログラム・当番表
           tools: [
