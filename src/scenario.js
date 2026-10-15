@@ -319,7 +319,7 @@ const erased = (date, at) => ({
   html: `<span class="nosearch"><p class="meta">${date}　所属：（削除済み）　真壁 湊</p>`
     + `<p class="erased">████████████████████████<br>██████████████████</p>`
     + `<p class="erased-note">この日報は削除されました（${at}　削除者：admin）</p></span>`,
-  keys: "真壁湊 まかべみなと makabe minato",
+  keys: "真壁湊 まかべみなと makabe minato makabe.minato",
 });
 // 「真壁」で検索したときの、師匠のひとこと（任務1・2で共通）
 const MAKABE_NOTE = {
@@ -330,7 +330,7 @@ const MAKABE_NOTE = {
 // 任務2：「特別プロジェクト室」は、社内のシステムで検索すること自体が禁じられている（m2 の banned）
 // 任務2：場所と人の手がかり（ビル管理システムの電力・入館ゲート）
 const POWER_CLUE = "12階の、名前のない区画 12-E が、夜も電気を使っている";
-const GATE_CLUE = "12-E の扉を通れるのは、兄（m.makabe）と k.washio の2人だけ";
+const GATE_CLUE = "12-E の扉を通れるのは、兄（makabe.minato）と washio.kyosuke の2人だけ";
 const MAKABE_GATE_CLUE = "兄の社員証：毎晩のように、12階の 12-E に出入りしていた";
 const TRI_CLUE = "部署コードは、できた順に三角数（1から順に足していった数）";
 const BANNED_CLUE = "「特別プロジェクト室」は、社内で検索すること自体が禁じられている";
@@ -567,7 +567,7 @@ const hrEntries = (m, goal) => [
         "※ この社員の詳細を閲覧する権限がありません",
       ],
     }),
-    keys: "washio k.washio", // 入館ゲートの ID（k.washio）で探しても出る
+    keys: "washio washio.kyosuke k.washio", // 入館ゲートの ID（washio.kyosuke）で探しても出る
     // 任務2：「特別プロジェクト室」で出てくる、もう1人。経歴も部署コードも、伏せられている
     clue: m === 2 ? "室長・鷲尾恭介：経歴も部署コードも伏せられている" : m === "rush" && "室長の人事記録：「室長」以外は空欄",
     // 爽快版（rush）：保護された記録を、師匠が無理やりこじ開ける（それでも中身は空っぽ）
@@ -940,6 +940,47 @@ const voucher = ({ no, date, dept, item, amount, lines = [], warn = [] }) =>
   }</pre>`;
 // 変更ログ：1行目に日時とシステム名、2行目から中身（\n で何行にでも）
 const chlog = (at, sys, text) => `${at}  ${sys}\n  ${text.split("\n").join("\n  ")}`;
+
+// ─────────────────────────────────────────
+//  任務2：ビル管理の電力（2026/09 平均・kW）。時間帯は 0-6時・6-12時・12-18時・18-24時
+//    ふつうの階は、夜になると電気がほとんど落ちる。12F だけ、夜中も落ちない（12-E が、ずっと 18kW 使っている）
+//    B1 はサーバー室があるので、一日じゅう高い（当たり前）
+// ─────────────────────────────────────────
+const POWER_BANDS = ["0-6時", "6-12時", "12-18時", "18-24時"];
+const POWER = {
+  "12F": [19.6, 26.8, 29.4, 21.7],
+  "11F": [2.4, 31.2, 34.6, 9.8],
+  "10F": [2.1, 27.5, 29.8, 6.2],
+  "9F": [1.9, 25.1, 27.3, 5.4],
+  "8F": [3.1, 33.8, 36.0, 12.6],
+  "7F": [2.7, 29.4, 32.1, 10.3],
+  "6F": [1.8, 24.0, 25.6, 4.9],
+  "5F": [1.6, 22.7, 24.9, 4.1],
+  "4F": [2.2, 26.3, 27.0, 5.8],
+  "3F": [0.9, 18.2, 20.5, 2.3],
+  "2F": [1.4, 21.0, 30.2, 6.0],
+  "1F": [3.0, 15.6, 16.8, 5.2],
+  "B1": [26.4, 31.0, 32.3, 27.8],
+};
+const POWER_MAX = 36;
+// ビル全体：階 × 時間帯の表（電気を使っているほど、マスが明るい）
+const powerHeat = () => `<p class="fm-cap">本社ビル　時間帯ごとの電力<br>2026/09 の平均（kW）</p>
+<div class="pw-heat"><span></span>${POWER_BANDS.map(b => `<span class="pw-h">${b}</span>`).join("")}${Object.entries(POWER)
+  .map(([f, v]) => `<span class="pw-f">${f}</span>${v.map(x => `<span class="pw-c" style="--a:${(x / POWER_MAX).toFixed(2)}">${x.toFixed(1)}</span>`).join("")}`)
+  .join("")}</div>`;
+// 1つの階：時間帯ごとの棒グラフ（extra … 下に足す表）
+//   となりに点線で「ほかの階の平均」（12F と B1 をのぞく、ふつうの階）を並べる。12F だけ夜中に落ちないのが、ひと目で分かる
+const POWER_AVG = POWER_BANDS.map((_, i) => {
+  const v = Object.entries(POWER).filter(([f]) => f !== "12F" && f !== "B1").map(([, x]) => x[i]);
+  return v.reduce((a, b) => a + b, 0) / v.length;
+});
+const pwH = x => `${Math.round((x / POWER_MAX) * 100)}%`;
+const powerBars = (floor, extra = "") => `<p class="fm-cap">${floor}　時間帯ごとの電力<br>2026/09 の平均（kW）</p>
+<div class="pw-bars">${POWER[floor]
+  .map((x, i) => `<div class="pw-bar"><span class="pw-v">${x.toFixed(1)}</span><div class="pw-pair"><i style="height:${pwH(x)}"></i><b style="height:${pwH(POWER_AVG[i])}"></b></div><span class="pw-l">${POWER_BANDS[i]}</span></div>`)
+  .join("")}</div>
+<p class="pw-legend"><span class="pw-key"></span>${floor}　<span class="pw-key pw-key-avg"></span>ほかの階の平均</p>${extra}`;
+const powerKeys = f => (f === "B1" ? ["b1", "b1f", "地下", "地下1", "地下1階"] : [f.replace("F", ""), f.toLowerCase(), f.replace("F", "階")]);
 
 const filesDir = (secret) => [
   { name: "NGA-2026", desc: "次世代会計基盤プロジェクト", text: "要件定義書_v12.docx\n移行計画_最新_最終_本当に最終.xlsx\n議事録（42件）" },
@@ -2049,7 +2090,7 @@ help　　　　── 手札を確かめる
       // 謎の筋（2026-10-14 フロア図で作り直し）
       //   1. 場所：社内のどこで「特別プロジェクト室」と検索しても、弾かれて逆探知が上がる（検索禁止の言葉）
       //      → ビル管理システムのフロア図に、名前の書いていない区画 12-E。夜の電力も 12-E だけ 18kW
-      //   2. 人：入館ゲートで 12-E の扉を見ると、通れるのは兄（m.makabe）と k.washio だけ
+      //   2. 人：入館ゲートで 12-E の扉を見ると、通れるのは兄（makabe.minato）と washio.kyosuke だけ
       //      → 人事DB で鷲尾の記録（経歴も部署コードも伏せられている）
       //   3. 鷲尾の正体：部署コードを割り出す：日報の見出しや財務会計に、ほかの部署のコードが出ている。部署ができた年は、日報などに散らばっている
       //      できた順に並べると 1035, 1081, 1128 …… → 外の検索サイトで数字を調べると「三角数」
@@ -2523,7 +2564,7 @@ help　　　　── 手札を確かめる
               // 日付だけで検索すると、いちばん上に出る（師匠の「もっと絞れ」はここで言う）
               { html: `<pre class="log">${chlog("2026/09/12 00:10:00", "backup.daily", "定期バックアップ　完了")}</pre>`, say: ["[師匠] 一日分でこの量か。", "[師匠] もっと絞らないと、日が暮れるぞ。"] },
               { html: `<pre class="log">${chlog("2026/09/12 01:05:31", "gate.log", "入館ログのローテーション")}</pre>` },
-              { html: `<pre class="log">${chlog("2026/09/12 09:00:02", "ad.accounts", "アカウント停止　m.makabe")}</pre>`, keys: "真壁 湊 makabe" },
+              { html: `<pre class="log">${chlog("2026/09/12 09:00:02", "ad.accounts", "アカウント停止　makabe.minato")}</pre>`, keys: "真壁 湊 makabe" },
               {
                 html: `<pre class="log">${chlog("2026/09/11 23:59:58", "（非公開ホスト）", "プロセス追加　mm_zero（登録者不明）")}</pre>`,
                 clue: "謎のプロセス mm_zero（兄が死ぬ前日）",
@@ -2587,7 +2628,7 @@ help　　　　── 手札を確かめる
         // ── ビル管理システム：フロア図・電力・入館ゲート・監視カメラ
         //    map … フロア図。12階に、名前の書いていない区画 12-E がある
         //    power … 夜の電力。12階だけ高い → 区画ごとに見ると、12-E だけ夜中も 18kW（ここが特別プロジェクト室）
-        //    gate … 扉の記録。12-E を通れるのは、兄（m.makabe）と k.washio だけ。兄は 01:24 に 12-E を出て、01:26 に非常口B
+        //    gate … 扉の記録。12-E を通れるのは、兄（makabe.minato）と washio.kyosuke だけ。兄は 01:24 に 12-E を出て、01:26 に非常口B
         //    cam --rec → その後の30分の録画を抜き出して、--sort で並び替える → cam.a11 だけ抜けている
         //    → フロア図で cam.a11 は非常階段B → cam --live cam.a11 で、花が置いてある非常階段
         //    隠し：lights --floor all off（本社ビルの照明を全部落とす）──
@@ -2666,43 +2707,33 @@ help　　　　── 手札を確かめる
               cmd: "power",
               menu: true,   // 場所の一覧と NEXT 欄に出す
               usage: "power <階>",
-              desc: "夜の電力を見る（power だけで、ビル全体）",
-              index: `<pre class="log">本社ビル　夜間の電力
-（2026/09 平均・22時〜6時）
-12F   19.6 kW
-11F    2.4 kW
-10F    2.1 kW
- 9F    1.9 kW
- 8F    3.1 kW
- 7F    2.7 kW
- 6F    1.8 kW
- 5F    1.6 kW
- 4F    2.2 kW
- 3F    0.9 kW
- 2F    1.4 kW
- 1F    3.0 kW
- B1   26.4 kW　※ サーバー室</pre>`,
-              miss: "power {arg} ── 夜間の電力は、ふつう（2〜3 kW）。",
+              desc: "時間帯ごとの電力を見る（power だけで、ビル全体）",
+              index: powerHeat(),
+              miss: "power {arg} ── そのような階はありません。",
               pages: [
                 {
-                  keys: ["12"],
-                  html: `<pre class="log">12F　区画ごとの夜間の電力
-（2026/09 平均）
+                  keys: powerKeys("12F"),
+                  html: powerBars("12F", `<pre class="log">0-6時　区画ごとの電力
 12-A  社長室          0.6 kW
 12-B  秘書室          0.1 kW
 12-C  会議室A         0.1 kW
 12-D  経営企画部      0.4 kW
-12-E  ――――         18.4 kW</pre>`,
+12-E  ――――         18.4 kW</pre>`),
                   clue: POWER_CLUE,
-                  say: ["[師匠] ……12-E。名前のない区画だけ、夜中も 18kW 食ってやがる。", "[師匠] 機械でも回してなきゃ、こうはならない。……ここだな。"],
+                  say: ["[師匠] ほかの階は、夜になると電気がほとんど落ちる。12階だけ、夜中も落ちてない。", "[師匠] ……12-E。名前のない区画だけ、夜中も 18kW 食ってやがる。", "[師匠] 機械でも回してなきゃ、こうはならない。……ここだな。"],
                 },
                 {
-                  keys: ["b1", "地下1", "地下"],
-                  html: `<pre class="log">B1　区画ごとの夜間の電力（2026/09 平均）
+                  keys: powerKeys("B1"),
+                  html: powerBars("B1", `<pre class="log">0-6時　区画ごとの電力
 サーバー室     24.9 kW
 駐車場          1.2 kW
-搬入口          0.3 kW</pre>`,
+搬入口          0.3 kW</pre>`),
+                  say: ["[師匠] サーバー室だ。夜も動いてて当たり前だな。"],
                 },
+                // ほかの階：ふつうの形（昼に高く、夜はほとんど落ちる）
+                ...Object.keys(POWER)
+                  .filter(f => f !== "12F" && f !== "B1")
+                  .map(f => ({ keys: powerKeys(f), html: powerBars(f) })),
               ],
             },
             {
@@ -2722,8 +2753,8 @@ B1   サーバー室 ／ 搬入口
               pages: [
                 // 兄の社員証（任務1で ID を知っている）：毎晩のように 12-E に入っている → 何の部屋だ？（map 12 へ）
                 {
-                  keys: ["m.makabe", "makabe", "真壁", "真壁湊", "真壁 湊", "湊"],
-                  html: `<pre class="log">社員証 m.makabe　通過の記録（直近）
+                  keys: ["makabe.minato", "m.makabe", "makabe", "真壁", "真壁湊", "真壁 湊", "湊"],
+                  html: `<pre class="log">社員証 makabe.minato　通過の記録（直近）
 09/10 08:51  1F  正面玄関
 09/10 19:05  12F 12-E     入室
 09/10 23:12  12F 12-E     退室
@@ -2742,8 +2773,8 @@ B1   サーバー室 ／ 搬入口
                 },
                 // 鷲尾：来るのは夜だけ。出入りは通用口だけ
                 {
-                  keys: ["k.washio", "washio", "鷲尾", "鷲尾恭介", "鷲尾 恭介"],
-                  html: `<pre class="log">社員証 k.washio　通過の記録（直近）
+                  keys: ["washio.kyosuke", "k.washio", "washio", "鷲尾", "鷲尾恭介", "鷲尾 恭介"],
+                  html: `<pre class="log">社員証 washio.kyosuke　通過の記録（直近）
 09/22 20:18  1F  通用口
 09/22 20:30  12F 12-E     入室
 09/22 22:12  12F 12-E     退室
@@ -2765,25 +2796,25 @@ B1   サーバー室 ／ 搬入口
                 {
                   keys: ["12-E", "12E"],
                   html: `<pre class="log">扉 12-E（12F）　入退室の記録（直近）
-2026/09/25 21:58  k.washio   入室
-2026/09/25 23:41  k.washio   退室
-2026/09/22 20:30  k.washio   入室
-2026/09/22 22:12  k.washio   退室
-2026/09/12 00:41  m.makabe   入室
-2026/09/12 01:24  m.makabe   退室
-2026/09/11 19:02  m.makabe   入室
-2026/09/11 22:47  m.makabe   退室
+2026/09/25 21:58  washio.kyosuke 入室
+2026/09/25 23:41  washio.kyosuke 退室
+2026/09/22 20:30  washio.kyosuke 入室
+2026/09/22 22:12  washio.kyosuke 退室
+2026/09/12 00:41  makabe.minato  入室
+2026/09/12 01:24  makabe.minato  退室
+2026/09/11 19:02  makabe.minato  入室
+2026/09/11 22:47  makabe.minato  退室
 ※ この扉を通れる ID：2</pre>`,
                   clue: GATE_CLUE,
-                  say: ["[師匠] この扉を通れるのは、2人だけ。兄貴と……k.washio。", "[師匠] 兄貴は、あの夜 01:24 に、この部屋を出てる。"],
+                  say: ["[師匠] この扉を通れるのは、2人だけ。兄貴と……washio.kyosuke。", "[師匠] 兄貴は、あの夜 01:24 に、この部屋を出てる。"],
                 },
                 {
                   keys: ["非常口B", "非常口", "非常口b"],
                   html: `<pre class="log">扉 非常口B（12F → 非常階段B）
 通過の記録（2026/09/12）
-00:12  s.kimura   通過（警備の巡回）
-01:26  m.makabe   通過
-※ m.makabe：この日の最後の記録</pre>`,
+00:12  kimura.shota   通過（警備の巡回）
+01:26  makabe.minato  通過
+※ makabe.minato：この日の最後の記録</pre>`,
                   say: ["[師匠] 01:24 に部屋を出て、01:26 に非常口B。……兄貴の、最後の足取りだ。", "[師匠] この先は、非常階段だな。"],
                 },
               ],
@@ -3612,7 +3643,7 @@ B1   サーバー室 ／ 搬入口
           body: `
 <pre class="log">
 process   mm_zero
-owner     m.makabe
+owner     makabe.minato
 started   2026/09/11 23:59:58
 action    予測データの送信をすべて遮断（送信エラーを返す）
 </pre>
