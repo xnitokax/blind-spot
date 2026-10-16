@@ -983,6 +983,8 @@ const powerBars = (floor, extra = "") => `<p class="fm-cap">${floor}　時間帯
   .join("")}</div>
 <p class="pw-legend"><span class="pw-key"></span>${floor}　<span class="pw-key pw-key-avg"></span>ほかの階の平均</p>${extra}`;
 const powerKeys = f => (f === "B1" ? ["b1", "b1f", "地下", "地下1", "地下1階"] : [f.replace("F", ""), f.toLowerCase(), f.replace("F", "階")]);
+// 本社ビルにある階（1〜12階と、地下1階）。map などで、これ以外を打ったら「その階はありません」
+const FLOOR_KEYS = Object.keys(POWER).flatMap(powerKeys);
 
 const filesDir = (secret) => [
   { name: "NGA-2026", desc: "次世代会計基盤プロジェクト", text: "要件定義書_v12.docx\n移行計画_最新_最終_本当に最終.xlsx\n議事録（42件）" },
@@ -2763,6 +2765,8 @@ help　　　　── 手札を確かめる
  1F  ロビー・受付・警備室
  B1  サーバー室・駐車場・搬入口</pre>`,
               miss: "map {arg} ── 執務フロア。図面に、変わったところはない。",
+              args: FLOOR_KEYS,
+              badArg: "map {arg} ── その階はありません。",
               pages: [
                 {
                   keys: ["12"],
@@ -2794,7 +2798,7 @@ help　　　　── 手札を確かめる
 </div>`,
                 },
                 {
-                  keys: ["b1", "地下1", "地下"],
+                  keys: ["b1", "地下1", "地下", "地下1階"],
                   html: `<p class="fm-cap">B1　フロア図</p>
 <div class="fmap" style="grid-template-areas: 's s s p p p' 's s s p p p' 'v k k p p p'">
   <div class="fm-room" style="grid-area: s">サーバー室<span class="fm-cam">cam.a05</span></div>

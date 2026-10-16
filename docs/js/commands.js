@@ -558,6 +558,9 @@ async function toolPage(tool, arg) {
     : tool.index && { html: tool.index, keys: [], clue: tool.indexClue, say: tool.indexSay }; // 引数なし（一覧）にも、手がかりと師匠のひとことを付けられる
   if (!page) {
     if (!arg) return print(`使い方：${esc(tool.usage || tool.cmd)}`, "dim");
+    // args … 打てる引数の一覧（map の階など）。ないものを打ったら badArg（「その階はありません」）
+    if (tool.args && !tool.args.some(k => pageKey(k) === pageKey(arg)))
+      return print(esc(fill(String(tool.badArg || "{arg}: 見つかりません。").replaceAll("{arg}", arg))), "dim");
     return print(esc(fill(String(tool.miss || "{arg}: 見つかりません。").replaceAll("{arg}", arg))), "dim");
   }
   const key = `page:${state.current}:${tool.cmd}:${[].concat(page.keys)[0] ?? ""}`;
