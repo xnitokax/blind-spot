@@ -4005,6 +4005,61 @@ body[data-zone="rpg"] #eviCount {
   width: min(72vw, 440px);
   filter: drop-shadow(0 0 22px rgba(255, 20, 20, 0.75));
 }
+/* 目の出かた：浮かび上がる（暗がりから、ぼやけた目がゆっくりはっきりしてくる） */
+.fx-eye.emerge {
+  opacity: 1;
+  transition: none;
+  animation: eyeDark 0.6s ease-out both;
+}
+.fx-eye.emerge svg {
+  animation: eyeEmerge 2s cubic-bezier(0.35, 0, 0.2, 1) both;
+}
+@keyframes eyeDark {
+  from {
+    background-color: rgba(0, 0, 0, 1);
+  }
+}
+@keyframes eyeEmerge {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+    filter: blur(14px) brightness(0.15) drop-shadow(0 0 0 rgba(255, 20, 20, 0));
+  }
+  60% {
+    opacity: 0.85;
+    filter: blur(4px) brightness(0.6) drop-shadow(0 0 10px rgba(255, 20, 20, 0.45));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0) brightness(1) drop-shadow(0 0 22px rgba(255, 20, 20, 0.75));
+  }
+}
+/* 目の出かた：開く（細い赤い線 → 一度うっすら開きかけて → かっと見開く） */
+.fx-eye.open {
+  opacity: 1;
+  transition: none;
+}
+.fx-eye.open .we-lid {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: eyeOpen 1.3s cubic-bezier(0.6, 0, 0.2, 1) both;
+}
+@keyframes eyeOpen {
+  0%,
+  30% {
+    transform: scaleY(0.04);
+  }
+  48% {
+    transform: scaleY(0.3);
+  }
+  60% {
+    transform: scaleY(0.22);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
 /* 横線のノイズ（砂嵐の前）：いつもの画面の上を、細い黒い線や薄いざらつきが、ばらばらに走る */
 .fx-lines {
   position: fixed;

@@ -1577,10 +1577,15 @@ const WATCH_EYE = `<svg viewBox="0 0 200 100" aria-hidden="true">
     <radialGradient id="weIris"><stop offset="0" stop-color="#ff6a4a"/><stop offset="0.65" stop-color="#b3000f"/><stop offset="1" stop-color="#3a0004"/></radialGradient>
     <clipPath id="weClip"><path d="M6 50 Q100 -12 194 50 Q100 112 6 50 Z"/></clipPath>
   </defs>
+  <g class="we-lid">
   <path d="M6 50 Q100 -12 194 50 Q100 112 6 50 Z" fill="#070000"/>
   <g clip-path="url(#weClip)"><g class="we-ball"><circle cx="100" cy="50" r="30" fill="url(#weIris)"/><ellipse cx="100" cy="50" rx="5" ry="23" fill="#000"/></g></g>
   <path d="M6 50 Q100 -12 194 50 Q100 112 6 50 Z" fill="none" stroke="#ff2a2a" stroke-width="2.5"/>
+  </g>
 </svg>`;
+// 目の出かた：on … ふっと出る ／ emerge … 暗がりから、ぼやけた目がゆっくり浮かび上がる（不協和音の盛り上がりと一緒に）
+//            open … 細い赤い線（閉じた目）から、一度うっすら開きかけて、かっと見開く
+let EYE_STYLE = "on";
 // 砂嵐：テレビのような白黒のざらざらが、画面いっぱいに動く（音は「ザーッ」）。ブルースクリーンや目の上にもかぶさる
 async function noiseBurst(ms = 500) {
   tear(ms, 1.2);
@@ -1665,7 +1670,7 @@ async function lineNoise(ms = 900) {
   }
   return cv; // 呼んだ側で、砂嵐のあとに消す
 }
-async function fxWatched(withEye = true) {
+async function fxWatched(withEye = true, eyeStyle = EYE_STYLE) {
   if (REDUCED) return;
   // 横線のノイズ（じじじじ）→ 砂嵐（ザーッ）→ ブルースクリーン（ピー）
   const lines = await lineNoise(withEye ? 1000 : 700);
@@ -1691,10 +1696,16 @@ async function fxWatched(withEye = true) {
   // 不協和音：ごく小さい音から盛り上がり、こもった音が開いて、うなりがだんだん速くなる → 砂嵐に変わる瞬間（絶頂）で消える
   SFX.gwan?.(2.18, { open: true, drift: true, peak: true });
   await sleep(20);
-  eye.classList.add("on");
-  await sleep(360);
-  bs.remove();
-  await sleep(1800);
+  eye.classList.add(eyeStyle);
+  if (eyeStyle === "on") {
+    await sleep(360);
+    bs.remove();
+    await sleep(1800);
+  } else {
+    // 浮かび上がる・開く：ブルースクリーンはすぐ消して、暗がりから目が出てくる
+    bs.remove();
+    await sleep(2160);
+  }
   await noiseBurst(520);
   eye.remove();
 }
