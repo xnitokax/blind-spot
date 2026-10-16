@@ -268,8 +268,8 @@ async function connect(id, opt = {}) {
     // 裏で動いている処理（師匠の権限昇格など）が、この行き先で止まるなら、先に止める（「なるほどな」）
     if (state.job && state.job.stopAt === id) await stopJob();
     const line = print(`Connecting to ${esc(node.host)} `, "dim");
-    for (let i = 0; i < 6; i++) {
-      await wait(20);
+    for (let i = 0; i < 8; i++) {
+      await wait(35);
       line.innerHTML += "▓";
       SFX.tick();
       scrollDown();

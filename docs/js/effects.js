@@ -379,21 +379,21 @@ async function breach(node) {
       crumble(per);
       SFX.tick();
       scrollDown();
-      await wait(16);
+      await wait(26);
     }
     gauge.innerHTML = `[▮▮▮▮▮▮▮▮▮▮]<span class="ok">OK</span>`;
     row.classList.add("done");
     SFX.hop(0);
     tear(110, 0.3);
     scrollDown();
-    await wait(45);
+    await wait(80);
   }
   // 残りの壁が、一気に砕け散る
   SFX.crack();
   tear(520, 1.1);
   for (let i = 0; i < 4; i++) {
     crumble(cols * rows);
-    await wait(30);
+    await wait(40);
   }
   wallEl.remove(); // 崩れきった壁は消して、はんこだけ残す
   panel.querySelector(".bp-live").remove();
@@ -401,7 +401,7 @@ async function breach(node) {
   SFX.granted();
   pulse($("term"), "flash-ok", 600);
   scrollDown();
-  await wait(380);
+  await wait(520);
 }
 
 // ---------------- 任務2の見せ場の演出（台本の1ステップ） ----------------

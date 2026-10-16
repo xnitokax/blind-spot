@@ -332,7 +332,7 @@ async function search(arg) {
   await busy(async () => {
     // 検索中の演出：件数が回っていく
     const total = conf.records ?? 10000,
-      frames = 10;
+      frames = 12;
     const line = print("", "dim scan");
     // stream：ログが高速で流れていく（変更ログなど。ハッキングしている手ざわり）
     const flow = conf.stream ? print("", "dim scan flow") : null;
@@ -340,7 +340,7 @@ async function search(arg) {
       line.textContent = `scanning [${"▮".repeat(f)}${"·".repeat(frames - f)}] ${Math.round((total * f) / frames).toLocaleString()} records`;
       if (flow) flow.textContent = [fakeLogLine(), fakeLogLine(), fakeLogLine()].join("\n");
       SFX.tick();
-      await wait(22);
+      await wait(28);
     }
     flow?.remove();
     await showResults(conf, q, terms, hits, shown, limit);

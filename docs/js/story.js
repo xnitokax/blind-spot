@@ -40,22 +40,22 @@ async function startChapter(ch) {
   // 師匠が回線をつなぐ（移動の演出）
   await busy(async () => {
     await typeLine("[師匠] 回線をつなぐ。しっかり掴まってろ。");
-    await wait(250);
+    await wait(400);
     const route = CH.route || ["uzu://safehouse", "tor-entry.anon", "tor-exit.anon"];
     for (const [i, hop] of route.entries()) {
       // 中継点：中身のない演出なので、テンポよく（遅くしない）
       const l = print(`  ${i === route.length - 1 ? "└" : "├"}─ ${esc(hop)} `, "dim");
       for (let k = 0; k < 6; k++) {
-        await wait(22);
+        await wait(28);
         l.innerHTML += "▓";
       }
       l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
       SFX.hop(i);
-      await wait(75);
+      await wait(95);
     }
     SFX.warp();
     pulse($("wrap"), "warp", 800);
-    await wait(350);
+    await wait(500);
     print(`[+] 接続完了：${esc(route.at(-1))}`, "sys");
     addLog(`LINE OPEN  ${CH.label}`);
 
@@ -70,8 +70,9 @@ async function startChapter(ch) {
       <div class="m-meta">${esc(CH.date)} ${esc(CH.clock || "")}</div>
     </div>`);
     await decode(card, 700);
-    // カードを読む時間を取ってから、師匠が話し出す
-    await wait(1300);
+    // カードを読む時間を取ってから、師匠が話し出す（タップの任務では、読み終えてタップするまで待つ）
+    if (tapMode()) await tapWait();
+    else await wait(1300);
   });
   // 導入の台本（{ music: true } で師匠が音楽を流し始める）
   await busy(async () => {
