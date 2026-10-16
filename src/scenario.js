@@ -514,8 +514,9 @@ const NIPPO_NODE = {
 const HR_LABEL_W = 14;
 const hrWidth = s => [...s].reduce((n, c) => n + (c.charCodeAt(0) > 0xff ? 2 : 1), 0);
 //   photo … 顔写真の画像（社員証の写真）。あれば、名前の右に出す
+// 名前にひらがなが入っている人（真壁 みなと など）は、ふりがなを出さない（検索では、ふりがなでも見つかる）
 const hrRecord = ({ no, name, kana, age, rows, photo }) => `<div class="hr-head"><div><p class="meta">社員番号 ${no}</p>
-<p><b>${name}</b>（${kana}）${age ? `　${age}歳` : ""}</p></div>${photo ? `<img class="hr-photo" src="${photo}" alt="">` : ""}</div>
+<p><b>${name}</b>${/[ぁ-ゖ]/.test(name) ? `<span hidden>（${kana}）</span>` : `（${kana}）`}${age ? `　${age}歳` : ""}</p></div>${photo ? `<img class="hr-photo" src="${photo}" alt="">` : ""}</div>
 <pre class="log">
 ${rows.map(r => {
   if (typeof r === "string") return r;   // 空行や「※ …」の注記は、そのまま
