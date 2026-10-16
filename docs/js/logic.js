@@ -50,8 +50,9 @@ function objDone(o) {
 function updateClueCount() {
   const o = nowObj();
   const total = CH ? countClues(CH) : 0;
+  // noEvidence（任務2）：手がかりの数は出さない（目標を進めるためには、裏で数えている）
   $("eviCount").textContent =
-    CH?.objectives?.length && !state.objShown
+    CH?.noEvidence || (CH?.objectives?.length && !state.objShown)
       ? ""
       : o?.clues?.length
         ? `${objCount(o)}/${o.clues.length}`
@@ -68,7 +69,7 @@ function renderObjectives(fresh) {
   const box = $("evi");
   // 見つけた手がかりだけを並べる（まだの分を「？？？」で先に見せることはしない）
   const clueItems = o =>
-    (o.clues || [])
+    (CH?.noEvidence ? [] : o.clues || [])
       .filter(c => state.clues.includes(c))
       .map(c => li(`o-clue jump${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`, c))
       .join("");
@@ -232,7 +233,8 @@ async function addClue(label, opt = {}) {
   state.clues.push(label);
   updateClueCount();
   renderObjectives(label);
-  if (opt.quiet) return;
+  // noEvidence（任務2）：EVIDENCE のカードは出さない（手がかりは裏で記録して、目標だけ進める）
+  if (opt.quiet || CH?.noEvidence) return;
   // カードの数字は「その目標の手がかり n / N」（目標のない手がかりは任務全体の数）
   const o = objOf(label),
     total = countClues(CH);
@@ -330,7 +332,7 @@ async function search(arg) {
   await busy(async () => {
     // 検索中の演出：件数が回っていく
     const total = conf.records ?? 10000,
-      frames = 14;
+      frames = 10;
     const line = print("", "dim scan");
     // stream：ログが高速で流れていく（変更ログなど。ハッキングしている手ざわり）
     const flow = conf.stream ? print("", "dim scan flow") : null;
@@ -338,7 +340,7 @@ async function search(arg) {
       line.textContent = `scanning [${"▮".repeat(f)}${"·".repeat(frames - f)}] ${Math.round((total * f) / frames).toLocaleString()} records`;
       if (flow) flow.textContent = [fakeLogLine(), fakeLogLine(), fakeLogLine()].join("\n");
       SFX.tick();
-      await wait(32);
+      await wait(22);
     }
     flow?.remove();
     await showResults(conf, q, terms, hits, shown, limit);
@@ -440,7 +442,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   // goal.quietClue … 結果をじっくり読ませたいので、カードは出さずに手がかりだけ回収する
   const quiet = shown.some(e => e.goal?.quietClue);
   if (clues.length) {
-    if (!quiet) await wait(700);
+    if (!quiet && !CH.noEvidence) await wait(700);
     for (const c of clues) await addClue(c, { quiet });
   }
 

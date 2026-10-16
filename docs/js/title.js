@@ -181,22 +181,22 @@ async function fanPage() {
 async function fakeRoute(dest, opt = {}) {
   const hops = opt.hops || ["uzu://safehouse", "tor-entry.anon", dest];
   const line = print("", "dim");
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 6; i++) {
     line.textContent = `回線コードを照合中... ${randHex(6)}`;
     SFX.tick();
-    await wait(60);
+    await wait(35);
   }
   line.textContent = "回線コードを照合中... done";
   for (const [i, hop] of hops.entries()) {
     const last = i === hops.length - 1;
     const l = print(`  ${last ? "└" : "├"}─ ${esc(hop)} `, "dim");
-    for (let k = 0; k < 6; k++) {
-      await wait(32);
+    for (let k = 0; k < 4; k++) {
+      await wait(14);
       l.innerHTML += "▓";
     }
     l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
     SFX.hop(i);
-    await wait(110);
+    await wait(40);
   }
   if (opt.loop) {
     // 出発点に戻ってきた：エラーとして接続を止める
@@ -209,7 +209,7 @@ async function fakeRoute(dest, opt = {}) {
   } else {
     print(`[+] 接続完了：${esc(dest)}`, "sys");
   }
-  await wait(900);
+  await wait(450);
 }
 
 // 小ネタ：connect 師匠 と打つと、ふつうに「回線コードが違います」と出たあと、師匠が過去を少しだけ語る

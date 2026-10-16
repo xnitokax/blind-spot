@@ -40,21 +40,22 @@ async function startChapter(ch) {
   // 師匠が回線をつなぐ（移動の演出）
   await busy(async () => {
     await typeLine("[師匠] 回線をつなぐ。しっかり掴まってろ。");
-    await wait(500);
+    await wait(250);
     const route = CH.route || ["uzu://safehouse", "tor-entry.anon", "tor-exit.anon"];
     for (const [i, hop] of route.entries()) {
+      // 中継点：中身のない演出なので、テンポよく（遅くしない）
       const l = print(`  ${i === route.length - 1 ? "└" : "├"}─ ${esc(hop)} `, "dim");
-      for (let k = 0; k < 6; k++) {
-        await wait(32);
+      for (let k = 0; k < 4; k++) {
+        await wait(14);
         l.innerHTML += "▓";
       }
       l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
       SFX.hop(i);
-      await wait(110);
+      await wait(40);
     }
     SFX.warp();
     pulse($("wrap"), "warp", 800);
-    await wait(600);
+    await wait(350);
     print(`[+] 接続完了：${esc(route.at(-1))}`, "sys");
     addLog(`LINE OPEN  ${CH.label}`);
 
