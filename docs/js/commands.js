@@ -123,8 +123,8 @@ const COMMANDS = {
     // フォルダ（ファイルサーバーなど）も ssh で開く。移動はすべて ssh、戻るのはすべて back（cd はなくした）
     if (!link && here()?.dir) {
       const a = NZ.norm(arg);
-      // ファイル（file: true）は ssh では開かない（ほかの間違った行き先と同じ扱い。open で開く）
-      if (dirHere().some(d => !d.file && (NZ.norm(d.name) === a || (d.alias || []).some(x => NZ.norm(x) === a))))
+      // ファイル（file: true）は ssh では開けない。打ったら「ファイルは open で開く」と教える（cd の処理の中で）
+      if (dirHere().some(d => (NZ.norm(d.name) === a || (d.alias || []).some(x => NZ.norm(x) === a))))
         return COMMANDS.cd(arg);
     }
     // 来た道（ひとつ前の場所）の名前を打ったときは、back と同じように戻る（一覧には出していない）
@@ -188,7 +188,8 @@ const COMMANDS = {
       return connect(byAlias.go);
     }
     const d = dirHere(node).find(d => NZ.norm(d.name) === a);
-    if (!d || d.file) return print(`ssh: 接続先が見つかりません: ${esc(arg)}`, "alert");
+    if (!d) return print(`ssh: 接続先が見つかりません: ${esc(arg)}`, "alert");
+    if (d.file) return print(`ssh: ${esc(d.name)} はファイルです。ファイルは open ${esc(d.name)} で開きます。`, "alert");
     // フォルダの場所を見出しに、中身は左の線で囲んだ一覧に（空のときは黄色）
     const files = (d.text || "ファイルがありません。").split("\n").map(esc);
     const empty = !d.text || /ファイルがありません/.test(d.text);
