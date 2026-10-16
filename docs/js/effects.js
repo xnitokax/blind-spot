@@ -1585,7 +1585,7 @@ const WATCH_EYE = `<svg viewBox="0 0 200 100" aria-hidden="true">
 </svg>`;
 // 目の出かた：on … ふっと出る ／ emerge … 暗がりから、ぼやけた目がゆっくり浮かび上がる（不協和音の盛り上がりと一緒に）
 //            open … 細い赤い線（閉じた目）から、一度うっすら開きかけて、かっと見開く
-let EYE_STYLE = "on";
+let EYE_STYLE = "emerge"; // 2026-10-16：浮かび上がる形に決定
 // 砂嵐：テレビのような白黒のざらざらが、画面いっぱいに動く（音は「ザーッ」）。ブルースクリーンや目の上にもかぶさる
 async function noiseBurst(ms = 500) {
   tear(ms, 1.2);
