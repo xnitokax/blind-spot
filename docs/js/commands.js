@@ -89,7 +89,6 @@ const COMMANDS = {
       ["ssh <名前>", "接続先へ移動する（例：ssh portal）"],
       ["back", "ひとつ前の場所へ戻る"],
       ["search <言葉>", "検索できる場所で検索する（スペース区切りで条件を重ねる）"],
-      ["cd <フォルダ名>", "ファイルサーバーでフォルダを移動する"],
       ["ls", "今いる場所の接続先をもう一度表示"],
       // ゲームの世界（rpg）では、ものを拾える
       ...(document.body.dataset.zone === "rpg" ? [["pick <もの>", "落ちているものを拾う"]] : []),
@@ -121,6 +120,12 @@ const COMMANDS = {
       return print(`ssh: いまは ${esc(shortHost(d.host))} の扉の前です。`, "alert");
     }
     const link = state.links.find(l => l.name.toLowerCase() === arg.toLowerCase());
+    // フォルダ（ファイルサーバーなど）も ssh で開く。移動はすべて ssh、戻るのはすべて back（cd はなくした）
+    if (!link && here()?.dir) {
+      const a = NZ.norm(arg);
+      if (dirHere().some(d => NZ.norm(d.name) === a || (d.alias || []).some(x => NZ.norm(x) === a)))
+        return COMMANDS.cd(arg);
+    }
     // 来た道（ひとつ前の場所）の名前を打ったときは、back と同じように戻る（一覧には出していない）
     const prev = state.history.at(-1);
     const backLink =
@@ -171,19 +176,19 @@ const COMMANDS = {
   async cd(arg) {
     const node = here();
     if (!node.dir) return COMMANDS.ssh(arg);
-    if (!arg) return print("使い方：cd &lt;フォルダ名&gt;", "dim");
+    if (!arg) return print("使い方：ssh &lt;名前&gt;", "dim");
     const a = NZ.norm(arg);
     const byAlias = dirHere(node).find(d => d.go && (d.alias || []).some(x => NZ.norm(x) === a));
     if (byAlias) {
-      addLog(`cd ${arg}`);
+      addLog(`ssh ${arg}`);
       SFX.granted();
       print(panelHtml("found", "FOUND", `${esc(node.host)}/${esc(arg.toUpperCase())}`));
       await wait(1500);
       return connect(byAlias.go);
     }
     const d = dirHere(node).find(d => NZ.norm(d.name) === a);
-    if (!d) return print(`cd: ${esc(arg)}: そのようなフォルダはありません。`, "alert");
-    if (d.file) return print(`cd: ${esc(d.name)}: フォルダではありません（open ${esc(d.name)} で開けます）`, "alert");
+    if (!d) return print(`ssh: ${esc(arg)}: そのような場所はありません。`, "alert");
+    if (d.file) return print(`ssh: ${esc(d.name)}: ファイルです。open ${esc(d.name)} で開けます。`, "alert");
     // フォルダの場所を見出しに、中身は左の線で囲んだ一覧に（空のときは黄色）
     const files = (d.text || "ファイルがありません。").split("\n").map(esc);
     const empty = !d.text || /ファイルがありません/.test(d.text);
@@ -391,7 +396,7 @@ async function run(raw) {
   // 使い終わったボタンは、すぐに NEXT 欄から消す（結果に「次の一手」がないと、古いボタンが残ってしまうので）
   if (state.guide !== g) updateNext();
   // actions：その場所でだけ使える特別なコマンド（任務2の見せ場。押すと、たっぷり時間をかけた演出が流れる）
-  //   alias … 同じ演出になる、別の打ち方（「cd ??????」でも「open ??????」でも開く）
+  //   alias … 同じ演出になる、別の打ち方（「ssh ??????」でも「open ??????」でも開く）
   //   別の打ち方で、もう済んだ演出に当たったときは、ふつうのコマンドとして動かす（cd ならフォルダに入る）
   const acts = here()?.actions;
   const same = (a, b) => cmdKey(a) === cmdKey(b);
@@ -467,15 +472,14 @@ async function runAction(key, a) {
   await checkObjectives();
 }
 
-// Tab 補完：1語目はコマンド、ssh の後は接続先、cd の後はフォルダ
+// Tab 補完：1語目はコマンド、ssh の後は接続先とフォルダ
 function complete() {
   const v = cmd.value;
   const node = here();
   const m = v.match(/^\s*(\S+)\s+(\S*)$/);
   let pool, prefix, head;
-  if (m && /^ssh$/i.test(m[1])) pool = state.links.map(l => l.name);
-  else if (m && /^cd$/i.test(m[1]))
-    pool = node.dir ? dirHere(node).map(d => d.name) : state.links.map(l => l.name);
+  if (m && /^(ssh|cd)$/i.test(m[1]))
+    pool = [...state.links.map(l => l.name), ...(node.dir ? dirHere(node).filter(d => !d.file).map(d => d.name) : [])];
   else if (!m && /^\s*\S*$/.test(v))
     pool = [
       "ssh",
@@ -483,7 +487,6 @@ function complete() {
       "help",
       "ls",
       ...(node.search ? ["search"] : []),
-      ...(node.dir ? ["cd"] : []),
       ...(state.saveReady ? ["return"] : []),
     ];
   else return;

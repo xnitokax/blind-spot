@@ -84,7 +84,7 @@ function updateNext() {
     }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const t of menuTools(node)) chips.push(chip(t.fill, t.label, "go"));
-    for (const d of dirHere(node)) chips.push(chip(d.file ? `open ${d.name}` : `cd ${d.name}`));
+    for (const d of dirHere(node)) chips.push(chip(d.file ? `open ${d.name}` : `ssh ${d.name}`));
     // ゲームの世界：落ちているものと、その場所でできること（まだやっていないもの）
     for (const name of itemsHere()) chips.push(chip(`pick ${name}`, `pick ${name}`, "go"));
     if (document.body.dataset.zone === "rpg")
