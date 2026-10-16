@@ -45,13 +45,13 @@ async function startChapter(ch) {
     for (const [i, hop] of route.entries()) {
       // 中継点：中身のない演出なので、テンポよく（遅くしない）
       const l = print(`  ${i === route.length - 1 ? "└" : "├"}─ ${esc(hop)} `, "dim");
-      for (let k = 0; k < 4; k++) {
-        await wait(14);
+      for (let k = 0; k < 6; k++) {
+        await wait(22);
         l.innerHTML += "▓";
       }
       l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
       SFX.hop(i);
-      await wait(40);
+      await wait(75);
     }
     SFX.warp();
     pulse($("wrap"), "warp", 800);

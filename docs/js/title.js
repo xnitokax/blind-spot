@@ -190,13 +190,13 @@ async function fakeRoute(dest, opt = {}) {
   for (const [i, hop] of hops.entries()) {
     const last = i === hops.length - 1;
     const l = print(`  ${last ? "└" : "├"}─ ${esc(hop)} `, "dim");
-    for (let k = 0; k < 4; k++) {
-      await wait(14);
+    for (let k = 0; k < 6; k++) {
+      await wait(22);
       l.innerHTML += "▓";
     }
     l.innerHTML += ` <span class="sys">${20 + Math.floor(Math.random() * 180)}ms OK</span>`;
     SFX.hop(i);
-    await wait(40);
+    await wait(75);
   }
   if (opt.loop) {
     // 出発点に戻ってきた：エラーとして接続を止める
