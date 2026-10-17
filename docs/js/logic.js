@@ -243,7 +243,9 @@ async function addClue(label, opt = {}) {
     : total
       ? `${state.clues.length} / ${total}`
       : "";
-  await pause(250);
+  // タップの任務（練習・任務1）では、見つけたものを読み終えてタップしてから、EVIDENCE のカードを出す
+  if (tapMode()) await tapWait();
+  else await pause(250);
   const card = print(
     `<div class="evi-card" data-clue="${esc(label)}"><span class="evi-tag">EVIDENCE</span><span class="evi-label">${esc(label)}</span>` +
       (n ? `<span class="evi-n">${n}</span>` : "") +
@@ -253,7 +255,7 @@ async function addClue(label, opt = {}) {
   SFX.evidence();
   await decode(card.querySelector(".evi-label"), 650);
   card.classList.add("landed");
-  await pause(1500);
+  await pause(tapMode() ? 800 : 1500);
 }
 
 // ---------------- 検索 ----------------
@@ -442,7 +444,7 @@ async function showResults(conf, q, terms, hits, shown, limit) {
   // goal.quietClue … 結果をじっくり読ませたいので、カードは出さずに手がかりだけ回収する
   const quiet = shown.some(e => e.goal?.quietClue);
   if (clues.length) {
-    if (!quiet && !CH.noEvidence) await wait(700);
+    if (!quiet && !CH.noEvidence && !tapMode()) await wait(700); // タップの任務では、カードの前でタップを待つので、ここでは待たない
     for (const c of clues) await addClue(c, { quiet });
   }
 
