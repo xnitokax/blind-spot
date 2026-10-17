@@ -26,10 +26,25 @@ async function userOops(lock, raw, r) {
   if (/\s/.test(raw.trim())) return oops("idSpace", o.idSpace);
   if (r.unknown && ++state.idMiss >= 2) return oops("idMiss", o.idMiss);
 }
-// パスワード（passJa ／ near：惜しい答え ／ passMiss：2回目の失敗から）
+// パスワード（passJa ／ near：惜しい答え ／ passMiss：2回目の失敗から ／ parts：手がかりがそろってから）
 async function passOops(id, lock, raw) {
   const o = lock.oops || {};
   if (hasJa(raw)) return oops("passJa", o.passJa);
+  // 今の目標の手がかりが全部そろっているとき：「調べ直せ」は言わない。
+  //   名前（英字）と日付（数字）の、どちらが違うかだけ言う（記号の部分は言わない）。打ち間違えるたびに言う
+  const obj = nowObj();
+  if (obj?.clues?.length && obj.clues.every(c => state.clues.includes(c))) {
+    const p = o.parts,
+      m = String(raw).match(/^([a-z]+)(\d+)/i);
+    if (p && m) {
+      const same = async (part, s) => (p.hashed ? part === (await NZ.hash(id, s)) : NZ.norm(part) === NZ.norm(s));
+      const nameOk = await same(p.name, m[1]),
+        dateOk = await same(p.date, m[2]);
+      if (nameOk && !dateOk) return speak(p.dateSay, BEAT.small);
+      if (!nameOk && dateOk) return speak(p.nameSay, BEAT.small);
+    }
+    return;
+  }
   for (const [i, n] of (o.near || []).entries()) {
     // 開発モードは平文（pass）、公開データはハッシュ（hashes）で比べる
     const hit = n.pass

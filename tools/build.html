@@ -251,6 +251,14 @@
               say: n.say,
             });
         }
+        // 手がかりがそろってからの打ち間違い（oops.parts）：名前と日付も、ハッシュにしてから残す
+        if (lock.oops?.parts) {
+          const p = lock.oops.parts;
+          rest.oops = {
+            ...(rest.oops || lock.oops),
+            parts: { hashed: true, name: await NZ.hash(id, p.name), date: await NZ.hash(id, p.date), nameSay: p.nameSay, dateSay: p.dateSay },
+          };
+        }
         log(
           `  🔒 ${id}: 暗号化しました（パスワード ${boxes.length + Object.keys(lock.user?.pass || {}).length} 通り）`,
         );
