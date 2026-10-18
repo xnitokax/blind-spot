@@ -17,13 +17,29 @@ async function oops(kind, lines) {
 // 日本語（全角の英数字・記号は半角にそろえてから見る）が入っているか
 const hasJa = s => /[^\x00-\x7f]/.test(String(s).normalize("NFKC"));
 
-// 鍵の打ち間違い：ユーザーID（lock.oops の idJa / idSpace / idMiss / idDenied）
+// 今の目標の手がかりが、全部そろっているか（そろっていたら、師匠は「調べ直せ」とは言わない）
+const evidenceReady = () => {
+  const obj = nowObj();
+  return !!(obj?.clues?.length && obj.clues.every(c => state.clues.includes(c)));
+};
+// 鍵の打ち間違い：ユーザーID（lock.oops の idJa / idSpace / idMiss / idDenied ／ idParts：手がかりがそろってから）
 async function userOops(lock, raw, r) {
   const o = lock.oops || {};
   if (hasJa(raw)) return oops("idJa", o.idJa);
   // 登録はあるが、ここには入れない人の ID（人事DB なら、人事部ではない社員）
   if (o.idDenied?.ids.includes(r.account)) return oops("idDenied", o.idDenied.say);
   if (/\s/.test(raw.trim())) return oops("idSpace", o.idSpace);
+  // 手がかりがそろっているとき：苗字と下の名前の、どちらが違うかだけ言う（打ち間違えるたびに）
+  if (evidenceReady()) {
+    const p = o.idParts,
+      m = NZ.norm(raw).match(/^([a-z]+)\.([a-z]+)$/);
+    if (p && m && r.unknown) {
+      const [sur, given] = NZ.norm(p.id).split(".");
+      if (m[1] === sur && m[2] !== given) return speak(p.givenSay, BEAT.small);
+      if (m[1] !== sur && m[2] === given) return speak(p.surnameSay, BEAT.small);
+    }
+    return;
+  }
   if (r.unknown && ++state.idMiss >= 2) return oops("idMiss", o.idMiss);
 }
 // パスワード（passJa ／ near：惜しい答え ／ passMiss：2回目の失敗から ／ parts：手がかりがそろってから）
@@ -32,8 +48,7 @@ async function passOops(id, lock, raw) {
   if (hasJa(raw)) return oops("passJa", o.passJa);
   // 今の目標の手がかりが全部そろっているとき：「調べ直せ」は言わない。
   //   名前（英字）と日付（数字）の、どちらが違うかだけ言う（記号の部分は言わない）。打ち間違えるたびに言う
-  const obj = nowObj();
-  if (obj?.clues?.length && obj.clues.every(c => state.clues.includes(c))) {
+  if (evidenceReady()) {
     const p = o.parts,
       m = String(raw).match(/^([a-z]+)(\d+)/i);
     if (p && m) {
