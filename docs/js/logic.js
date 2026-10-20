@@ -213,7 +213,8 @@ async function checkObjectives() {
     setGuide(nowObj().next, nowObj().intro);
   }
   // 目標の goal：その目標の手がかりが全部そろったら、任務完了（どの順番で見つけても、最後の1つで終わる）
-  const last = nowObj();
+  //   goal.early … 前の目標が済んでいなくても、手がかりがそろったら終わる（任務2：千里眼のファイルを開くと、パソコンごと落ちる）
+  const last = nowObj()?.goal ? nowObj() : CH.objectives?.find(o => o.goal?.early && allClues(o));
   if (last?.goal && !state.saveReady && !state.over && allClues(last)) await runGoal(last.goal);
 }
 function showObjective(o, tag = "NEXT OBJECTIVE") {

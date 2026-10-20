@@ -430,6 +430,16 @@ const fakeFile = () =>
 // 流れていく伝票の1行（見た目だけ）
 const fakeLedger = () =>
   `伝票 #${80000 + Math.floor(Math.random() * 19999)}  2026/${String(1 + Math.floor(Math.random() * 9)).padStart(2, "0")}/${String(1 + Math.floor(Math.random() * 28)).padStart(2, "0")}  ${pickOne(["営業本部", "総務部", "人事部", "経理部", "IT統括部", "広報部"])}  ${pickOne(["交通費", "消耗品費", "会議費", "外注費", "保守費", "広告費"])}  ¥${(Math.floor(Math.random() * 9e6) + 1000).toLocaleString().padStart(11)}`;
+// 千里眼のデータの1行（1行が1人。人間を数字の列にしたもの。見た目だけ。スマホで折り返さないよう 40 文字以内）
+let mindRow = 0;
+const mindNum = () => {
+  const x = (Math.random() * 3 - 1.5).toFixed(3);
+  return x.startsWith("-") ? x : ` ${x}`;
+};
+const fakeMind = () => {
+  mindRow += 1 + Math.floor(Math.random() * 9000);
+  return `#${String(mindRow).padStart(8, "0")} ${mindNum()} ${mindNum()} ${mindNum()} ${mindNum()} …`;
+};
 let lastBuilding = null; // { building } で描いたビル（{ lights: "on" } で明かりを戻す）
 let lastMapNodes = null;
 // 点描の世界地図に使う、ざっくりした大陸の形（[経度, 緯度] の多角形）
@@ -730,7 +740,7 @@ async function playFx(s) {
     for (let i = 0; i < s.flood; i++) {
       box.textContent +=
         (i ? "\n" : "") +
-        (s.kind === "log" ? fakeLogLine() : s.kind === "ledger" ? fakeLedger() : fakeFile());
+        (s.kind === "log" ? fakeLogLine() : s.kind === "ledger" ? fakeLedger() : s.kind === "mind" ? fakeMind() : fakeFile());
       box.scrollTop = box.scrollHeight;
       if (i % 3 === 0) SFX.tick();
       await pause(Math.max(8, 60 - i * 1.2));

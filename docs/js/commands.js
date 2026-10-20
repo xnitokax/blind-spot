@@ -134,7 +134,7 @@ const COMMANDS = {
     print(
       `<div class="ls">${rows}</div>` +
         (tools ? `<div class="dim">── ここで使えるコマンド ──</div><div class="ls">${tools}</div>` : "") +
-        `<span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中は素早く3回クリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ ここでは cd が使えます" : ""}</span>`,
+        `<span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中は素早く3回クリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ フォルダにも ssh で入れます" : ""}</span>`,
     );
   },
   async ssh(arg) {
