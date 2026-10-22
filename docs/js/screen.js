@@ -99,6 +99,9 @@ function updateNext() {
         ),
       );
   }
+  // 光るボタン（次の一手）と同じコマンドの、ふつうのボタンは並べない（同じものが2つ並ばないように）
+  const g = state?.current && !mode && guideCmd();
+  if (g) chips = chips.filter(c => c.includes("chip pick guide") || !c.includes(`data-fill="${esc(g)}"`));
   box.innerHTML = chips.length ? `<span class="next-label">NEXT</span>${chips.join("")}` : "";
   box.scrollLeft = 0; // スマホ（横にスクロールする1行）で、先頭の光るボタンが見えるように
   // NEXT 欄の高さが変わると最後の行が隠れるので、いちばん下までスクロールし直す

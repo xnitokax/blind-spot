@@ -12,17 +12,24 @@ async function titleCommand(raw) {
   const c = name.toLowerCase(),
     arg = rest.join(" ");
   if (c === "handle") {
-    if (!arg) return speak(["[師匠] 名前も一緒に打て。例えば handle anonymous"]);
+    if (!arg) return speak(["[師匠] 名前も一緒に打て。例えば handle anonymous。"]);
     const h = arg.normalize("NFKC").trim();
     if ([...h].length > 16 || /\s/.test(h))
       return speak(["[師匠] 呼び名は16文字まで、空白なしだ。"]);
+    // 師匠（製作者）のハンドルは使わせない。……「connect するな」は、つまり、そういうこと
+    if (S.author && NZ.norm(h) === NZ.norm(S.author.handle))
+      return speak([
+        "[師匠] ……おい。それは俺のだ。",
+        "[師匠] なんでお前が知っている。",
+        "[師匠] ……いいか。その名前で、絶対に connect するなよ。",
+      ]);
     state.mode = { type: "handleConfirm", name: h, autoCode: state.mode.autoCode };
     setPrompt("決定する？ [y/n]");
     return speak([`[師匠] 「${h}」……それでいいんだな？`]);
   }
   if (!handle)
     return speak([
-      "[師匠] まずは呼び名だ。handle と打って、その後ろに名前。例えば handle anonymous",
+      "[師匠] まずは呼び名だ。handle と打って、その後ろに名前。例えば handle anonymous。",
     ]);
   // 物語の始まり（しおりが事務所に来る場面）を、もう一度見る
   if (c === "opening" && S.opening) return runTalk(S.opening);

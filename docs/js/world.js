@@ -83,7 +83,7 @@ function printMenu(force = false) {
   }
   for (const name of itemsHere()) {
     rows.push(
-      `<span class="n pick" data-fill="pick ${esc(name)}">pick ${esc(name)}</span><span>${esc(node.items[name].desc || "落ちている")}</span>`,
+      `<span class="n pick" data-fill="pick ${esc(name)}">pick ${esc(name)}</span><span>拾う${node.items[name].desc ? `　── ${esc(node.items[name].desc)}` : ""}</span>`,
     );
   }
   for (const l of state.links) {

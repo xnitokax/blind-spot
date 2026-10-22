@@ -232,10 +232,13 @@ function showObjective(o, tag = "NEXT OBJECTIVE") {
 async function addClue(label, opt = {}) {
   if (!label || state.clues.includes(label)) return;
   state.clues.push(label);
-  updateClueCount();
-  renderObjectives(label);
+  // 右の欄（CASE FILE の EVIDENCE）に載せる。カードを出す任務では、カードが出てから載せる（タップの前に右の欄で先にネタが割れないように）
+  const listIt = () => {
+    updateClueCount();
+    renderObjectives(label);
+  };
   // noEvidence（任務2）：EVIDENCE のカードは出さない（手がかりは裏で記録して、目標だけ進める）
-  if (opt.quiet || CH?.noEvidence) return;
+  if (opt.quiet || CH?.noEvidence) return listIt();
   // カードの数字は「その目標の手がかり n / N」（目標のない手がかりは任務全体の数）
   const o = objOf(label),
     total = countClues(CH);
@@ -254,6 +257,7 @@ async function addClue(label, opt = {}) {
     "evidence",
   ).querySelector(".evi-card");
   SFX.evidence();
+  listIt();
   await decode(card.querySelector(".evi-label"), 650);
   card.classList.add("landed");
   await pause(tapMode() ? 800 : 1500);
