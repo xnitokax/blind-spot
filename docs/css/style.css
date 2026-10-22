@@ -266,6 +266,14 @@ h2 {
 .ls .n {
   color: var(--accent);
 }
+/* 落ちているものを拾うコマンド（pick 勇者の剣）：「pick」と名前で1つのコマンドだと分かるように、枠で囲む */
+.ls .item-cmd {
+  justify-self: start;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
 .ls .ow {
   color: var(--warn);
 }
