@@ -26,6 +26,29 @@ body {
   line-height: 1.7;
   overflow: hidden;
 }
+/* スクロールバー：ブラウザの白い太いバーではなく、画面になじむ細い線に（会話・ログ・右の欄など、全部共通） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 22%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
 /* ブラウン管：走査線と周辺の暗がり */
 body::before,
 body::after {
