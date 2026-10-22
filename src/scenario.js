@@ -305,6 +305,19 @@ const DEPT_CODE = {
   // 特別プロジェクト室 1770（2021年）
   "AI推進室": 1830,      // 2024年
 };
+// 任務2のファイルサーバー：部署名・部署コードで探したときに出る、ふつうの資料（大きな会社らしく、どの部署にも資料がある）
+//   「特別」「プロジェクト」は入れない（広すぎる言葉の検索に混ざらないように）。並びは事件の手がかりより下
+const DEPT_FILES = Object.entries(DEPT_CODE).flatMap(([name, code], i) =>
+  [
+    `${name}_定例会議_議事録_2026${String(4 + (i % 6)).padStart(2, "0")}.docx`,
+    `${name}_予算管理_2026上期.xlsx`,
+    `${name}_業務マニュアル_v${2 + (i % 4)}.pdf`,
+  ].map(file => ({ html: `<pre class="log">${file}\n  持ち主：dept:${code} ${name}</pre>` })),
+);
+// 部署名・部署コードで探したときの件数（大きな会社らしく、どの部署にも数百件の資料がある）
+const DEPT_FILE_TOTALS = Object.fromEntries(
+  Object.entries(DEPT_CODE).flatMap(([name, code], i) => [[name, 240 + ((i * 137) % 900)], [String(code), 240 + ((i * 137) % 900)]]),
+);
 // 日報の見出しには、部署コード（dept:〇〇〇〇）も出す（who の最初の言葉が部署名）
 const deptOf = who => DEPT_CODE[String(who).split(/[　 ]/)[0]];
 const nippo = (date, who, text, opt = {}) => {
@@ -727,6 +740,9 @@ const hrEntries = (m, goal) => [
     ["T-050401", "中野 まゆ", "なかの まゆ", 43, "品質保証部", "技術職　品質管理", "2005/04"],
     ["T-100401", "岡本 さつき", "おかもと さつき", 39, "総務部", "事務職　庶務", "2010/04"],
     ["T-230401", "田辺 皐月", "たなべ さつき", 25, "法務部", "事務職　契約審査", "2023/04"],
+    // 経理部の人（「経理部」で探すと、対外表記が経理部の兄のほかに、本物の経理部の人も出る）
+    ["T-080401", "森 早苗", "もり さなえ", 42, "経理部 主計課", "事務職　決算", "2008/04"],
+    ["T-150401", "高木 一郎", "たかぎ いちろう", 34, "経理部 財務課", "事務職　資金管理", "2015/04"],
   ].map(([no, name, kana, age, dept, job, join]) => ({
     html: hrRecord({
       no, name, kana, age,
@@ -2046,7 +2062,7 @@ help　　　　── 手札を確かめる
           search: {
             label: "人事DB",
             records: 38112,
-            totals: { "人事部": 214 },
+            totals: { "人事部": 214, "経理部": 58 },
             aliases: SEARCH_ALIASES,
             fakeTotals: true, // 件数の表がない言葉でも、それらしい件数を出す（見つからないときは師匠がひとこと）
             entries: hrEntries(1, {
@@ -2299,6 +2315,7 @@ help　　　　── 手札を確かめる
           search: {
             label: "ファイルサーバー",
             records: 12408,
+            totals: DEPT_FILE_TOTALS,
             fakeTotals: true,
             exact: ["特別プロジェクト室", "プロジェクト室"],
             aliases: SEARCH_ALIASES,
@@ -2317,6 +2334,15 @@ help　　　　── 手札を確かめる
   持ち主：dept:1035 総務部</pre>` },
               { html: `<pre class="log">特別損失_計上メモ.docx
   持ち主：dept:1081 経理部</pre>` },
+              // 兄の個人フォルダ：中身は、兄が死んだ日の明け方にすべて消されている（日報と同じ admin）
+              {
+                html: `<pre class="log">makabe.minato/
+  持ち主：makabe.minato
+  <span class="warn">※ 中身：0 件
+  ※ 2026/09/12 04:20 全削除（削除者：admin）</span></pre>`,
+                keys: "真壁 みなと 真壁みなと まかべ makabe minato makabe.minato",
+                say: ["[師匠] ……兄貴の個人フォルダか。空っぽだ。", "[師匠] 必要なものは、隠されてるな。……もしくは、消されたか。"],
+              },
               // 名前のないフォルダ：割り出した部署コード（1770）で探したときだけ見つかる
               {
                 html: `<pre class="log">??????/
@@ -2327,6 +2353,7 @@ help　　　　── 手札を確かめる
                 say: ["[師匠] ……出たな。一覧には出てこない、名前のないフォルダだ。"],
                 after: [{ flag: "secretDir" }],
               },
+              ...DEPT_FILES,
             ],
             notes: [
               { when: ["議事録", "見積", "請求", "設計", "写真", "提案"], say: ["[師匠] ふつうの資料ばかりだな。"] },
@@ -2450,7 +2477,7 @@ help　　　　── 手札を確かめる
           search: {
             label: "人事DB",
             records: 38112,
-            totals: { "人事部": 214 },
+            totals: { "人事部": 214, "経理部": 58 },
             aliases: SEARCH_ALIASES,
             fakeTotals: true, // 件数の表がない言葉でも、それらしい件数を出す（見つからないときは師匠がひとこと）
             entries: hrEntries(2),
@@ -2475,6 +2502,7 @@ help　　　　── 手札を確かめる
             label: "Seek",
             records: 3402118,
             totals: { "鷲尾": 12400, "事件": 3210000, "帝和": 58300, "国家治安庁": 241000 },
+            aliases: { "帝和": ["帝和ホールディングス", "帝和HD", "帝和ホールディングス株式会社", "ていわ", "teiwa"] },
             fakeTotals: true,
             fanPage: true, // 師匠のハンドルネームで検索すると、謎のファンページが見つかる（小ネタ）
             outside: true, // 外のサイト：社内の検索禁止ワードは効かない（「特別プロジェクト室」は、ふつうに0件）
@@ -3238,7 +3266,7 @@ help　　　　── 手札を確かめる
           search: {
             label: "人事DB",
             records: 38112,
-            totals: { "人事部": 214 },
+            totals: { "人事部": 214, "経理部": 58 },
             aliases: SEARCH_ALIASES,
             fakeTotals: true, // 件数の表がない言葉でも、それらしい件数を出す（見つからないときは師匠がひとこと）
             entries: hrEntries("rush"),
