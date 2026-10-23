@@ -404,3 +404,112 @@ async function raceTrace(to, ms) {
   $("traceBar").parentElement.classList.remove("racing");
   state.trace = to;
 }
+
+// ---------------- スクロールの目盛り（scroll rail） ----------------
+// ブラウザのスクロールバーは CSS で消してある。代わりに、プレイヤーが自分でスクロールしているあいだだけ、
+// その欄の右端に、点線の目盛りと「▮」（今の位置）を出す。止めて少したつと消える
+//   文字が流れて勝手に下へ送られるとき（scrollDown）には出さない（ホイール・スワイプ・キー・つまんだときだけ）
+//   「▮」はつかんで動かせる。目盛りを押すと、その位置へ飛ぶ。パソコンでは、欄の右端にマウスを寄せても出る
+(() => {
+  const rails = new Map(); // 欄 → { rail, mark, timer }
+  const scrollable = el => {
+    for (; el && el !== document.body; el = el.parentElement) {
+      const oy = getComputedStyle(el).overflowY;
+      if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 2) return el;
+    }
+    return null;
+  };
+  const place = (el, r) => {
+    const b = el.getBoundingClientRect();
+    r.rail.style.top = `${b.top + 10}px`;
+    r.rail.style.height = `${Math.max(0, b.height - 20)}px`;
+    r.rail.style.left = `${b.right - 15}px`;
+    const max = el.scrollHeight - el.clientHeight,
+      h = b.height - 20 - 14;
+    r.mark.style.top = `${max > 0 ? (el.scrollTop / max) * h : 0}px`;
+  };
+  const railOf = el => {
+    let r = rails.get(el);
+    if (r) return r;
+    const rail = document.createElement("div");
+    rail.className = "srail";
+    rail.innerHTML = `<span class="end top">▴</span><span class="mark"></span><span class="end bot">▾</span>`;
+    document.body.appendChild(rail);
+    r = { rail, mark: rail.querySelector(".mark"), timer: 0, drag: false };
+    rails.set(el, r);
+    const jump = y => {
+      const b = rail.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, (y - b.top - 7) / (b.height - 14)));
+      el.scrollTop = p * (el.scrollHeight - el.clientHeight);
+    };
+    rail.addEventListener("pointerdown", e => {
+      r.drag = true;
+      rail.setPointerCapture(e.pointerId);
+      jump(e.clientY);
+      show(el);
+    });
+    rail.addEventListener("pointermove", e => {
+      if (!r.drag) return;
+      jump(e.clientY);
+      show(el);
+    });
+    const up = () => {
+      r.drag = false;
+      show(el);
+    };
+    rail.addEventListener("pointerup", up);
+    rail.addEventListener("pointercancel", up);
+    rail.addEventListener("pointerenter", () => show(el));
+    return r;
+  };
+  function show(el, ms = 900) {
+    if (!el.isConnected || el.scrollHeight <= el.clientHeight + 2) return;
+    const r = railOf(el);
+    place(el, r);
+    r.rail.classList.add("on");
+    clearTimeout(r.timer);
+    r.timer = setTimeout(function hide() {
+      if (r.drag || r.rail.matches(":hover")) return (r.timer = setTimeout(hide, 400));
+      r.rail.classList.remove("on");
+      // 欄ごと消えていたら（会話の画面を閉じた、など）、目盛りも片付ける
+      if (!el.isConnected) {
+        r.rail.remove();
+        rails.delete(el);
+      }
+    }, ms);
+  }
+  const fromEvent = e => {
+    const el = scrollable(e.target);
+    if (el) show(el);
+  };
+  addEventListener("wheel", fromEvent, { capture: true, passive: true });
+  addEventListener("touchmove", fromEvent, { capture: true, passive: true });
+  addEventListener(
+    "keydown",
+    e => {
+      if (!/^(PageUp|PageDown|Home|End|ArrowUp|ArrowDown)$/.test(e.key)) return;
+      const t = document.activeElement && scrollable(document.activeElement);
+      if (t) show(t);
+    },
+    { capture: true },
+  );
+  // パソコン：欄の右端（20px）にマウスを寄せると出る
+  addEventListener(
+    "pointermove",
+    e => {
+      if (e.pointerType !== "mouse") return;
+      const el = scrollable(e.target);
+      if (el && el.getBoundingClientRect().right - e.clientX < 20) show(el, 1200);
+    },
+    { passive: true },
+  );
+  // 出ているあいだは、スクロールに合わせて「▮」を動かす
+  addEventListener(
+    "scroll",
+    e => {
+      const r = rails.get(e.target);
+      if (r && r.rail.classList.contains("on")) place(e.target, r);
+    },
+    { capture: true, passive: true },
+  );
+})();
