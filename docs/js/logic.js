@@ -327,10 +327,19 @@ async function search(arg) {
   if (ban && !conf.outside && terms.some(t => ban.words.some(w => t.includes(fold(w).replace(/\s+/g, "")))))
     return bannedSearch(ban, q);
 
+  // 未登録の部署コード（任務の codeAudit）：本社にない部署コードで社内を検索すると、監査に引っかかる
+  //   当てずっぽうの総当たりを防ぐ。外のサイト（outside）では効かない
+  const audit = CH.codeAudit;
+  if (audit && !conf.outside && terms.some(t => audit.codes.includes(t.replace(/^dept:?/, ""))))
+    return auditSearch(audit, q);
+
   // need … その flag が立っているときだけ見つかる結果（任務2：権限を上げたあとにだけ見える、隠されたデータ）
   const hits = conf.entries.filter(
     e => (!e.need || state.flags[e.need]) && terms.every(t => searchText(e).includes(t)),
   );
+  // numberFacts（外の検索サイト）：数字だけで検索すると、その数の性質（数のずかん）がいちばん上に出る
+  if (conf.numberFacts && terms.length === 1 && /^\d{1,6}$/.test(terms[0]) && +terms[0] > 0)
+    hits.unshift(numberFacts(+terms[0]));
   const shown = hits.slice(0, limit);
   state.minutes += 1;
   updateClock();
@@ -561,6 +570,71 @@ function recordEnding(id) {
 
 // 禁止ワードで検索したとき：検索は弾かれ、監査に記録されて、逆探知（TRACE）が上がる
 //   ban … { words: [...], trace: 初めてのときに上がる量, traceAgain: 2回目から上がる量,first: [初めてのときの台本], again: [2回目の台本] }（3回目からは、警告と TRACE だけ）
+// 数のずかん：数字だけで検索したときに出る、その数の性質の一覧（三角数なら、下から2番目に「三角数」）
+function numberFacts(n) {
+  const facts = [n % 2 ? "奇数" : "偶数"];
+  const ps = [];
+  for (let x = n, p = 2; x > 1; ) {
+    if (p * p > x) {
+      ps.push(x);
+      break;
+    }
+    if (x % p) p++;
+    else {
+      ps.push(p);
+      x /= p;
+    }
+  }
+  facts.push(n === 1 ? "素数でも合成数でもない" : ps.length === 1 ? "素数" : `合成数（${ps.join(" × ")}）`);
+  let d = 0;
+  for (let i = 1; i <= n; i++) if (n % i === 0) d++;
+  facts.push(`約数の個数：${d} 個`);
+  facts.push(`各位の和：${[...String(n)].reduce((a, c) => a + +c, 0)}`);
+  facts.push(`2進数：${n.toString(2)}`);
+  if (n < 4000) {
+    const R = [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+    let x = n,
+      r = "";
+    for (const [v, s] of R)
+      while (x >= v) {
+        r += s;
+        x -= v;
+      }
+    facts.push(`ローマ数字：${r}`);
+  }
+  const k = (Math.sqrt(8 * n + 1) - 1) / 2;
+  if (Number.isInteger(k)) facts.push(`三角数（${k} 番目）`);
+  facts.push(`16進数：${n.toString(16).toUpperCase()}`);
+  return {
+    html: `<p class="meta">数のずかん</p><p><b>${n}</b> の性質</p><p>${facts.map(f => `・${esc(f)}`).join("<br>")}</p>`,
+  };
+}
+
+// 未登録の部署コードで検索したとき（任務2の codeAudit）：0件で、監査に記録され、TRACE が上がる
+async function auditSearch(audit, q) {
+  state.minutes += 1;
+  updateClock();
+  addLog(`QUERY "${q}" @${shortHost(here().host)} ── AUDIT`);
+  const n = (state.auditHits = (state.auditHits || 0) + 1);
+  await busy(async () => {
+    const line = print("", "dim scan");
+    for (let f = 1; f <= 6; f++) {
+      line.textContent = `scanning [${"▮".repeat(f)}${"·".repeat(14 - f)}]`;
+      SFX.tick();
+      await wait(32);
+    }
+    print(
+      `<div class="res-head none"><span class="res-title">${esc(here().search.label)} ─ 「${esc(q)}」</span><span class="res-count">0 件</span></div>`,
+    );
+    SFX.denied?.();
+    print("[!] 登録のない部署コードを照会しました ── 監査ログに記録されました", "alert");
+    addTrace(audit.trace ?? 20);
+    await wait(BEAT.small);
+    if (state.over) return;
+    if (n === 1 && audit.first?.length) await speak(audit.first, BEAT.react);
+  });
+}
+
 async function bannedSearch(ban, q) {
   state.minutes += 1;
   updateClock();

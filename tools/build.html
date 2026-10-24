@@ -187,7 +187,11 @@
         const clues = new Set();
         for (const node of Object.values(ch.nodes)) {
           if (node.clue) clues.add(node.clue);
-          for (const e of node.search?.entries || []) if (e.clue) clues.add(e.clue);
+          for (const e of node.search?.entries || []) {
+            if (e.clue) clues.add(e.clue);
+            // after・before の台本の中の { clue }（任務2：1770 で当たったときの手がかり）
+            for (const x of [...(e.after || []), ...(e.before || [])]) if (x?.clue) clues.add(x.clue);
+          }
           for (const d of node.dir || []) if (d.clue) clues.add(d.clue);
           for (const a of Object.values(node.actions || {}))
             for (const x of a.script || []) if (x?.clue) clues.add(x.clue);

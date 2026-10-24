@@ -83,6 +83,7 @@ function updateNext() {
       if (why) $("why").innerHTML = `<span class="why-mark">▸</span><span>${esc(fill(why))}</span>`;
     }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
+    if (CH.memo) chips.push(chip("memo", "memo"));
     for (const t of menuTools(node)) chips.push(chip(t.fill, t.label, "go"));
     for (const d of dirHere(node)) chips.push(chip(d.file ? `open ${d.name}` : `ssh ${d.name}`));
     // ゲームの世界：落ちているものと、その場所でできること（まだやっていないもの）
@@ -114,6 +115,8 @@ function print(html, cls = "") {
   d.className = "line " + cls;
   d.innerHTML = html;
   out.appendChild(d);
+  // memo（任務2の部署コード表）：画面に部署名が出たら、その行を表に足す
+  if (CH?.memo && typeof memoSeen === "function") memoSeen(d);
   scrollDown();
   return d;
 }
