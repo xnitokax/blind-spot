@@ -120,8 +120,6 @@ const COMMANDS = {
       ["back", "ひとつ前の場所へ戻る"],
       ["search <言葉>", "検索できる場所で検索する（スペース区切りで条件を重ねる）"],
       ["ls", "今いる場所の接続先をもう一度表示"],
-      // 任務2：部署コード表
-      ...(CH?.memo ? [["memo", "部署コード表を見る（memo 部署名 コード で書き込む ／ memo sort で並べ替え）"]] : []),
       // ゲームの世界（rpg）では、ものを拾える
       ...(document.body.dataset.zone === "rpg" ? [["pick <もの>", "落ちているものを拾う"]] : []),
       ["return", "調べ終わったら、成果を持って帰る（任務を終える）"],
@@ -247,38 +245,10 @@ const COMMANDS = {
     await checkObjectives();
   },
   search,
-  // memo：部署コード表（任務2）。memo だけで表を出す ／ memo 部署名 コード で書き込む ／ memo sort でコードの小さい順に
-  async memo(arg) {
-    const conf = CH?.memo;
-    if (!conf) return print("memo: ここでは使えません。", "dim");
-    const m = memoState();
-    const a = (arg || "").normalize("NFKC").trim();
-    if (!a) return printMemo();
-    if (/^(--)?sort$|^並べ替え$|^ソート$/i.test(a)) {
-      m.sorted = true;
-      printMemo();
-      if (!m.sortSaid && Object.keys(m.codes).length >= (conf.sortMin ?? 4)) {
-        m.sortSaid = true;
-        await speak(conf.sortSay, BEAT.react);
-      }
-      return;
-    }
-    const mm = a.match(/^(.+?)\s+(?:dept:)?(\d{3,5})$/i);
-    if (!mm) return print("使い方：memo ／ memo 部署名 コード ／ memo sort", "dim");
-    const key = s => fold(s).replace(/\s+/g, "");
-    const name = key(mm[1]),
-      code = mm[2];
-    const row = name.length >= 2 && conf.rows.find(r => key(r.name) === name || key(r.name).startsWith(name));
-    if (!row) {
-      if (name.length >= 2 && key(conf.special.name).includes(name)) return speak(conf.specialSay, BEAT.small);
-      return speak(conf.unknownSay, BEAT.small);
-    }
-    if (row.code !== code) return speak(conf.wrongSay, BEAT.small);
-    if (!m.rows.includes(row.name)) m.rows.push(row.name);
-    m.codes[row.name] = code;
-    SFX.select?.();
-    addLog(`MEMO ${row.name} ${code}`);
-    printMemo(row.name);
+  // memo：任務2の部署コード表（docs/js/memo.js）。打って使うのはやめて、上の MEMO ボタンから開く。打たれたら、画面を開くだけ
+  memo() {
+    if (!memoReady()) return print("memo: ここでは使えません。", "dim");
+    openMemo();
   },
 
   // 調べ終わったら、成果を持って帰る（git commit / push が流れて完了画面へ）
@@ -554,7 +524,6 @@ function complete() {
       "help",
       "ls",
       ...(node.search ? ["search"] : []),
-      ...(CH?.memo ? ["memo"] : []),
       ...(state.saveReady ? ["return"] : []),
     ];
   else return;
@@ -652,41 +621,4 @@ async function toolPage(tool, arg) {
     }
   });
   if (first && (page.clue || page.flag)) await checkObjectives();
-}
-
-// ---------------- memo（任務2の部署コード表） ----------------
-const memoState = () => (state.memo ||= { rows: [], codes: {}, sorted: false, sortSaid: false });
-// 画面に出た部署名を、表に足す（コードは空欄のまま。書き込むのはプレイヤー）
-function memoSeen(el) {
-  if (!state || el.classList.contains("memo-view")) return;
-  const m = memoState(),
-    text = el.textContent;
-  for (const r of CH.memo.rows)
-    if (!m.rows.includes(r.name) && text.includes(r.name)) {
-      m.rows.push(r.name);
-      addLog(`MEMO ＋ ${r.name}`);
-    }
-}
-// 表を出す。特別プロジェクト室の欄は、1770 で検索して当たったら埋まる（並べ替えるまでは、いつも一番下の行）
-function printMemo(hl) {
-  const conf = CH.memo,
-    m = memoState(),
-    sp = conf.special;
-  const rows = m.rows.map(name => ({ name, code: m.codes[name] || null }));
-  rows.push({ name: sp.name, code: state.clues.includes(sp.clue) ? sp.code : null, special: true });
-  if (m.sorted) rows.sort((x, y) => (x.code ? +x.code : 1e9) - (y.code ? +y.code : 1e9));
-  const w = s => [...s].reduce((n, c) => n + (c.charCodeAt(0) > 0xff ? 2 : 1), 0);
-  const pad = (s, n) => s + " ".repeat(Math.max(1, n - w(s)));
-  const lines = [
-    pad("部署名", 20) + "コード",
-    ...rows.map(r => {
-      const t = esc(pad(r.name, 20)) + (r.code || "????");
-      return r.name === hl ? `<span class="sys">${t}</span>` : r.special && !r.code ? `<span class="warn">${t}</span>` : t;
-    }),
-  ];
-  print(
-    `<div class="dim">部署コード表${m.sorted ? "　── コードの小さい順" : ""}</div><pre class="log">${lines.join("\n")}</pre>` +
-      `<div class="dim">memo 部署名 コード で書き込む ／ memo sort で並べ替え</div>`,
-    "memo-view",
-  );
 }

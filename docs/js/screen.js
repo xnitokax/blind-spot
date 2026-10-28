@@ -83,7 +83,6 @@ function updateNext() {
       if (why) $("why").innerHTML = `<span class="why-mark">▸</span><span>${esc(fill(why))}</span>`;
     }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
-    if (CH.memo) chips.push(chip("memo", "memo"));
     for (const t of menuTools(node)) chips.push(chip(t.fill, t.label, "go"));
     for (const d of dirHere(node)) chips.push(chip(d.file ? `open ${d.name}` : `ssh ${d.name}`));
     // ゲームの世界：落ちているものと、その場所でできること（まだやっていないもの）
@@ -115,8 +114,8 @@ function print(html, cls = "") {
   d.className = "line " + cls;
   d.innerHTML = html;
   out.appendChild(d);
-  // memo（任務2の部署コード表）：画面に部署名が出たら、その行を表に足す
-  if (CH?.memo && typeof memoSeen === "function") memoSeen(d);
+  // memo（任務2の部署コード表）：画面に部署名・番号・できた年が出たら、表とタイルに足す
+  if (typeof memoSeen === "function") memoSeen(d);
   scrollDown();
   return d;
 }
@@ -357,8 +356,12 @@ function clockText() {
   const t = h * 60 + m + state.minutes;
   return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 }
+// 年は、スマホでは隠す（上の欄に MEMO のボタンが並んでも、1行に収まるように）
 function updateClock() {
-  $("clock").textContent = CH ? `${CH.date} ${clockText()}` : "";
+  const d = CH?.date?.match(/^(\d{4}\/)(.*)$/);
+  $("clock").innerHTML = CH
+    ? `${d ? `<span class="yr">${esc(d[1])}</span>${esc(d[2])}` : esc(CH.date || "")} ${clockText()}`
+    : "";
 }
 function addLog(text, cls = "") {
   const li = document.createElement("li");
