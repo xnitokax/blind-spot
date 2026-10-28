@@ -188,30 +188,39 @@ async function checkObjectives() {
       await speak(cur.ready, BEAT.react);
     }
   }
+  // tap の任務では、見るものが変わるところ（師匠の話 → CLEAR → NEXT → 師匠の案内）で、タップを待つ
   let cleared = false;
-  while (nowObj() && objDone(nowObj())) {
-    const o = nowObj();
-    state.objIdx++;
-    await pause(cleared ? 400 : 700);
-    cleared = true;
-    SFX.objective();
-    const card = print(
-      `<div class="obj-card clear"><span class="o-tag">OBJECTIVE CLEAR</span><span class="o-text">${esc(o.text)}</span></div>`,
-    );
-    addLog(`CLEAR  ${o.text}`);
-    updateClueCount();
-    // 達成した目標を噛みしめる間（カードがもう一度光ってから、次へ）
-    await pause(900);
-    card.querySelector(".obj-card").classList.add("landed");
-    await pause(1300);
-  }
-  if (cleared && nowObj()) {
-    showObjective(nowObj());
-    await pause(1500);
-    // 新しい目標の案内（どこを探すか）
-    if (nowObj().intro) await speak(nowObj().intro, BEAT.small);
-    setGuide(nowObj().next, nowObj().intro);
-  }
+  if (nowObj() && objDone(nowObj()))
+    await busy(async () => {
+      while (nowObj() && objDone(nowObj())) {
+        const o = nowObj();
+        state.objIdx++;
+        if (tapMode()) await tapWait();
+        else await pause(cleared ? 400 : 700);
+        cleared = true;
+        SFX.objective();
+        const card = print(
+          `<div class="obj-card clear"><span class="o-tag">OBJECTIVE CLEAR</span><span class="o-text">${esc(o.text)}</span></div>`,
+        );
+        addLog(`CLEAR  ${o.text}`);
+        updateClueCount();
+        // 達成した目標を噛みしめる間（カードがもう一度光ってから、次へ）
+        await pause(900);
+        card.querySelector(".obj-card").classList.add("landed");
+        await pause(tapMode() ? 500 : 1300);
+      }
+      if (nowObj()) {
+        if (tapMode()) await tapWait();
+        showObjective(nowObj());
+        await pause(1500);
+        // 新しい目標の案内（どこを探すか）
+        if (nowObj().intro) {
+          if (tapMode()) await tapWait();
+          await speak(nowObj().intro, BEAT.small);
+        }
+        setGuide(nowObj().next, nowObj().intro);
+      }
+    });
   // 目標の goal：その目標の手がかりが全部そろったら、任務完了（どの順番で見つけても、最後の1つで終わる）
   //   goal.early … 前の目標が済んでいなくても、手がかりがそろったら終わる（任務2：千里眼のファイルを開くと、パソコンごと落ちる）
   const last = nowObj()?.goal ? nowObj() : CH.objectives?.find(o => o.goal?.early && allClues(o));
