@@ -9,3 +9,10 @@ desktop.ini
 # 手元だけのメモ・比較ページ
 *_指示文.md
 tools/bgm-samples.html
+
+# ウズ（コードモード）の試作：ライブラリ・ビルドの出力・ゲーム本体の写し（docs/ から自動で写す）は入れない
+uzu-code/node_modules/
+uzu-code/dist/
+uzu-code/game.zip
+uzu-code/public/*
+!uzu-code/public/uzu.css

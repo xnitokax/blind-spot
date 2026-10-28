@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BLIND//SPOT</title>
+    <!-- フォント：本文の BIZ UDゴシック（iPhone には入っていないので読み込む。ないと「…」「─」が半分の幅になって詰まる）、
+         製作者のサイン用の筆記体（connect nitoka の小ネタ）、練習のゲームの世界のドット文字 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=DotGothic16&family=Yellowtail&display=swap"
+    />
+    <!-- 版の番号（元のゲームをビルドしたときの番号） -->
+    <meta name="build" content="202610241824" />
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- ウズ（コードモード）用：ウズのメニューボタン（HUD）とノッチを避ける余白 -->
+    <link rel="stylesheet" href="uzu.css" />
+  </head>
+  <body>
+    <!-- 画面が裂ける演出のフィルター：横の帯ごとに画面をずらし（displacement）、赤と青の色をずらす（数値は JS の tear() が動かす） -->
+    <svg id="fxdefs" aria-hidden="true">
+      <filter id="tear" x="-3%" y="0" width="106%" height="100%" color-interpolation-filters="sRGB">
+        <feTurbulence
+          id="tearNoise"
+          type="fractalNoise"
+          baseFrequency="0 0.05"
+          numOctaves="1"
+          seed="1"
+          result="noise"
+        />
+        <feComponentTransfer in="noise" result="bands">
+          <feFuncR
+            type="discrete"
+            tableValues="0.5 0.5 0.12 0.5 0.5 0.86 0.5 0.3 0.5 0.5 0.7 0.5 0.04 0.5"
+          />
+          <feFuncG type="linear" slope="0" intercept="0.5" />
+        </feComponentTransfer>
+        <feDisplacementMap
+          id="tearMap"
+          in="SourceGraphic"
+          in2="bands"
+          scale="0"
+          xChannelSelector="R"
+          yChannelSelector="G"
+          result="torn"
+        />
+        <feColorMatrix
+          in="torn"
+          type="matrix"
+          values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+          result="red"
+        />
+        <feOffset id="tearR" in="red" dx="0" result="red2" />
+        <feColorMatrix
+          in="torn"
+          type="matrix"
+          values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"
+          result="cyan"
+        />
+        <feOffset id="tearB" in="cyan" dx="0" result="cyan2" />
+        <feBlend in="red2" in2="cyan2" mode="screen" />
+      </filter>
+    </svg>
+    <div id="stage">
+      <div class="wrap" id="wrap">
+        <header>
+          <h1 id="gameTitle">BLIND//SPOT</h1>
+          <span id="np" aria-live="polite">♪ 師匠のプレイリスト</span>
+          <button id="bgm" type="button" aria-label="BGM のオン・オフ">BGM ON</button>
+          <button id="mute" type="button" aria-label="音のオン・オフ">SOUND ON</button>
+          <span id="clock" class="meta"></span>
+        </header>
+
+        <main class="panel" id="term">
+          <div id="out"></div>
+          <div class="dock" id="dock">
+            <button id="toBottom" type="button" aria-label="いちばん下へ">↓ 最新へ</button>
+            <div id="job" aria-live="polite"></div>
+            <div id="why" aria-live="polite"></div>
+            <div id="next" aria-label="次にできること"></div>
+            <form class="row" id="form" autocomplete="off">
+              <span class="ps" id="prompt"></span>
+              <input
+                id="cmd"
+                spellcheck="false"
+                autocapitalize="off"
+                autocorrect="off"
+                autocomplete="off"
+                enterkeyhint="go"
+                aria-label="コマンド入力"
+              />
+              <button id="run" type="submit" aria-label="実行">⏎</button>
+            </form>
+          </div>
+        </main>
+
+        <aside class="panel" id="side">
+          <div class="trace-label">
+            <span>TRACE（逆探知）</span>
+            <span id="traceNum">0%</span>
+          </div>
+          <div class="bar"><i id="traceBar"></i></div>
+          <h2>ACCESS LOG</h2>
+          <ul id="log"></ul>
+          <h2 class="evi-head">
+            <span>CASE FILE</span>
+            <span id="eviCount"></span>
+          </h2>
+          <ul id="evi"></ul>
+        </aside>
+      </div>
+    </div>
+    <div id="dead" aria-hidden="true"></div>
+
+    <div id="fx"></div>
+    <!-- トーク：師匠との暗号チャット ／ 依頼人と会う場面（js/talk.js） -->
+    <div id="talk"></div>
+    <div id="overlay"></div>
+    <div id="gate"></div>
+
+    <script src="nz-crypto.js"></script>
+    <script src="scenario.data.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/screen.js"></script>
+    <script src="js/effects.js"></script>
+    <script src="js/logic.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/story.js"></script>
+    <script src="js/commands.js"></script>
+    <script src="js/talk.js"></script>
+    <script src="js/title.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/main.js"></script>
+    <!-- ウズ（コードモード）とのつなぎ：SDK の初期化と、アプリへの合図（firstFrameReady / gameReady） -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

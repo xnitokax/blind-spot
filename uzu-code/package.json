@@ -1,0 +1,25 @@
+{
+  "name": "blind-spot-code",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "sync": "node tools/sync.mjs",
+    "predev": "node tools/sync.mjs",
+    "prebuild": "node tools/sync.mjs",
+    "dev": "vite",
+    "harness": "uzu dev",
+    "build": "tsc && vite build",
+    "zip": "npm run build && cd dist && zip -r ../game.zip .",
+    "publish": "uzu publish",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@uzuhq/code-sdk": "*"
+  },
+  "devDependencies": {
+    "@uzuhq/code-cli": "*",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}

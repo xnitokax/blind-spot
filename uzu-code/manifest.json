@@ -1,0 +1,8 @@
+{
+  "id": "blindspot-nitoka-proto",
+  "build": "npm run build",
+  "output": "dist",
+  "playerCount": 1,
+  "orientation": "portrait",
+  "dev": { "command": "npm run dev" }
+}

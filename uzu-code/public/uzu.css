@@ -1,0 +1,33 @@
+/* =========================================================
+   ウズ（コードモード）用の上書き
+   ウズのメニューボタン（左上の HUD）と、ノッチ・ホームインジケータを避ける。
+   値はアプリ（SDK の init()）が CSS 変数で配る。ブラウザで直接開いたときは 0 になる。
+   ※ 素の env(safe-area-inset-*) は、ウズの WebView の中では 0 を返すことがあるので使わない
+   ========================================================= */
+.wrap {
+  padding-top: calc(16px + var(--uzu-content-inset-top, 0px));
+  padding-right: calc(16px + var(--uzu-content-inset-right, 0px));
+  padding-bottom: calc(16px + var(--uzu-content-inset-bottom, 0px));
+  padding-left: calc(16px + var(--uzu-content-inset-left, 0px));
+}
+@media (max-width: 800px) {
+  .wrap {
+    padding-top: calc(12px + var(--uzu-content-inset-top, 0px));
+    padding-right: calc(12px + var(--uzu-content-inset-right, 0px));
+    padding-bottom: calc(12px + var(--uzu-content-inset-bottom, 0px));
+    padding-left: calc(12px + var(--uzu-content-inset-left, 0px));
+  }
+}
+
+/* 画面いっぱいに重なる画面（会話・入口・完了・ゲームオーバー）も、同じだけ避ける
+   （ゲームの本体 .wrap とは別の層なので、ここで足す。演出の目や砂嵐は、隠れても困らないのでそのまま） */
+#talk,
+#gate,
+#overlay,
+#dead {
+  padding-top: var(--uzu-content-inset-top, 0px);
+  padding-right: var(--uzu-content-inset-right, 0px);
+  padding-bottom: var(--uzu-content-inset-bottom, 0px);
+  padding-left: var(--uzu-content-inset-left, 0px);
+  box-sizing: border-box;
+}

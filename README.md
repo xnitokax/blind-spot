@@ -132,14 +132,24 @@ docs/                  公開されるファイル
   scenario.data.js     ビルドで生成したデータ（自動生成。体験版では練習と任務1だけ）
   scenario.more.js     体験版の続き（任務2以降。connect nitoka で読み込む。自動生成）
 tools/
-  serve.ps1            開発用ローカルサーバー（ポート 8766）
+  serve.ps1            開発用ローカルサーバー（ポート 8766。Windows 用）
+  serve.mjs            同じサーバーの Node.js 版（Windows 以外・クラウド用）
   build.html           ビルドツール
+uzu-code/              ウズのコードモード用の試作（SDK のつなぎ・HUD をよける CSS・manifest）
+                       ゲーム本体は docs/ から public/ へ自動で写す（npm run dev / build の前。tools/sync.mjs）
+CLAUDE.md              Claude 向けの開発メモ（進め方の約束・ゲームの決まり・いまの状況）
 ```
 
 ## 開発
 
 ```bash
 powershell -ExecutionPolicy Bypass -File tools/serve.ps1
+```
+
+Windows 以外（クラウドなど）では：
+
+```bash
+node tools/serve.mjs
 ```
 
 - ゲーム：http://localhost:8766/docs/
