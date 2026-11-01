@@ -135,6 +135,8 @@ async function play(steps) {
     if (s.set || s.add || s.unflag) {
       refreshLinks();
       renderObjectives();
+      // 任務2の MEMO ボタン（{ set: { memo: true } } で出る）
+      if (typeof memoButton === "function") memoButton();
     }
     // { ending: { id, title } } … エンド。この端末に記録して、エンドのカードを出し、任務の endWarp の場所へ飛ぶ
     if (s.ending) {

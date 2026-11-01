@@ -275,6 +275,11 @@ async function speak(lines, beat = 0) {
     if (beat) await wait(beat);
     // 師匠のセリフの間は、演出のテンポ（tempo）に関係なく一定（速くしない）
     for (const s of lines) {
+      // セリフのあいだに、台本の動き（{ set } { spot } など）もはさめる
+      if (typeof s !== "string") {
+        await play([s]);
+        continue;
+      }
       await pause(220);
       await typeLine(s);
       await afterLine(s);

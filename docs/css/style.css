@@ -3361,21 +3361,23 @@ body[data-zone="rpg"] #eviCount {
 }
 
 /* ---------------- MEMO（任務2の部署コード表。docs/js/memo.js） ---------------- */
-/* ヘッダーのボタン：BGM・SOUND と同じ形で、少しだけ目立たせる。新しいタイルが届いたら、黄色の点が灯る */
+/* ヘッダーのボタン：BGM・SOUND より大きく、色をつけて目立たせる。新しいタイルが届いたら、黄色の点が灯る */
 #memoBtn {
   font: inherit;
-  font-size: 12px;
-  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  background: rgba(61, 255, 168, 0.12);
   color: var(--accent);
-  border: 1px solid rgba(61, 255, 168, 0.45);
-  border-radius: 4px;
-  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 4px 14px;
   cursor: pointer;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   position: relative;
+  box-shadow: 0 0 10px rgba(61, 255, 168, 0.25);
 }
 #memoBtn:hover {
-  border-color: var(--accent);
+  background: rgba(61, 255, 168, 0.22);
 }
 #memoBtn.new::after {
   content: "";
@@ -3416,7 +3418,7 @@ body[data-zone="rpg"] #eviCount {
   padding: 16px;
   box-sizing: border-box;
   display: grid;
-  grid-template-rows: auto auto 1fr auto auto;
+  grid-template-rows: auto 1fr auto auto;
   gap: 8px;
 }
 .memo-head {
@@ -3445,51 +3447,34 @@ body[data-zone="rpg"] #eviCount {
   padding: 4px 12px;
   cursor: pointer;
 }
-.memo-sorts {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.memo-sorts button {
-  font: inherit;
-  font-size: 12px;
-  color: var(--dim);
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 99px;
-  padding: 2px 12px;
-  cursor: pointer;
-}
-.memo-sorts button[aria-pressed="true"] {
-  color: var(--bg);
-  background: var(--dim);
-  border-color: var(--dim);
-}
 .memo-table {
   overflow-y: auto;
   min-height: 0;
 }
 .memo-row {
   display: grid;
-  grid-template-columns: 1fr 70px 70px;
-  gap: 8px;
+  grid-template-columns: 1fr 104px;
+  gap: 12px;
   align-items: center;
-  padding: 4px 0;
+  padding: 8px 0;
   border-bottom: 1px dashed var(--line);
 }
 .memo-th {
   color: var(--dim);
-  font-size: 11px;
+  font-size: 12px;
+  padding: 4px 0;
   border-bottom-style: solid;
 }
 .memo-name {
   min-width: 0;
+  font-size: 16px;
 }
 .memo-name small {
   display: block;
-  color: var(--dim);
-  font-size: 10px;
-  line-height: 1.3;
+  color: var(--voice);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 2px;
 }
 .memo-row.special .memo-name {
   color: var(--warn);
@@ -3497,7 +3482,7 @@ body[data-zone="rpg"] #eviCount {
 .memo-slot {
   box-sizing: border-box;
   width: 100%;
-  height: 30px;
+  height: 40px;
   border-radius: 5px;
   border: 1px dashed var(--line);
   display: grid;
@@ -3505,7 +3490,7 @@ body[data-zone="rpg"] #eviCount {
   color: var(--dim);
   background: transparent;
   font: inherit;
-  font-size: 13px;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
   padding: 0;
 }
@@ -3513,13 +3498,6 @@ body[data-zone="rpg"] #eviCount {
   border: 1px solid transparent;
   background: #10201d;
   color: var(--fg);
-}
-.memo-slot.filled.year {
-  color: var(--voice);
-}
-.memo-slot.none {
-  border-style: dotted;
-  opacity: 0.5;
 }
 .memo-slot.target {
   border-color: var(--accent);
@@ -3599,16 +3577,16 @@ body[data-zone="rpg"] #eviCount {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  min-height: 30px;
+  min-height: 40px;
   max-height: 30vh;
   overflow-y: auto;
 }
 .memo-tile {
   font: inherit;
-  font-size: 13px;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
-  min-width: 58px;
-  height: 30px;
+  min-width: 72px;
+  height: 40px;
   border-radius: 5px;
   border: 1px solid var(--line);
   background: #10201d;
@@ -3618,14 +3596,6 @@ body[data-zone="rpg"] #eviCount {
   transition:
     transform 0.15s ease,
     border-color 0.15s ease;
-}
-.memo-tile.year {
-  color: var(--voice);
-}
-.memo-tile .k {
-  font-size: 9px;
-  color: var(--dim);
-  margin-right: 4px;
 }
 .memo-tile[aria-pressed="true"] {
   border-color: var(--accent);
@@ -3641,7 +3611,7 @@ body[data-zone="rpg"] #eviCount {
   min-height: 2.6em;
   border-top: 1px solid var(--line);
   padding-top: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .memo-voice p {
   margin: 0;
@@ -3658,8 +3628,8 @@ body[data-zone="rpg"] #eviCount {
 }
 @media (max-width: 800px) {
   #memoBtn {
-    font-size: 11px;
-    padding: 1px 5px;
+    font-size: 13px;
+    padding: 3px 10px;
   }
   #memo {
     top: var(--vvtop, 0px);

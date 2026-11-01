@@ -1513,6 +1513,7 @@ const SPOTS = {
   trace: ".trace-label, #side > .bar",
   log: "#side > h2:not(.evi-head), #log",
   case: ".evi-head, #evi",
+  memo: "#memoBtn",
 };
 const isPhone = () => matchMedia("(max-width: 800px)").matches;
 function spot(names) {
