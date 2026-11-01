@@ -74,9 +74,14 @@ async function startChapter(ch) {
     if (tapMode()) await tapWait();
     else await wait(1300);
   });
+  const jump = testJump();
   // 導入の台本（{ music: true } で師匠が音楽を流し始める）
   await busy(async () => {
-    await play(CH.intro || []);
+    // テストで途中の目標から始めるときは、導入は飛ばして、曲だけ流す
+    if (jump) {
+      const m = (CH.intro || []).find(s => s && typeof s === "object" && "music" in s);
+      if (m) await play([m]);
+    } else await play(CH.intro || []);
     // 導入で師匠が言った「次の一手」（最初の場所に着いたら NEXT 欄に出る）
     if (CH.next) state.guide = CH.next;
     // 最初の目標
@@ -91,6 +96,31 @@ async function startChapter(ch) {
     }
   });
   await enterNode(CH.start);
+  if (jump) await jumpToObjective(jump);
+}
+
+// ---------------- テスト用：途中の目標から始める ----------------
+// test.html から ?line=回線コード&obj=N で開くと、N 番目の目標から始まる（最初に開いた任務だけ）
+//   それより前の目標の手がかりは、見つけたことにする。そのあと、ふつうに目標が切りかわる（CLEAR → 次の目標 → 師匠の案内）
+//   禁止ワードの手がかりを飛ばしたときは、検索で弾かれたあとと同じにする（TRACE が上がり、次の検索は2回目の扱い）
+let testObjUsed = false;
+function testJump() {
+  const n = +params.get("obj") || 0;
+  if (testObjUsed || n < 2 || !CH.objectives?.length || CH.code !== (params.get("line") || "").toUpperCase()) return 0;
+  testObjUsed = true;
+  return Math.min(n, mainObjs().length);
+}
+async function jumpToObjective(n) {
+  const skipped = mainObjs()
+    .slice(0, n - 1)
+    .flatMap(o => o.clues || []);
+  const ban = CH.banned;
+  if (ban && skipped.some(c => (ban.first || []).some(x => x?.clue === c))) {
+    state.banHits = 1;
+    addTrace(ban.trace ?? 40);
+  }
+  for (const c of skipped) await addClue(c, { quiet: true });
+  await checkObjectives();
 }
 
 // 演出の台本を再生する（書き方は src/scenario.js の先頭を参照）

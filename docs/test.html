@@ -71,6 +71,7 @@
       <h1>BLIND//SPOT</h1>
       <p>テスト用の入口です。押した任務から、すぐ始まります。<br />オープニングと呼び名の入力は飛ばします。</p>
       <a href="#" data-line="SQUINT"><b>任務2</b>プロジェクト室<span>二部の最初（ポータル）から</span></a>
+      <a href="#" data-line="SQUINT" data-obj="2"><b>任務2</b>部署コードを割り出す<span>特別プロジェクト室を search して、弾かれたあとから（MEMO が出るところ）</span></a>
       <a href="#" data-line="TEIWA"><b>任務1</b>社員名簿<span>一部の最初から</span></a>
       <a href="#" data-line="TRAINING"><b>練習</b>師匠のサーバー<span>チュートリアルと RPG</span></a>
       <a href="#" data-line="" data-opening="1"><b>最初から</b>オープニング<span>汐里が来る場面から見直す</span></a>
@@ -88,7 +89,9 @@
           } catch {}
           const line = a.dataset.line;
           // v … 古い画面が出ないように、毎回ちがう URL にする
-          location.href = "index.html?" + (line ? "line=" + line + "&" : "") + "v=" + Date.now();
+          // obj … その任務の、何番目の目標から始めるか（前の目標は済ませたことにする）
+          const obj = a.dataset.obj ? "obj=" + a.dataset.obj + "&" : "";
+          location.href = "index.html?" + (line ? "line=" + line + "&" : "") + obj + "v=" + Date.now();
         }),
       );
     </script>
