@@ -1721,6 +1721,115 @@ async function fxWatched(withEye = true, eyeStyle = EYE_STYLE) {
   eye.remove();
 }
 
+// 見つかった（GAME OVER：TRACE が 100%）
+//   ウズのプロフィールのカードが、こちらの画面に組み上がっていく。分かった名前とアイコンだけがはっきり出て、
+//   ほかの欄（ID・作成日・遊んだ数・QR）はノイズが走って読めない → 赤い目が浮かび上がって、こちらを見る → 砂嵐
+//   名前とアイコンは、ウズの中ならウズのニックネームとアイコン（window.UZU.me）、そうでなければ handle
+function noiseBox(w, h, cls = "") {
+  const cv = document.createElement("canvas");
+  cv.width = w;
+  cv.height = h;
+  cv.className = `uz-noise ${cls}`;
+  return cv;
+}
+function drawNoise(cv) {
+  const c = cv.getContext("2d"),
+    img = c.createImageData(cv.width, cv.height),
+    d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = (Math.random() * 255) | 0;
+    d[i] = d[i + 1] = d[i + 2] = v;
+    d[i + 3] = 255;
+  }
+  c.putImageData(img, 0, 0);
+}
+async function fxCaught() {
+  const me = window.UZU?.me || {};
+  const name = me.nickname || handle || "anonymous";
+  const box = document.createElement("div");
+  box.className = "fx-caught";
+  box.innerHTML = `
+    <div class="uz-scan">照合中<span></span></div>
+    <div class="uz-card">
+      <div class="uz-side"><b>UZU</b><span>マダミスアプリ</span></div>
+      <div class="uz-main">
+        <div class="uz-badge uz-step">✓ <i data-n="played"></i> イベント遊びました</div>
+        <div class="uz-row uz-step"><span class="uz-k">名前</span><b class="uz-name"></b></div>
+        <div class="uz-row uz-step"><span class="uz-k">ID</span><i data-n="id"></i></div>
+        <div class="uz-row uz-step"><span class="uz-k">作成日</span><i data-n="date"></i></div>
+      </div>
+      <div class="uz-right">
+        <div class="uz-icon uz-step"></div>
+        <div class="uz-qr uz-step"></div>
+      </div>
+    </div>
+    <div class="uz-found">接続元の利用者を、特定しました</div>`;
+  const sizes = { played: [34, 9], id: [70, 10], date: [118, 10] };
+  for (const el of box.querySelectorAll("[data-n]")) el.replaceWith(noiseBox(...sizes[el.dataset.n], "txt"));
+  box.querySelector(".uz-qr").append(noiseBox(42, 42));
+  const icon = box.querySelector(".uz-icon");
+  if (me.iconUrl) {
+    const img = new Image();
+    img.alt = "";
+    img.src = me.iconUrl;
+    img.onerror = () => img.replaceWith(noiseBox(40, 40));
+    icon.append(img);
+  } else icon.append(noiseBox(40, 40));
+  document.body.appendChild(box);
+  // ノイズは、カードが出ているあいだ、ずっと動き続ける
+  let alive = true;
+  (async () => {
+    while (alive) {
+      box.querySelectorAll(".uz-noise").forEach(drawNoise);
+      await sleep(70);
+    }
+  })();
+  await sleep(30);
+  box.classList.add("on");
+  const scan = box.querySelector(".uz-scan span");
+  for (let i = 0; i < 6; i++) {
+    scan.textContent = " " + "▮".repeat(i + 1) + "·".repeat(5 - i);
+    SFX.tick();
+    await sleep(REDUCED ? 0 : 110);
+  }
+  box.querySelector(".uz-card").classList.add("in");
+  SFX.select();
+  await sleep(REDUCED ? 0 : 450);
+  // 欄が、上から順に出てくる（名前だけは、文字化けからはっきりした名前に戻る）
+  for (const step of box.querySelectorAll(".uz-step")) {
+    step.classList.add("in");
+    SFX.tick();
+    if (step.querySelector(".uz-name")) {
+      const n = step.querySelector(".uz-name");
+      n.textContent = name;
+      await decode(n, 900);
+      SFX.granted();
+    }
+    await sleep(REDUCED ? 0 : 260);
+  }
+  await sleep(REDUCED ? 0 : 500);
+  box.querySelector(".uz-found").classList.add("in");
+  SFX.alert();
+  pulse(box.querySelector(".uz-card"), "caught", 700);
+  await sleep(REDUCED ? 1500 : 1500);
+  // 赤い目：カードの上に、暗がりから浮かび上がって、こちらを見る
+  if (!REDUCED) {
+    const eye = document.createElement("div");
+    eye.className = "fx-eye";
+    eye.innerHTML = WATCH_EYE;
+    document.body.appendChild(eye);
+    SFX.gwan?.(2.18, { open: true, drift: true, peak: true });
+    await sleep(20);
+    eye.classList.add("emerge");
+    box.classList.add("dim");
+    await sleep(2400);
+    await noiseBurst(620);
+    eye.remove();
+  }
+  alive = false;
+  box.remove();
+}
+
 // 心臓の脈（任務2の曲 watch で、コマンドを打ったとき）：画面のふちが暗い赤に「ドクン、ドクン」と沈み、画面がかすかにふくらむ
 //   音と同じ瞬間に、sound.js から呼ばれる
 SFX.onPulse = () => {

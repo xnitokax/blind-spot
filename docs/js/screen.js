@@ -398,6 +398,8 @@ function addTrace(n) {
       setStorm(1);
       await sleep(1200);
       await powerOff();
+      // 消えた画面に、こちらのプロフィールが組み上がり、赤い目に見つかる（effects.js の fxCaught）
+      await fxCaught();
       showEnding(S.gameOver, { retry: true });
     })();
   }
