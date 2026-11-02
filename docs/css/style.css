@@ -3559,6 +3559,7 @@ body[data-zone="rpg"] #eviCount {
 }
 .memo-slot.note::placeholder {
   color: rgba(255, 193, 77, 0.45);
+  text-align: center;
 }
 .memo-slot.note:focus {
   border-style: solid;
