@@ -120,14 +120,14 @@ function renderObjectives(fresh) {
     // 調べ終わったら、最後の目標として return を案内する
     html += li("o-now", "「return」で成果を持って帰る");
   }
-  // 見つけてはいるが、まだ出ていない目標の手がかり
+  // 見つけてはいるが、まだ出ていない目標の手がかり（見出しは NOTE。任務2の部署コード表 MEMO と、名前がかぶらないように）
   const shown = new Set(
     [...mains.slice(0, state.objIdx + 1), ...sideObjs()].flatMap(x => x.clues || []),
   );
   const extra = state.clues.filter(c => !shown.has(c));
   if (extra.length)
     html +=
-      li("o-sec", "MEMO") +
+      li("o-sec", "NOTE") +
       extra.map(c => li(`o-clue jump${c === fresh ? " new" : ""}`, `◆ ${esc(c)}`, c)).join("");
   for (const s of sideObjs()) {
     if (!objCount(s)) continue; // ひとつも見つけていない「気になること」は、まだ出さない
