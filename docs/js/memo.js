@@ -123,7 +123,8 @@ function memoEl() {
     e.target.value = e.target.value.normalize("NFKC").replace(/\D/g, "").slice(0, 4);
     memoState().notes[n] = e.target.value;
     // あの部屋の欄に番号を書きこんだら、その番号で探すように、師匠がひとこと（一度だけ）
-    if (n === CH.memo.special.name && /^\d{4}$/.test(e.target.value)) memoSay(CH.memo.hints?.try, "hint:try");
+    //   材料がそろってから（段階が try になったとき）だけ。それより前に、あてずっぽうで書いたときは何も言わない
+    if (n === CH.memo.special.name && memoStage() === "try") memoSay(CH.memo.hints?.try, "hint:try");
   });
   // 書きこみ終えたら（欄から離れたら）、表をコード順に並べ直す
   el.addEventListener("change", e => {
