@@ -43,7 +43,9 @@ function memoSeen(el) {
   };
   for (const r of memoRows()) {
     if (text.includes(r.name)) addRow(r);
-    if (r.code && !r.special && text.includes(`dept:${r.code}`)) got = memoGive(r) || got;
+    // 番号：「dept:1081」、または表の「1081　経理部」のように、番号のすぐあとに部署名が並んでいるとき
+    if (r.code && !r.special && (text.includes(`dept:${r.code}`) || new RegExp(`(^|\\D)${r.code}[ 　]+${r.name}`, "m").test(text)))
+      got = memoGive(r) || got;
     if (r.year && !m.years[r.name] && r.when?.some(w => text.includes(w))) {
       m.years[r.name] = true;
       addLog(`MEMO ${r.name} ${r.year}年`);
@@ -120,6 +122,17 @@ function memoEl() {
     if (!n) return;
     e.target.value = e.target.value.normalize("NFKC").replace(/\D/g, "").slice(0, 4);
     memoState().notes[n] = e.target.value;
+    // あの部屋の欄に番号を書きこんだら、その番号で探すように、師匠がひとこと（一度だけ）
+    if (n === CH.memo.special.name && /^\d{4}$/.test(e.target.value)) memoSay(CH.memo.hints?.try, "hint:try");
+  });
+  // 書きこみ終えたら（欄から離れたら）、表をコード順に並べ直す
+  el.addEventListener("change", e => {
+    if (!e.target.dataset?.note) return;
+    setTimeout(() => {
+      const id = document.activeElement?.id;
+      renderMemo();
+      if (id) $(id)?.focus({ preventScroll: true });
+    }, 0);
   });
   el.addEventListener("keydown", e => {
     e.stopPropagation();
@@ -145,8 +158,39 @@ function openMemo() {
   renderMemo();
   memoButton();
   if (finePointer) memoEl().querySelector(".memo-close").focus({ preventScroll: true });
-  if (r) memoSay(first.say, "first");
+  if (r) return memoSay(first.say, "first");
+  // 開くたびに、いまの段階で何を探せばいいかを、師匠がひとこと（段階が変わってから、はじめて開いたときだけ）
+  const st = memoStage();
+  if (st && CH.memo.hints?.[st]) memoSay(CH.memo.hints[st], `hint:${st}`);
 }
+
+// 推理の段階（MEMO を開いたときの、師匠のひとこと hints のどれを出すか）
+//   codes … 番号を集めている ／ rule … 番号がそろったので、決まりを外で調べる ／ when … あの部屋ができた年を探す
+//   years … まわりの部署ができた年を探す ／ gone … あいだにできて、今はない部署を探す ／ order … できた順に並べて書きこむ
+//   try … 書きこんだ番号で、社内を探す ／ null … 番号が分かった
+function memoStage() {
+  const conf = CH.memo,
+    m = memoState();
+  if (state.clues.includes(conf.special.clue)) return null;
+  const placed = conf.rows.filter(r => m.placed[`${r.name}:code`]).length;
+  if (!state.clues.includes(conf.rule)) return placed < (conf.sortMin ?? 4) ? "codes" : "rule";
+  if (!m.years[conf.special.name]) return "when";
+  if (!(conf.around || []).every(n => m.years[n])) return "years";
+  if (!(conf.former || []).every(r => m.years[r.name])) return "gone";
+  if (!/^\d{4}$/.test(m.notes[conf.special.name] || "")) return "order";
+  return "try";
+}
+
+// 三角数の並び（rule の手がかりが分かったら、表の番号のあいだに「空き番号」を出す）
+const triBetween = (lo, hi) => {
+  const out = [];
+  for (let n = 1; ; n++) {
+    const t = (n * (n + 1)) / 2;
+    if (t >= hi) break;
+    if (t > lo) out.push(t);
+  }
+  return out;
+};
 function closeMemo() {
   const el = $("memo");
   if (!el?.classList.contains("on")) return;
@@ -199,8 +243,18 @@ function renderMemo(landed) {
     .sort((a, b) => a.c - b.c || a.i - b.i)
     .map(x => x.r);
 
+  // 決まり（三角数）が分かったら、分かっている番号のあいだに、まだ埋まっていない番号を「空き」として出す
+  const rule = state.clues.includes(conf.rule);
+  const used = new Set(list.map(codeOf).filter(c => c < 1e9));
+  let prev = null;
   let html = `<div class="memo-row memo-th"><span>部署名</span><span>コード</span></div>`;
   for (const r of list) {
+    const c = codeOf(r);
+    if (rule && prev && c < 1e9) {
+      const gaps = triBetween(prev, c).filter(t => !used.has(t));
+      if (gaps.length) html += `<div class="memo-gap"><span>空き</span>${gaps.join("・")}</div>`;
+    }
+    if (c < 1e9) prev = c;
     const ck = `${r.name}:code`;
     let codeCell;
     if (r.special && confirmed) codeCell = `<span class="memo-slot confirmed">${r.code}</span>`;
@@ -264,6 +318,8 @@ function memoPlace(slot) {
   if (praised) memoSay(conf.first.done, "firstDone");
   // 番号が sortMin 個そろったら、間が広がっていくのに師匠が気づく（表は、いつもコード順）
   const codes = conf.rows.filter(x => m.placed[`${x.name}:code`]).length;
-  if (codes >= (conf.sortMin ?? 4) && !m.said.sort)
+  if (codes >= (conf.sortMin ?? 4) && !m.said.sort) {
+    m.said["hint:rule"] = true; // 次に開いたとき、同じ話（外で調べろ）をくり返さない
     setTimeout(() => memoSay(conf.sortSay, "sort"), praised ? 2400 : 700);
+  }
 }

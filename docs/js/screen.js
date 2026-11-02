@@ -387,9 +387,12 @@ function addTrace(n) {
   updateTrace();
   pulse($("term"), "flash", 1000);
   impact();
-  if (state.trace >= 100) {
+  // 逆探知が 100% に届いたら、どの任務・どの場面でも、同じ GAME OVER の演出（一度だけ）
+  if (state.trace >= 100 && !state.over) {
     state.over = true;
+    state.halt = true; // 流れている台本（師匠のセリフなど）は、そこで打ち切る
     cmd.disabled = true;
+    if (typeof closeMemo === "function") closeMemo();
     (async () => {
       await sleep(600);
       SFX.boom();

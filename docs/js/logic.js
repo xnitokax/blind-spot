@@ -347,8 +347,19 @@ async function search(arg) {
     e => (!e.need || state.flags[e.need]) && terms.every(t => searchText(e).includes(t)),
   );
   // numberFacts（外の検索サイト）：数字だけで検索すると、その数の性質（数のずかん）がいちばん上に出る
-  if (conf.numberFacts && terms.length === 1 && /^\d{1,6}$/.test(terms[0]) && +terms[0] > 0)
-    hits.unshift(numberFacts(+terms[0]));
+  if (conf.numberFacts && terms.length === 1 && /^\d{1,6}$/.test(terms[0]) && +terms[0] > 0) {
+    const facts = numberFacts(+terms[0]);
+    // numberHint：決まった数（任務2の部署コード）を、いくつか調べても気づかないとき、師匠が見比べるように言う（一度だけ）
+    const nh = conf.numberHint;
+    if (nh?.codes?.includes(terms[0]) && !(nh.until && state.clues.includes(nh.until))) {
+      (state.numbersSeen ||= new Set()).add(terms[0]);
+      if (state.numbersSeen.size >= (nh.after ?? 2) && !state.said.has("numberHint")) {
+        state.said.add("numberHint");
+        facts.say = nh.say;
+      }
+    }
+    hits.unshift(facts);
+  }
   const shown = hits.slice(0, limit);
   state.minutes += 1;
   updateClock();

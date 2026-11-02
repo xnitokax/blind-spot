@@ -3459,6 +3459,25 @@ body[data-zone="rpg"] #eviCount {
   padding: 8px 0;
   border-bottom: 1px dashed var(--line);
 }
+/* 空き番号（三角数の決まりが分かってから）：番号のあいだに、まだ埋まっていない番号を小さく出す */
+.memo-gap {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--line);
+  color: var(--warn);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+.memo-gap span {
+  color: var(--dim);
+  font-size: 11px;
+  margin-right: auto;
+}
 .memo-th {
   color: var(--dim);
   font-size: 12px;
