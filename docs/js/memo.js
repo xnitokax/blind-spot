@@ -167,7 +167,7 @@ function openMemo() {
 }
 
 // 推理の段階（MEMO を開いたときの、師匠のひとこと hints のどれを出すか）
-//   open … まだ MEMO を開いていない ／ codes … 番号を集めている ／ rule … 番号がそろったので、決まりを外で調べる ／ when … あの部屋ができた年を探す
+//   open … まだ MEMO を開いていない ／ codes … 番号を集めている ／ place … 届いたタイルが残っている ／ rule … 番号がそろったので、決まりを外で調べる ／ when … あの部屋ができた年を探す
 //   years … まわりの部署ができた年を探す ／ gone … あいだにできて、今はない部署を探す ／ order … できた順に並べて書きこむ
 //   try … 書きこんだ番号で、社内を探す ／ null … 番号が分かった
 function memoStage() {
@@ -177,6 +177,8 @@ function memoStage() {
   if (conf.first && !m.said.first) return "open"; // まだ MEMO を一度も開いていない
   const placed = conf.rows.filter(r => m.placed[`${r.name}:code`]).length;
   if (!state.clues.includes(conf.rule)) return placed < (conf.sortMin ?? 4) ? "codes" : "rule";
+  // 届いたタイルを入れないままだと、表の「未確認」の番号が正しく出ない（あの部屋のまわりが見えない）
+  if (m.tiles.length) return "place";
   if (!m.years[conf.special.name]) return "when";
   if (!(conf.around || []).every(n => m.years[n])) return "years";
   if (!(conf.former || []).every(r => m.years[r.name])) return "gone";
@@ -184,7 +186,7 @@ function memoStage() {
   return "try";
 }
 
-// 三角数の並び（rule の手がかりが分かったら、表の番号のあいだに「空き番号」を出す）
+// 三角数の並び（rule の手がかりが分かったら、表の番号のあいだに「未確認」の番号を出す）
 const triBetween = (lo, hi) => {
   const out = [];
   for (let n = 1; ; n++) {
@@ -246,7 +248,7 @@ function renderMemo(landed) {
     .sort((a, b) => a.c - b.c || a.i - b.i)
     .map(x => x.r);
 
-  // 決まり（三角数）が分かったら、分かっている番号のあいだに、まだ埋まっていない番号を「空き」として出す
+  // 決まり（三角数）が分かったら、分かっている番号のあいだに、まだ埋まっていない番号を「未確認」として出す
   const rule = state.clues.includes(conf.rule);
   const used = new Set(list.map(codeOf).filter(c => c < 1e9));
   let prev = null;
@@ -255,7 +257,7 @@ function renderMemo(landed) {
     const c = codeOf(r);
     if (rule && prev && c < 1e9) {
       const gaps = triBetween(prev, c).filter(t => !used.has(t));
-      if (gaps.length) html += `<div class="memo-gap"><span>空き</span>${gaps.join("・")}</div>`;
+      if (gaps.length) html += `<div class="memo-gap"><span>未確認</span>${gaps.join("・")}</div>`;
     }
     if (c < 1e9) prev = c;
     const ck = `${r.name}:code`;

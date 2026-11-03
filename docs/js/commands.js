@@ -591,8 +591,10 @@ async function camRec(rec, arg) {
     }
   });
   // 並び替えて、止められていたカメラがいちばん上に来たら、師匠がひとこと（一度だけ）
-  if (sorted && rows[0]?.id === rec.target && rows[0].kept < to - from && rec.found)
+  if (sorted && rows[0]?.id === rec.target && rows[0].kept < to - from && rec.found) {
+    if (rec.flag) state.flags[rec.flag] = true; // 止められていたカメラを見つけた印（フロア図で、師匠がそのカメラに触れる）
     await oops(`camrec:${state.current}`, rec.found);
+  }
   // 並べずに出したときは、短い順に並べるように、師匠がひとこと（一度だけ）
   else if (!sorted && rec.unsorted) await oops(`camrec-unsorted:${state.current}`, rec.unsorted);
 }
@@ -627,12 +629,20 @@ async function toolPage(tool, arg) {
     print(`<div class="doc tool-page">${fill(page.html)}</div>`, "node result reveal");
     scrollDown();
     await wait(450);
-    if (!first) return;
-    if (page.flag) state.flags[page.flag] = true;
-    if (page.clue) await addClue(page.clue);
-    if (page.say?.length) {
-      await tapWait();
-      await speak(page.say, BEAT.react);
+    if (first) {
+      if (page.flag) state.flags[page.flag] = true;
+      if (page.clue) await addClue(page.clue);
+      if (page.say?.length) {
+        await tapWait();
+        await speak(page.say, BEAT.react);
+      }
+    }
+    // also：[{ if, say }] … その画面を見たとき、条件（cond）に合えば師匠がひとこと（それぞれ一度だけ。2回目以降に見たときも）
+    for (const [i, a] of (page.also || []).entries()) {
+      const k = `${key}:also${i}`;
+      if (state.said.has(k) || !cond(a.if)) continue;
+      state.said.add(k);
+      await speak(a.say, BEAT.small);
     }
   });
   if (first && (page.clue || page.flag)) await checkObjectives();
