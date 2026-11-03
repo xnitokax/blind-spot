@@ -29,7 +29,7 @@ $("form").onsubmit = async e => {
   // コマンドの処理（演出を含む）が終わるまで、次の入力は受け付けない
   await busy(() => run(raw));
   if (plain) maybeNoise();
-  // 任務2：番号が画面に出ていたら、師匠が「MEMO に追加した」（memo.js の memoAnnounce）
+  // 任務2：はじめての説明で探させた番号が出たら、師匠が MEMO を開かせる（memo.js の memoAnnounce）
   if (plain && raw.trim() && typeof memoAnnounce === "function") await memoAnnounce();
   // 行き詰まっていたら、師匠が今の目標について一言（logic.js の stuckHint）
   if (plain && raw.trim()) await stuckHint();

@@ -114,7 +114,7 @@ function print(html, cls = "") {
   d.className = "line " + cls;
   d.innerHTML = html;
   out.appendChild(d);
-  // memo（任務2の部署コード表）：画面に部署名・番号・できた年が出たら、表とタイルに足す
+  // memo（任務2の部署コード表）：画面に部署名・できた年が出たら、表に足す
   if (typeof memoSeen === "function") memoSeen(d);
   scrollDown();
   return d;
