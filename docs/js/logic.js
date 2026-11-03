@@ -569,6 +569,14 @@ async function showResults(conf, q, terms, hits, shown, limit) {
       await wait(BEAT.small);
       await play(e.after);
     }
+    // afterQuery：{ "言葉": [台本] } … その言葉で探して見つけたときだけ流れる（一度だけ）
+    //   任務2：あの部屋の伝票は、室長の名前でも見つかるが、部署コード（1770）が分かるのは、番号で探したときだけ
+    for (const [w, steps] of Object.entries(e.afterQuery || {})) {
+      if (state.said.has(steps) || !terms.some(t => t.includes(fold(w)))) continue;
+      state.said.add(steps);
+      await wait(BEAT.small);
+      await play(steps);
+    }
   }
   setGuide(next, nextLines);
   await checkObjectives();
