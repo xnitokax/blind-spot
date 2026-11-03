@@ -690,7 +690,7 @@ async function auditSearch(audit, q) {
       `<div class="res-head none"><span class="res-title">${esc(here().search.label)} ─ 「${esc(q)}」</span><span class="res-count">0 件</span></div>`,
     );
     SFX.denied?.();
-    print("[!] 登録のない部署コードを照会しました ── 監査ログに記録されました", "alert");
+    print("[!] 欠番の部署コードを照会しました ── 監査ログに記録されました", "alert");
     addTrace(audit.trace ?? 20);
     await wait(BEAT.small);
     if (state.over) return;

@@ -381,6 +381,8 @@ function updateTrace(shown = state.trace) {
   $("traceBar").style.background =
     t >= 70 ? "var(--alert)" : t >= 40 ? "var(--warn)" : "var(--accent)";
   $("side").classList.toggle("danger", t >= 70);
+  // 任務2の MEMO の画面にも、同じ逆探知を出す（memo.js）
+  if (typeof memoTrace === "function") memoTrace();
 }
 function addTrace(n) {
   state.trace += n;
