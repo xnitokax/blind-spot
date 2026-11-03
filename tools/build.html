@@ -198,6 +198,9 @@
           for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) clues.add(x.clue);
           for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) clues.add(p.clue);
           for (const t of node.tools || []) if (t.indexClue) clues.add(t.indexClue);
+          // 人格モデル（任務3）：うその証言と、崩したときの証言
+          for (const l of node.mind?.lies || []) for (const c of [l.clue, l.gives]) if (c) clues.add(c);
+          for (const t of node.mind?.topics || []) if (t.clue) clues.add(t.clue);
         }
         for (const x of ch.banned?.first || []) if (x?.clue) clues.add(x.clue);
         for (const o of ch.objectives || []) {
@@ -300,6 +303,8 @@
             for (const n of node.search?.notes || []) for (const x of n.script || []) if (x?.clue) clueSet.add(x.clue);
             for (const t of node.tools || []) for (const p of t.pages || []) if (p.clue) clueSet.add(p.clue);
             for (const t of node.tools || []) if (t.indexClue) clueSet.add(t.indexClue);
+            for (const l of node.mind?.lies || []) for (const c of [l.clue, l.gives]) if (c) clueSet.add(c);
+            for (const t of node.mind?.topics || []) if (t.clue) clueSet.add(t.clue);
           }
           for (const x of ch.banned?.first || []) if (x?.clue) clueSet.add(x.clue);
           ch.clueTotal = clueSet.size;

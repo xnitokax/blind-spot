@@ -82,6 +82,8 @@ function updateNext() {
         state.current === state.guide.at ? state.guide.why : (state.guide.go ?? state.guide.why);
       if (why) $("why").innerHTML = `<span class="why-mark">▸</span><span>${esc(fill(why))}</span>`;
     }
+    // 人格モデル（任務3）：質問のボタンと show（docs/js/mind.js）
+    if (node.mind && typeof mindChips === "function") chips.push(...mindChips(node));
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const t of menuTools(node)) chips.push(chip(t.fill, t.label, "go"));
     for (const d of dirHere(node)) chips.push(chip(d.file ? `open ${d.name}` : `dive ${d.name}`));
@@ -257,7 +259,7 @@ async function typeLine(s, opt = {}) {
     t.textContent += chars[i];
     if (i % 6 === 0) scrollDown();
     // 登場人物のセリフは、昔のゲームのように「ポポポ」と鳴らしながら出す
-    if (name && i % 3 === 0 && chars[i].trim()) SFX.tick();
+    if (name && i % 3 === 0 && chars[i].trim() && !CH?.quietCast) SFX.tick();
     // 師匠のセリフは、読み切れるように少しゆっくり（「, 」「. 」でも一拍おく）
     //   練習の師匠は、もう少しゆっくり（説明をちゃんと読めるように）
     const slow = tapMode();
@@ -352,8 +354,10 @@ function setPrompt(text) {
 function normalPrompt() {
   // 鍵のかかった扉の前にいるときは、その扉の名前（back で戻る）
   const at = state.door ? nodeOf(state.door) : here();
-  setPrompt(`${who()}@${shortHost(at.host)}:~$`);
+  // 人格モデル（任務3）の中では、写しに話しかける入力欄
   cmd.type = "text";
+  if (at.mind) return setPrompt(`${who()} → ${at.mind.who}>`);
+  setPrompt(`${who()}@${shortHost(at.host)}:~$`);
 }
 
 function clockText() {

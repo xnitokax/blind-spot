@@ -112,6 +112,8 @@ const COMMANDS = {
       ["back", "ひとつ前の場所へ戻る"],
       ["search <言葉>", "検索できる場所で検索する（スペース区切りで条件を重ねる）"],
       ["ls", "今いる場所の接続先をもう一度表示"],
+      // 任務3：人格モデルに、証拠をつきつける
+      ...(CH?.evidence ? [["show <証拠>", "人格モデルに証拠をつきつける（show だけで一覧）"]] : []),
       // ゲームの世界（rpg）では、ものを拾える
       ...(document.body.dataset.zone === "rpg" ? [["pick <もの>", "落ちているものを拾う"]] : []),
       ["return", "調べ終わったら、成果を持って帰る（任務を終える）"],
@@ -143,7 +145,9 @@ const COMMANDS = {
       }
       return print(`dive: いまは ${esc(shortHost(d.host))} の扉の前です。`, "alert");
     }
-    const link = state.links.find(l => l.name.toLowerCase() === arg.toLowerCase());
+    const link =
+      state.links.find(l => l.name.toLowerCase() === arg.toLowerCase()) ||
+      state.links.find(l => (l.alias || []).some(x => NZ.norm(x) === NZ.norm(arg)));
     // フォルダ（ファイルサーバーなど）も dive で開く。移動はすべて dive、戻るのはすべて back
     if (!link && here()?.dir) {
       const a = NZ.norm(arg);
@@ -242,6 +246,10 @@ const COMMANDS = {
     await checkObjectives();
   },
   search,
+  // show：人格モデル（任務3）に、証拠をつきつける（docs/js/mind.js）。show だけで、持っている証拠の一覧
+  show(arg) {
+    return mindShow(arg || "");
+  },
   // memo：任務2の部署コード表（docs/js/memo.js）。打って使うのはやめて、上の MEMO ボタンから開く。打たれたら、画面を開くだけ
   memo() {
     if (!memoReady()) return print("memo: ここでは使えません。", "dim");
@@ -454,6 +462,8 @@ async function run(raw) {
     print(heads.map(t => `使い方：${esc(t.usage || t.cmd)}　── ${esc(t.desc || "")}`).join("<br>"), "dim");
     return;
   }
+  // 人格モデル（任務3の mind）の中では、コマンドでない入力は、写しへの質問になる（docs/js/mind.js）
+  if (!fn && here()?.mind) return mindAsk(raw);
   if (!fn) {
     print(`${esc(name)}: コマンドが見つかりません（help で一覧）`, "alert");
     return cmdOops(raw, cname);
@@ -612,6 +622,8 @@ async function toolPage(tool, arg) {
       return print(esc(fill(String(tool.badArg || "{arg}: 見つかりません。").replaceAll("{arg}", arg))), "dim");
     return print(esc(fill(String(tool.miss || "{arg}: 見つかりません。").replaceAll("{arg}", arg))), "dim");
   }
+  // need … その flag が立つまでは、その画面は出さない（任務3：映像を出す前に zoom しても、何も映っていない）
+  if (page.need && !state.flags[page.need]) return print(esc(fill(page.locked || tool.miss || "まだ見られません。")), "dim");
   const key = `page:${state.current}:${tool.cmd}:${[].concat(page.keys)[0] ?? ""}`;
   const first = !state.said.has(key);
   state.said.add(key);

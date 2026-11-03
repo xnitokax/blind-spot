@@ -3601,6 +3601,138 @@ body[data-zone="rpg"] #eviCount {
   }
 }
 
+/* ---------------- 人格モデル（任務3の尋問。docs/js/mind.js） ---------------- */
+/* 写しの中（頭の中）：うす紫の色合い */
+body[data-zone="mind"] {
+  --why: #9dffc8;
+  --accent: #c8b4ff;
+  --fg: #ece6ff;
+  --line: #352c52;
+  --dim: #8f86ad;
+  --tint: rgba(190, 170, 255, 0.12);
+}
+/* 名札：ID・名前・一致率と、所属など */
+.mind-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: rgba(190, 170, 255, 0.05);
+  display: grid;
+  gap: 6px;
+  max-width: 36em;
+}
+.mind-card.landed {
+  animation: mindCard 0.9s ease-out;
+}
+@keyframes mindCard {
+  from {
+    box-shadow: 0 0 18px rgba(200, 180, 255, 0.45);
+  }
+}
+.mc-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mc-id {
+  color: var(--dim);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+.mc-name {
+  color: var(--accent);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+.mc-sync {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.mc-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  font-size: 12px;
+}
+.mc-rows span:nth-child(odd) {
+  color: var(--dim);
+}
+/* 緊張度：ふだんは控えめ。うそのときは黄色く跳ねる */
+.mind-meter {
+  font-size: 12px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.mind-meter b {
+  font-weight: normal;
+  letter-spacing: 0;
+}
+.mind-meter.spike {
+  color: var(--warn);
+}
+.mind-meter.jolt {
+  display: inline-block;
+  animation: mindJolt 0.45s ease-out;
+}
+@keyframes mindJolt {
+  20% {
+    transform: translateX(-3px);
+    text-shadow: 0 0 10px rgba(255, 193, 77, 0.7);
+  }
+  45% {
+    transform: translateX(3px);
+  }
+  70% {
+    transform: translateX(-1px);
+  }
+}
+/* つきつけた証拠 */
+.mind-show {
+  display: inline-block;
+  border: 1px solid rgba(255, 193, 77, 0.5);
+  border-radius: 4px;
+  padding: 2px 10px;
+  color: var(--warn);
+}
+/* NEXT 欄の質問のボタン：聞いたものは控えめに */
+#next .chip.ask {
+  color: var(--fg);
+}
+#next .chip.ask.asked {
+  color: var(--dim);
+}
+/* 4人の写しのセリフ：名前が短いので、名前の欄を狭く（本文を広く） */
+.line.say.cast.kuzumi,
+.line.say.cast.hayase,
+.line.say.cast.maki,
+.line.say.cast.nishizono {
+  padding-left: calc(3.2em + 10px);
+  text-indent: -3.2em;
+}
+.say.cast.kuzumi .who,
+.say.cast.hayase .who,
+.say.cast.maki .who,
+.say.cast.nishizono .who {
+  width: 3.2em;
+}
+/* 4人の写しの名前の色（[久住] など） */
+.cast.kuzumi {
+  --cast: #b9a8ff;
+}
+.cast.hayase {
+  --cast: #e6b98a;
+}
+.cast.maki {
+  --cast: #ffa6bb;
+}
+.cast.nishizono {
+  --cast: #8fe0c6;
+}
+
 /* スマホ：TRACE は1行、アクセスログは最新1件だけ（タップで開閉）
    ※ 上の通常ルールを上書きするため、必ずスタイルの最後に置く */
 @media (max-width: 800px) {

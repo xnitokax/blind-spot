@@ -28,6 +28,8 @@ function parseNode(html) {
     const desc = text.includes("──") ? text.split("──")[1].trim() : text;
     links.push({
       name: linkName(a),
+      // data-alias="久住,S-06" … dive で打てる別名（任務3の人格モデル）
+      alias: a.dataset.alias ? a.dataset.alias.split(",") : [],
       go: a.dataset.go,
       oneway: a.hasAttribute("data-oneway"),
       desc,
@@ -133,11 +135,14 @@ function disablePicks() {
 //   ノードに need があると、その flag が立つまでは出ない（例：口座「SRG」が分かってから、海外の銀行へ行ける）
 function navLinks(links) {
   const extra = [];
+  // 人格モデル（任務3）の中では、ほかの場所は並べない（出るのは back で）
+  if (here()?.mind) return extra;
   for (const id of CH.nav || []) {
     const n = CH.nodes[id];
     if (!n || id === state.current || links.some(l => l.go === id)) continue;
     if (n.need && !state.flags[n.need]) continue;
-    extra.push({ name: n.host.split(/[./]/)[0], go: id, oneway: false, desc: fill(n.title) });
+    // navName … どこからでも行ける接続先の名前（host の頭と変えたいとき。任務3：files.teiwa.local/projects/SENRIGAN → senrigan）
+    extra.push({ name: n.navName || n.host.split(/[./]/)[0], go: id, oneway: false, desc: fill(n.title) });
   }
   return extra;
 }
@@ -201,8 +206,10 @@ async function enterNode(id, opt = {}) {
   const talkFirst = tapMode() && (CH.practice || node.talkFirst) && talks;
 
   await busy(async () => {
-    const view = { say: first ? node.say : null, noMenu: talkFirst };
+    const view = { say: first ? node.say : null, noMenu: talkFirst || !!node.mind };
     await showNode(view);
+    // 人格モデル（任務3）：名札と、はじめての質問（docs/js/mind.js）
+    if (node.mind) await mindEnter(id, first);
     const menus = state.menus || 0;
     // 場所の説明を読む間をおいてから、会話が始まる
     if (talkFirst) await pause(900);

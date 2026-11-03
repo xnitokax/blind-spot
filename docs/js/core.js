@@ -180,7 +180,7 @@ const dirHere = (node = here()) => (node?.dir || []).filter(d => !d.need || stat
 //   desc … 説明から（…）の補足を消したもの
 const menuTools = (node = here()) =>
   (node?.tools || [])
-    .filter(t => t.menu)
+    .filter(t => t.menu && (!t.need || state.flags[t.need]))
     .map(t => {
       const label = (t.usage || t.cmd).replace(/\s*\[[^\]]*\]/g, "").replace(/<[^>]*>/g, "〇〇");
       return { label, fill: label.replace(/〇〇.*$/, ""), desc: (t.desc || "").replace(/（[^）]*）/g, "") };
