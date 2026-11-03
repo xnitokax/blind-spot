@@ -22,23 +22,36 @@ const evidenceReady = () => {
   const obj = nowObj();
   return !!(obj?.clues?.length && obj.clues.every(c => state.clues.includes(c)));
 };
-// 鍵の打ち間違い：ユーザーID（lock.oops の idJa / idSpace / idMiss / idDenied ／ typo：手がかりがそろってから）
-async function userOops(lock, raw, r) {
+// 凡ミス（oops.idTypo / passTypo）：答えのある部分だけが1文字ちがいで、ほかは全部合っていたら、その部分の say を言う（打ち間違えるたびに）
+//   開発モードは平文（parts の text）から形を作って比べる。公開データは、ビルドで作ったハッシュ（hashes。頭の12文字）で比べる
+async function typoSay(id, typo, raw) {
+  if (!typo?.length) return;
+  const v = NZ.norm(raw);
+  const h = typo[0].hashes ? (await NZ.hash(id, raw)).slice(0, 12) : null;
+  for (const [i, p] of typo.entries()) {
+    if (!p.say) continue;
+    const hit = h ? p.hashes.includes(h) : NZ.typos(typo, i).includes(v);
+    if (hit) return speak(p.say, BEAT.small);
+  }
+}
+// 鍵の打ち間違い：ユーザーID（lock.oops の idJa / idSpace / idMiss / idDenied ／ idTypo：手がかりがそろってから）
+async function userOops(lock, raw, r, id) {
   const o = lock.oops || {};
   if (hasJa(raw)) return oops("idJa", o.idJa);
   // 登録はあるが、ここには入れない人の ID（人事DB なら、人事部ではない社員）
   if (o.idDenied?.ids.includes(r.account)) return oops("idDenied", o.idDenied.say);
   if (/\s/.test(raw.trim())) return oops("idSpace", o.idSpace);
-  // 手がかりがそろっているとき：「調べ直せ」は言わない。どこが違うかも言わない（師匠は答えを知らない）。一度だけ
-  if (evidenceReady()) return r.unknown && oops("idTypo", o.typo);
+  // 手がかりがそろっているとき：「調べ直せ」は言わない。凡ミス（1か所だけ1文字ちがい）のときだけ、どこを間違えたか言う
+  if (evidenceReady()) return r.unknown && typoSay(id, o.idTypo, raw);
   if (r.unknown && ++state.idMiss >= 2) return oops("idMiss", o.idMiss);
 }
-// パスワード（passJa ／ near：惜しい答え ／ passMiss：2回目の失敗から ／ typo：手がかりがそろってから）
+// パスワード（passJa ／ near：惜しい答え ／ passMiss：2回目の失敗から ／ passTypo：手がかりがそろってから）
 async function passOops(id, lock, raw) {
   const o = lock.oops || {};
   if (hasJa(raw)) return oops("passJa", o.passJa);
-  // 今の目標の手がかりが全部そろっているとき：「調べ直せ」は言わない。どこが違うかも言わない（何の打ち間違いかは、プレイヤーが決める）。一度だけ
-  if (evidenceReady()) return oops("passTypo", o.typo);
+  // 今の目標の手がかりが全部そろっているとき：「調べ直せ」は言わない。凡ミス（1か所だけ1文字ちがい）のときだけ、どこを間違えたか言う
+  //   それ以外の間違いには、何も言わない（何を間違えたかは、プレイヤーが考える）
+  if (evidenceReady()) return typoSay(id, o.passTypo, raw);
   for (const [i, n] of (o.near || []).entries()) {
     // 開発モードは平文（pass）、公開データはハッシュ（hashes）で比べる
     const hit = n.pass
@@ -315,7 +328,7 @@ async function run(raw) {
       SFX.denied();
       print(esc(r.error), "alert");
       state.mode = null;
-      await userOops(lock, raw, r);
+      await userOops(lock, raw, r, mode.id);
       return askUser(mode.id, mode.opt);
     }
     SFX.enter();

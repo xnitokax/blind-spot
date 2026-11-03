@@ -52,6 +52,25 @@ const NZ = (() => {
       return b64(d);
     },
 
+    // 凡ミスの形：parts（答えを区切ったもの。[{ text }]）の i 番目だけが1文字ちがい（入れ替わり・1文字多い・1文字少ない）で、
+    //   ほかは全部合っている答えを、全部並べる（台本の oops.idTypo / passTypo。文字の種類は、その部分が英字か数字かで決める）
+    typos(parts, i) {
+      const t = NZ.norm(parts[i].text);
+      const chars = /^\d+$/.test(t) ? "0123456789" : "abcdefghijklmnopqrstuvwxyz";
+      const out = new Set();
+      for (let k = 0; k <= t.length; k++) {
+        for (const c of chars) {
+          out.add(t.slice(0, k) + c + t.slice(k)); // 1文字多い
+          if (k < t.length && c !== t[k]) out.add(t.slice(0, k) + c + t.slice(k + 1)); // 1文字ちがう
+        }
+        if (k < t.length) out.add(t.slice(0, k) + t.slice(k + 1)); // 1文字少ない
+      }
+      out.delete(t);
+      const before = parts.slice(0, i).map(p => NZ.norm(p.text)).join(""),
+        after = parts.slice(i + 1).map(p => NZ.norm(p.text)).join("");
+      return [...out].map(v => before + v + after);
+    },
+
     // パスワードが違えば復号に失敗して null（AES-GCM の改ざん検知がそのまま正誤判定になる）
     async unlock(box, pass) {
       try {

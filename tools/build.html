@@ -255,6 +255,19 @@
               say: n.say,
             });
         }
+        // 凡ミスの形（oops.idTypo / passTypo）：答えの部分（text）は消して、1文字ちがいの形のハッシュ（頭の12文字）だけを残す
+        for (const k of ["idTypo", "passTypo"]) {
+          const parts = lock.oops?.[k];
+          if (!parts) continue;
+          const sealed = [];
+          for (const [i, p] of parts.entries())
+            sealed.push(
+              p.say
+                ? { say: p.say, hashes: await Promise.all(NZ.typos(parts, i).map(async v => (await NZ.hash(id, v)).slice(0, 12))) }
+                : { hashes: [] },
+            );
+          rest.oops = { ...(rest.oops || lock.oops), [k]: sealed };
+        }
         log(
           `  🔒 ${id}: 暗号化しました（パスワード ${boxes.length + Object.keys(lock.user?.pass || {}).length} 通り）`,
         );
