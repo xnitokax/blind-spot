@@ -132,7 +132,7 @@ function maybeNoise() {
 // 台本の { job: {...} } で始まる（書き方は src/scenario.js の先頭）。師匠が裏で回している権限昇格など。
 // プレイヤーは操作を続けられる。ゲージが上がるにつれて、画面が少しずつ壊れていく：
 //   文字がちらつく → 色がずれて画面のふちが赤くなる → 画面のあちこちが真っ暗に死んでいく → 監査のログが流れ込み、TRACE がじわじわ上がる
-// stopAt のノードへ ssh すると、stop の台本が流れて止まる（台本の { jobKill: true } で KILLED になる）
+// stopAt のノードへ dive すると、stop の台本が流れて止まる（台本の { jobKill: true } で KILLED になる）
 let jobRun = 0; // ジョブのループの番号（止めるときに1つ進めて、動いているループを終わらせる）
 function startJob(j) {
   killJob();
@@ -1522,7 +1522,7 @@ function spot(names) {
   const side = $("side");
   let inSide = false;
   for (const n of [].concat(names || [])) {
-    // host … いちばん新しい「▶ ssh://」の行
+    // host … いちばん新しい「▶ dive://」の行
     const els =
       n === "host"
         ? [...out.querySelectorAll(".node-head .host")].slice(-1)

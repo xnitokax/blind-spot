@@ -1,6 +1,6 @@
 // =========================================================
 //  コマンド
-//  ssh / back / search などの処理・打ち間違いの助け舟・場所ごとの特別なコマンド
+//  dive / back / search などの処理・打ち間違いの助け舟・場所ごとの特別なコマンド
 // =========================================================
 
 // ---------------- 打ち間違いの助け舟 ----------------
@@ -75,14 +75,14 @@ async function cmdOops(raw, cname) {
   const link = state.links.find(l => l.name.toLowerCase() === cname);
   if (link)
     return oops("needSsh", [
-      "[師匠] 移動するなら、頭に ssh を付けるんだ。",
-      `[師匠] 「ssh ${link.name}」って具合にな。`,
+      "[師匠] 移動するなら、頭に dive を付けるんだ。",
+      `[師匠] 「dive ${link.name}」って具合にな。`,
     ]);
   // 場所の名前だが、今いるところからは行けない
   if (CH?.nodes?.[cname])
     return oops("needSsh", [
-      "[師匠] 移動するなら、頭に ssh を付けるんだ。",
-      `[師匠] ${cname} なら、行ける場所まで back で戻ってから「ssh ${cname}」だな。`,
+      "[師匠] 移動するなら、頭に dive を付けるんだ。",
+      `[師匠] ${cname} なら、行ける場所まで back で戻ってから「dive ${cname}」だな。`,
     ]);
   if (node?.search && !/\s/.test(raw.trim()))
     return oops("needSearch", [
@@ -116,7 +116,7 @@ const COMMANDS = {
   help() {
     const node = here();
     const rows = [
-      ["ssh <名前>", "接続先へ移動する（例：ssh portal）"],
+      ["dive <名前>", "接続先へ潜る（例：dive portal）"],
       ["back", "ひとつ前の場所へ戻る"],
       ["search <言葉>", "検索できる場所で検索する（スペース区切りで条件を重ねる）"],
       ["ls", "今いる場所の接続先をもう一度表示"],
@@ -134,11 +134,13 @@ const COMMANDS = {
     print(
       `<div class="ls">${rows}</div>` +
         (tools ? `<div class="dim">── ここで使えるコマンド ──</div><div class="ls">${tools}</div>` : "") +
-        `<span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中は素早く3回クリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ フォルダにも ssh で入れます" : ""}</span>`,
+        `<span class="dim">Tab で補完 ／ ↑↓ で履歴 ／ 演出中は素早く3回クリックで早送り${node.search ? " ／ ここでは search が使えます" : ""}${node.dir ? " ／ フォルダにも dive で入れます" : ""}</span>`,
     );
   },
-  async ssh(arg) {
-    if (!arg) return print("使い方：ssh &lt;名前&gt;", "dim");
+  // dive：移動はすべてこれ（師匠が組んだ道具。乗っ取った端末を踏み台に、どこへでも潜る）。戻るのは back
+  //   ssh・cd と打っても、同じように動く（慣れた人の打ち方）
+  async dive(arg) {
+    if (!arg) return print("使い方：dive &lt;名前&gt;", "dim");
     // 鍵のかかった扉の前：その扉の名前なら、もう一度ログインを試す。ほかへは、back で戻ってから
     if (state.door) {
       const d = nodeOf(state.door);
@@ -147,13 +149,13 @@ const COMMANDS = {
         state.door = null;
         return connect(id);
       }
-      return print(`ssh: いまは ${esc(shortHost(d.host))} の扉の前です。`, "alert");
+      return print(`dive: いまは ${esc(shortHost(d.host))} の扉の前です。`, "alert");
     }
     const link = state.links.find(l => l.name.toLowerCase() === arg.toLowerCase());
-    // フォルダ（ファイルサーバーなど）も ssh で開く。移動はすべて ssh、戻るのはすべて back（cd はなくした）
+    // フォルダ（ファイルサーバーなど）も dive で開く。移動はすべて dive、戻るのはすべて back
     if (!link && here()?.dir) {
       const a = NZ.norm(arg);
-      // ファイル（file: true）は ssh では開けない。打ったら「ファイルは open で開く」と教える（cd の処理の中で）
+      // ファイル（file: true）は dive では開けない。打ったら「ファイルは open で開く」と教える（cd の処理の中で）
       if (dirHere().some(d => (NZ.norm(d.name) === a || (d.alias || []).some(x => NZ.norm(x) === a))))
         return COMMANDS.cd(arg);
     }
@@ -167,7 +169,7 @@ const COMMANDS = {
       return oops("sshBack", ["[師匠] 来た道を戻るなら、back でいい。"]);
     }
     if (!link) {
-      print(`ssh: 接続先が見つかりません: ${esc(arg)}`, "alert");
+      print(`dive: 接続先が見つかりません: ${esc(arg)}`, "alert");
       // 説明の言葉（「人事」など）で打ったときは、左の名前で打つことを教える
       const byDesc = state.links.find(
         l => !hasJa(l.name) && l.desc && fold(l.desc).includes(fold(arg)),
@@ -175,7 +177,7 @@ const COMMANDS = {
       if (byDesc)
         return oops("sshDesc", [
           "[師匠] 行き先は、一覧の左にある名前で打つんだ。",
-          `[師匠] それなら「ssh ${byDesc.name}」だな。`,
+          `[師匠] それなら「dive ${byDesc.name}」だな。`,
         ]);
       return oops("sshMiss", [
         "[師匠] その行き先は、ここからは見えないな。",
@@ -204,22 +206,25 @@ const COMMANDS = {
     }
     return connect(link.go);
   },
+  ssh(arg) {
+    return COMMANDS.dive(arg);
+  },
   async cd(arg) {
     const node = here();
-    if (!node.dir) return COMMANDS.ssh(arg);
-    if (!arg) return print("使い方：ssh &lt;名前&gt;", "dim");
+    if (!node.dir) return COMMANDS.dive(arg);
+    if (!arg) return print("使い方：dive &lt;名前&gt;", "dim");
     const a = NZ.norm(arg);
     const byAlias = dirHere(node).find(d => d.go && (d.alias || []).some(x => NZ.norm(x) === a));
     if (byAlias) {
-      addLog(`ssh ${arg}`);
+      addLog(`dive ${arg}`);
       SFX.granted();
       print(panelHtml("found", "FOUND", `${esc(node.host)}/${esc(arg.toUpperCase())}`));
       await wait(1500);
       return connect(byAlias.go);
     }
     const d = dirHere(node).find(d => NZ.norm(d.name) === a);
-    if (!d) return print(`ssh: 接続先が見つかりません: ${esc(arg)}`, "alert");
-    if (d.file) return print(`ssh: ${esc(d.name)} はファイルです。ファイルは open ${esc(d.name)} で開きます。`, "alert");
+    if (!d) return print(`dive: 接続先が見つかりません: ${esc(arg)}`, "alert");
+    if (d.file) return print(`dive: ${esc(d.name)} はファイルです。ファイルは open ${esc(d.name)} で開きます。`, "alert");
     // フォルダの場所を見出しに、中身は左の線で囲んだ一覧に（空のときは黄色）
     const files = (d.text || "ファイルがありません。").split("\n").map(esc);
     const empty = !d.text || /ファイルがありません/.test(d.text);
@@ -427,16 +432,16 @@ async function run(raw) {
   if (
     g &&
     state.current === g.at &&
-    fold(raw).replace(/\s+/g, "") === fold(g.cmd).replace(/\s+/g, "")
+    moveKey(raw) === moveKey(g.cmd)
   )
     state.guide = null;
   // 使い終わったボタンは、すぐに NEXT 欄から消す（結果に「次の一手」がないと、古いボタンが残ってしまうので）
   if (state.guide !== g) updateNext();
   // actions：その場所でだけ使える特別なコマンド（任務2の見せ場。押すと、たっぷり時間をかけた演出が流れる）
-  //   alias … 同じ演出になる、別の打ち方（「ssh ??????」でも「open ??????」でも開く）
+  //   alias … 同じ演出になる、別の打ち方（「dive ??????」でも「open ??????」でも開く。ssh・cd は dive と同じに扱う）
   //   別の打ち方で、もう済んだ演出に当たったときは、ふつうのコマンドとして動かす（cd ならフォルダに入る）
   const acts = here()?.actions;
-  const same = (a, b) => cmdKey(a) === cmdKey(b);
+  const same = (a, b) => moveKey(a) === moveKey(b);
   //   need … その flag が立つまでは使えない（任務2：名前のないフォルダを search で見つけるまで、open ?????? は効かない）
   const act =
     acts &&
@@ -485,6 +490,8 @@ async function reactTo(at, key) {
 
 // コマンドを比べるための形（全角・大文字・空白を無視。「??????」のような ? の数のちがいも無視する）
 const cmdKey = s => fold(s).replace(/\s+/g, "").replace(/[?？]+/g, "?");
+// 移動の打ち方は、ssh・cd でも dive と同じに扱う（台本の alias や「次の一手」と比べるとき）
+const moveKey = s => cmdKey(s).replace(/^(ssh|cd)(?=\S)/, "dive");
 
 // tools の実行：{ cmd, usage, desc, miss, say }
 //   miss … 引数がちがったときの返事（{arg} に打った引数が入る）。打ちかたが足りないときは usage を出す
@@ -515,17 +522,17 @@ async function runAction(key, a) {
   await checkObjectives();
 }
 
-// Tab 補完：1語目はコマンド、ssh の後は接続先とフォルダ
+// Tab 補完：1語目はコマンド、dive（ssh・cd）の後は接続先とフォルダ
 function complete() {
   const v = cmd.value;
   const node = here();
   const m = v.match(/^\s*(\S+)\s+(\S*)$/);
   let pool, prefix, head;
-  if (m && /^(ssh|cd)$/i.test(m[1]))
+  if (m && /^(dive|ssh|cd)$/i.test(m[1]))
     pool = [...state.links.map(l => l.name), ...(node.dir ? dirHere(node).filter(d => !d.file).map(d => d.name) : [])];
   else if (!m && /^\s*\S*$/.test(v))
     pool = [
-      "ssh",
+      "dive",
       "back",
       "help",
       "ls",

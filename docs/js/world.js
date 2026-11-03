@@ -1,6 +1,6 @@
 // =========================================================
 //  移動
-//  場所（ノード）の表示・ssh での移動・鍵と認証の画面
+//  場所（ノード）の表示・dive での移動・鍵と認証の画面
 // =========================================================
 
 // ---------------- ノード ----------------
@@ -37,7 +37,7 @@ function parseNode(html) {
   box.querySelectorAll("a[data-go]").forEach(a => {
     const span = document.createElement("span");
     const name = esc(linkName(a));
-    span.innerHTML = `<span class="tlink">${esc(a.textContent)}</span> <span class="tag pick" data-fill="ssh ${name}">[${name}]</span>`;
+    span.innerHTML = `<span class="tlink">${esc(a.textContent)}</span> <span class="tag pick" data-fill="dive ${name}">[${name}]</span>`;
     a.replaceWith(span);
   });
   return { html: box.innerHTML, links };
@@ -55,22 +55,22 @@ function printMenu(force = false) {
       ...dirHere(node).map(d =>
         d.file
           ? `<span class="n pick" data-fill="open ${esc(d.name)}">${esc(d.name)}</span>`
-          : `<span class="n pick" data-fill="ssh ${esc(d.name)}">${esc(d.name)}/</span>`,
+          : `<span class="n pick" data-fill="dive ${esc(d.name)}">${esc(d.name)}/</span>`,
       ),
       ...state.links.map(
-        l => `<span class="n pick" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span>`,
+        l => `<span class="n pick" data-fill="dive ${esc(l.name)}">${esc(l.name)}</span>`,
       ),
     ];
     if (names.length)
       print(`<div class="menu compact reveal">${names.join(`<span class="dim"> · </span>`)}</div>`);
     return names.length > 0;
   }
-  // フォルダは ssh で開く。file: true のものはファイル（open で開く。名前のあとに / を付けない）
+  // フォルダは dive で開く。file: true のものはファイル（open で開く。名前のあとに / を付けない）
   for (const d of dirHere(node)) {
     rows.push(
       d.file
         ? `<span class="n pick" data-fill="open ${esc(d.name)}">${esc(d.name)}</span><span>${esc(d.desc || "")}</span>`
-        : `<span class="n pick" data-fill="ssh ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`,
+        : `<span class="n pick" data-fill="dive ${esc(d.name)}">${esc(d.name)}/</span><span>${esc(d.desc || "")}</span>`,
     );
   }
   if (node.search) {
@@ -88,7 +88,7 @@ function printMenu(force = false) {
   }
   for (const l of state.links) {
     rows.push(
-      `<span class="n pick${l.oneway ? " ow" : ""}" data-fill="ssh ${esc(l.name)}">${esc(l.name)}</span><span${l.oneway ? ' class="ow"' : ""}>${esc(l.desc)}${l.oneway ? "　【一方通行】" : ""}</span>`,
+      `<span class="n pick${l.oneway ? " ow" : ""}" data-fill="dive ${esc(l.name)}">${esc(l.name)}</span><span${l.oneway ? ' class="ow"' : ""}>${esc(l.desc)}${l.oneway ? "　【一方通行】" : ""}</span>`,
     );
   }
   if (!rows.length) return false;
@@ -114,8 +114,8 @@ function refreshLinks() {
   updateNext();
 }
 
-// 行き先を決める。ひとつ前にいた場所（来た道）は出さない。戻るのは back（ssh で戻る行き先と back が並ばないように）
-//   allLinks には全部残しておく（ssh で来た道の名前を打たれたら、back として扱うため）
+// 行き先を決める。ひとつ前にいた場所（来た道）は出さない。戻るのは back（dive で戻る行き先と back が並ばないように）
+//   allLinks には全部残しておく（dive で来た道の名前を打たれたら、back として扱うため）
 function setLinks(all) {
   const prev = state.history.at(-1);
   state.allLinks = all;
@@ -153,7 +153,7 @@ async function showNode(opt = {}) {
   setLinks([...links, ...navLinks(links)]);
   // compact（任務2）：本文の説明（日本語）は出さない。情報は師匠のセリフから拾う
   if (CH.compact && !node.keepBody) html = "";
-  const head = print(`<span class="host">▶ ssh://${esc(node.host)}</span>`, "node-head");
+  const head = print(`<span class="host">▶ dive://${esc(node.host)}</span>`, "node-head");
   await wait(BEAT.small);
   head.insertAdjacentHTML("beforeend", `\n<b class="reveal">${esc(fill(node.title))}</b>`);
   scrollDown();

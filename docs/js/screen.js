@@ -8,7 +8,7 @@ function chip(fill, label, cls = "") {
   return `<span class="chip pick ${cls}" data-fill="${esc(fill)}">${esc(label ?? fill)}</span>`;
 }
 // 師匠が言った「次の一手」 { at: ノードid, cmd: "search 鷲尾" }（シナリオの next で決める）
-//   その場所にいれば cmd を、いなければそこへ行く ssh を、NEXT 欄の先頭に出す
+//   その場所にいれば cmd を、いなければそこへ行く dive を、NEXT 欄の先頭に出す
 // why … なぜそれをやるのか（行動の理由）。光るボタンのすぐ上に出す
 function setGuide(g) {
   if (!g) return;
@@ -20,12 +20,12 @@ function guideCmd() {
   if (!g || state.over) return null;
   if (state.current === g.at) return g.cmd;
   const link = state.links.find(l => l.go === g.at);
-  if (link) return `ssh ${link.name}`;
+  if (link) return `dive ${link.name}`;
   // 行き先が来た道（ひとつ前の場所）なら back。直接行けなければ、ポータルへ（ポータルが来た道なら back）
   const prev = state.history.at(-1);
   if (prev && (prev === g.at || prev === "portal")) return "back";
   const portal = state.links.find(l => l.go === "portal");
-  return portal ? `ssh ${portal.name}` : prev ? "back" : null;
+  return portal ? `dive ${portal.name}` : prev ? "back" : null;
 }
 
 function updateNext() {
@@ -84,7 +84,7 @@ function updateNext() {
     }
     if (node.search) chips.push(chip("search ", "search 〇〇", "go"));
     for (const t of menuTools(node)) chips.push(chip(t.fill, t.label, "go"));
-    for (const d of dirHere(node)) chips.push(chip(d.file ? `open ${d.name}` : `ssh ${d.name}`));
+    for (const d of dirHere(node)) chips.push(chip(d.file ? `open ${d.name}` : `dive ${d.name}`));
     // ゲームの世界：落ちているものと、その場所でできること（まだやっていないもの）
     for (const name of itemsHere()) chips.push(chip(`pick ${name}`, `pick ${name}`, "go"));
     if (document.body.dataset.zone === "rpg")
@@ -93,8 +93,8 @@ function updateNext() {
     for (const l of state.links)
       chips.push(
         chip(
-          `ssh ${l.name}`,
-          `ssh ${l.name}${l.oneway ? "（一方通行）" : ""}`,
+          `dive ${l.name}`,
+          `dive ${l.name}${l.oneway ? "（一方通行）" : ""}`,
           l.oneway ? "ow" : "",
         ),
       );
