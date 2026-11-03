@@ -54,6 +54,7 @@ function memoSeen(el) {
     }
   }
   if (got) {
+    state.idle = 0; // 進んだので、行き詰まりの数え直し（logic.js の stuckHint）
     if (isMemoOpen()) renderMemo();
     else m.dot = true;
     memoButton();
@@ -166,13 +167,14 @@ function openMemo() {
 }
 
 // 推理の段階（MEMO を開いたときの、師匠のひとこと hints のどれを出すか）
-//   codes … 番号を集めている ／ rule … 番号がそろったので、決まりを外で調べる ／ when … あの部屋ができた年を探す
+//   open … まだ MEMO を開いていない ／ codes … 番号を集めている ／ rule … 番号がそろったので、決まりを外で調べる ／ when … あの部屋ができた年を探す
 //   years … まわりの部署ができた年を探す ／ gone … あいだにできて、今はない部署を探す ／ order … できた順に並べて書きこむ
 //   try … 書きこんだ番号で、社内を探す ／ null … 番号が分かった
 function memoStage() {
   const conf = CH.memo,
     m = memoState();
   if (state.clues.includes(conf.special.clue)) return null;
+  if (conf.first && !m.said.first) return "open"; // まだ MEMO を一度も開いていない
   const placed = conf.rows.filter(r => m.placed[`${r.name}:code`]).length;
   if (!state.clues.includes(conf.rule)) return placed < (conf.sortMin ?? 4) ? "codes" : "rule";
   if (!m.years[conf.special.name]) return "when";
@@ -309,6 +311,7 @@ function memoPlace(slot) {
     return;
   }
   m.placed[slot.dataset.slot] = true;
+  state.idle = 0;
   m.tiles = m.tiles.filter(x => x.id !== t.id);
   m.sel = null;
   SFX.select();

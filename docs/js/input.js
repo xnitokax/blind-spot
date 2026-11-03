@@ -29,6 +29,8 @@ $("form").onsubmit = async e => {
   // コマンドの処理（演出を含む）が終わるまで、次の入力は受け付けない
   await busy(() => run(raw));
   if (plain) maybeNoise();
+  // 行き詰まっていたら、師匠が今の目標について一言（logic.js の stuckHint）
+  if (plain && raw.trim()) await stuckHint();
 };
 
 // パスワード入力中は、打った文字数を [5/17] のように出す

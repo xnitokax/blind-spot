@@ -237,10 +237,45 @@ function showObjective(o, tag = "NEXT OBJECTIVE") {
   );
 }
 
+// ---------------- 行き詰まったときの助け舟（目標の stuck） ----------------
+// 手がかりが増えないまま、コマンドを（任務の stuckAfter）回打つと、師匠が今の目標の stuck から一言だけ言う
+//   stuck: [{ clue, if, say }] … その手がかりがまだで、if（logic.js の cond）に合う、まだ言っていないものを上から1つ
+//          同じ clue を何行も書くと、だんだん具体的になる（1回目はぼんやり、2回目はもう少し）
+//   { memo: true } … 任務2の部署コード表の段階（memo.js の memoStage）に合わせた、MEMO のひとことを言う
+async function stuckHint() {
+  const o = nowObj();
+  if (!o?.stuck || !state || state.over || state.mode) return;
+  state.idle = (state.idle || 0) + 1;
+  if (state.idle < (CH.stuckAfter ?? 8)) return;
+  let lines = null;
+  for (const [i, s] of o.stuck.entries()) {
+    if (s.clue && state.clues.includes(s.clue)) continue;
+    if (s.if != null && !cond(s.if)) continue;
+    if (s.memo) {
+      const st = typeof memoStage === "function" && memoStage();
+      const key = `hint:${st}`;
+      if (!st || !CH.memo?.hints?.[st] || state.memo?.said?.[`stuck:${st}`]) continue;
+      memoState().said[`stuck:${st}`] = true;
+      memoState().said[key] = true; // MEMO を開いたときに、同じ話をくり返さない
+      lines = CH.memo.hints[st];
+      break;
+    }
+    const key = `stuck:${state.objIdx}:${i}`;
+    if (state.said.has(key)) continue;
+    state.said.add(key);
+    lines = s.say;
+    break;
+  }
+  if (!lines?.length) return;
+  state.idle = 0;
+  await speak(lines, BEAT.react);
+}
+
 // 手がかりを記録する。カードが光って現れ、文字が解読されてから、しばらく余韻を残す（呼ぶ側は await する）
 async function addClue(label, opt = {}) {
   if (!label || state.clues.includes(label)) return;
   state.clues.push(label);
+  state.idle = 0; // 進んだので、行き詰まりの数え直し（stuckHint）
   // 右の欄（CASE FILE の EVIDENCE）に載せる。カードを出す任務では、カードが出てから載せる（タップの前に右の欄で先にネタが割れないように）
   const listIt = () => {
     updateClueCount();

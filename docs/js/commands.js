@@ -451,6 +451,12 @@ async function run(raw) {
   const tool = (here()?.tools || []).find(t => cmdKey(raw).startsWith(cmdKey(t.cmd)));
   if (tool && !COMMANDS[cname]) return useTool(tool, raw);
   const fn = COMMANDS[cname];
+  // 道具の名前の頭だけ打ったとき（cam --rec / cam --live の「cam」など）：その道具の使い方を出す
+  const heads = !fn && (here()?.tools || []).filter(t => cmdKey(t.cmd).startsWith(cmdKey(name)) && cmdKey(raw) === cmdKey(name));
+  if (heads?.length) {
+    print(heads.map(t => `使い方：${esc(t.usage || t.cmd)}　── ${esc(t.desc || "")}`).join("<br>"), "dim");
+    return;
+  }
   if (!fn) {
     print(`${esc(name)}: コマンドが見つかりません（help で一覧）`, "alert");
     return cmdOops(raw, cname);
@@ -580,6 +586,8 @@ async function camRec(rec, arg) {
   // 並び替えて、止められていたカメラがいちばん上に来たら、師匠がひとこと（一度だけ）
   if (sorted && rows[0]?.id === rec.target && rows[0].kept < to - from && rec.found)
     await oops(`camrec:${state.current}`, rec.found);
+  // 並べずに出したときは、短い順に並べるように、師匠がひとこと（一度だけ）
+  else if (!sorted && rec.unsorted) await oops(`camrec-unsorted:${state.current}`, rec.unsorted);
 }
 
 // 道具の画面（tools の pages）：map 12 ／ power 12 ／ gate 12-E のように、引数ごとに決まった画面を出す（何度でも見られる）
