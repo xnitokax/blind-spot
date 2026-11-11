@@ -3555,8 +3555,11 @@ body[data-zone="rpg"] #eviCount {
   color: var(--accent);
   background: rgba(61, 255, 168, 0.08);
 }
+/* 師匠の声の欄：場所と高さは決まっていて、その中で上から文字が出る（あふれたら、欄の中で流れる） */
 .memo-voice {
-  min-height: 2.6em;
+  height: 9.6em;
+  overflow-y: auto;
+  scrollbar-width: none;
   border-top: 1px solid var(--line);
   padding-top: 8px;
   font-size: 14px;

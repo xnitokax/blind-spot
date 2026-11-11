@@ -77,6 +77,7 @@ async function memoAnnounce() {
     first = CH.memo.first;
   if (!(m.wait && m.found)) return;
   m.wait = false;
+  state.flags.memoAsk = false;
   if (first?.got) await speak(first.got, BEAT.small);
 }
 
@@ -210,6 +211,7 @@ function openMemo() {
   // はじめて開いたとき：師匠の声がここにも出ることを教えて（声の欄を光らせる）、人事部の番号を探させる
   if (first && !m.said.first) {
     m.wait = true;
+    state.flags.memoAsk = true; // 師匠に言われて探しているあいだ（人事DBの朝比奈の小ネタは言わない）
     const v = memoEl().querySelector(".memo-voice");
     v.classList.add("spot");
     memoSay(first.say, "first").then(() => v.classList.remove("spot"));
@@ -275,6 +277,7 @@ async function memoSay(lines, key) {
     for (const ch of text) {
       if (run !== memoVoiceRun) return;
       t.textContent += ch;
+      v.scrollTop = v.scrollHeight;
       await sleep("。、…！？.,".includes(ch) ? 90 : 38);
     }
   }
