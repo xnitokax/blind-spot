@@ -18,6 +18,7 @@
   - ゲーム本体は `docs/` から `public/` へ、`npm run dev` / `build` の前に自動で写す（`tools/sync.mjs`）。`public/` の写しは git に入れない
   - `docs/index.html` の `<script>` を増やしたら、`uzu-code/index.html` にも同じものを足す
   - `uzu login` / `uzu preview`（iPhone での確認）は、nitoka のパソコンでしかできない
+  - UZU Code の学び（公式に無い挙動・WebView の CSS・砂場の違いなど）は `uzu-code/Tips.md`。コードモードの作業の前に読む
   - ローカルの開発用画面（`uzu dev`）のログには PC の名前が出る。そこに本名が入っているので、ログをそのまま貼らない
 
 ## 進め方の約束
