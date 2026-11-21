@@ -3,6 +3,22 @@
 //  呼び名（handle）・回線コード（connect）・小ネタ
 // =========================================================
 
+// 下ネタ・悪口の呼び名か（文字のあいだの記号・数字は無視。カタカナはひらがなにそろえる。含んでいれば当たり。
+//   ふつうの名前に混ざりやすい語（shit … kinoshita、unko … junko、cock … peacock、shine … sunshine）は入れない）
+const RUDE_HANDLE = [
+  "ちんこ", "ちんぽ", "ちんちん", "まんこ", "うんこ", "うんち", "おっぱい", "せっくす", "くそ", "ころす",
+  "chinko", "tinko", "chinpo", "tinpo", "chinchin", "manko", "unchi", "oppai", "sekkusu",
+  "sex", "fuck", "bitch", "dick", "pussy", "penis", "porn", "nigger", "kuso",
+];
+function isRudeHandle(h) {
+  const t = h
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+    .replace(/[^a-zぁ-ゖ一-龯]/g, "");
+  return RUDE_HANDLE.some(w => t.includes(w));
+}
+
 // ---------------- タイトル画面（ハンドル名と回線コード） ----------------
 // 初めての人には、師匠が handle コマンドの使い方を教える（コマンド入力のチュートリアルを兼ねる）
 async function titleCommand(raw) {
@@ -23,6 +39,16 @@ async function titleCommand(raw) {
         "[師匠] なんでお前が知っている。",
         "[師匠] ……いいか。その名前で、絶対に connect するなよ。",
       ]);
+    // 下ネタ・悪口の呼び名は、師匠が一度だけ止める（同じ名前をもう一度打てば、そのまま進める）
+    if (isRudeHandle(h) && state.rudeWarned !== h) {
+      state.rudeWarned = h;
+      return speak([
+        "[師匠] 一生、その名前で呼ばれるんだぞ？",
+        `[師匠] おい、${h}。`,
+        "[師匠] お前はそれでいいのか？それがいいのか？",
+        "[師匠] それがいいなら止めねぇが。",
+      ]);
+    }
     state.mode = { type: "handleConfirm", name: h, autoCode: state.mode.autoCode };
     setPrompt("決定する？ [y/n]");
     return speak([`[師匠] 「${h}」……それでいいんだな？`]);
