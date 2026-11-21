@@ -2686,7 +2686,7 @@ help　　　　── 手札を確かめる
           zone: "hr",
           breach: ["reuse session: asahina.satsuki", "skip 2FA (internal network)", "load personnel index"],
           title: "人事データベース",
-          say: ["[師匠] 前回のパスワードがまだ生きてる。助かるな。"],
+          say: ["[師匠] 前回のログインがまだ生きてる。助かるな。"],
           login: "朝比奈 さつき（人事部 採用課）",
           body: HR_BODY,
           search: {
@@ -3531,7 +3531,7 @@ help　　　　── 手札を確かめる
           zone: "hr",
           breach: ["reuse session: asahina.satsuki", "skip 2FA (internal network)", "load personnel index"],
           title: "人事データベース",
-          say: ["[師匠] 前回のパスワードがまだ生きてる。助かるな。"],
+          say: ["[師匠] 前回のログインがまだ生きてる。助かるな。"],
           login: "朝比奈 さつき（人事部 採用課）",
           body: HR_BODY,
           search: {
