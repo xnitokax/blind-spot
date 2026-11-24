@@ -172,8 +172,9 @@ function memoWrote(name, v) {
     talked = true;
   }
   // 番号が sortMin 個書きこまれたら、間の空き方に師匠が気づく（表は、書くたびにコード順）
+  //   もう外で決まり（三角数）を調べたあとなら、「外で調べてみろ」は言わない（調べる順番は自由なので）
   const codes = conf.rows.filter(r => isCode(m.notes[r.name])).length;
-  if (codes >= (conf.sortMin ?? 4) && !m.said.sort) {
+  if (codes >= (conf.sortMin ?? 4) && !m.said.sort && !state.clues.includes(conf.rule)) {
     m.said["hint:rule"] = true; // 次に開いたとき、同じ話（外で調べろ）をくり返さない
     setTimeout(() => memoSay(conf.sortSay, "sort"), talked ? 4500 : 700);
   }

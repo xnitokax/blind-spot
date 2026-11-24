@@ -16,7 +16,7 @@ $("form").onsubmit = async e => {
     if (skipTap()) fast = true;
     return;
   }
-  if (state.over) return;
+  if (!state || state.over) return;
   const raw = cmd.value;
   cmd.value = "";
   $("run").classList.remove("ready");
